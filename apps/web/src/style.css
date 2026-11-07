@@ -1,0 +1,89 @@
+:root {
+  font-family: 'Trebuchet MS', sans-serif;
+  color: #292d27;
+  background: #f6f3ec;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  border-top: 5px solid #596b42;
+}
+main {
+  max-width: 1200px;
+  min-height: calc(100svh - 5px);
+  margin: auto;
+  padding: 32px clamp(24px, 6vw, 80px);
+  display: flex;
+  flex-direction: column;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #d8d8ca;
+}
+.wordmark {
+  font-weight: bold;
+}
+.edition,
+.eyebrow,
+footer {
+  color: #5c6254;
+  font-size: 0.8rem;
+  letter-spacing: 0.07em;
+}
+section {
+  padding: clamp(56px, 12vh, 140px) 0;
+  max-width: 760px;
+}
+.eyebrow {
+  text-transform: uppercase;
+}
+h1 {
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  font-weight: normal;
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin: 28px 0;
+}
+.description {
+  max-width: 460px;
+  line-height: 1.7;
+  color: #5c6254;
+}
+.connection {
+  margin-top: 40px;
+  padding-left: 16px;
+  border-left: 3px solid #596b42;
+}
+.connection p {
+  font-size: 0.9rem;
+}
+button {
+  font: inherit;
+  color: #fff;
+  background: #40532e;
+  border: 0;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+button:hover {
+  background: #293b1a;
+}
+button:focus-visible {
+  outline: 3px solid #8b4c1e;
+  outline-offset: 4px;
+}
+footer {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #d8d8ca;
+}

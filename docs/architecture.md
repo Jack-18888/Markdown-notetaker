@@ -1,6 +1,6 @@
 # Architecture
 
-**Implementation state:** The application has not been implemented. Consequential choices have individual statuses in the [decision register](#decision-status-and-evidence); none is validated yet.
+**Implementation state:** T01 supplies the TypeScript workspace scaffold, a React connection page, and an Express health endpoint. Note functionality and persistence are not implemented. Consequential choices have individual statuses in the [decision register](#decision-status-and-evidence); validation applies only to the scope recorded for each choice.
 
 The system supports the [product requirements](requirements.md): one person writes rich notes in a browser, organizes them in folders, and keeps saved content on their own computer. Individual documents in [roadmaps](../roadmaps/) define feature or release designs, detailed requirements, acceptance criteria, tasks, and verification evidence. The user specifies which roadmap governs the work.
 
@@ -24,11 +24,11 @@ Markdown crosses the system boundary only through explicit import/export. SQLite
 
 The proposed repository uses npm workspaces with three packages:
 
-| Component | Responsibility | Boundary |
-| --- | --- | --- |
-| `apps/web` | React navigation, editor, save coordination, Markdown conversion, and Mermaid previews. Vite supplies development tooling and the frontend build. | Calls the API; never accesses SQLite or imports server-only modules. |
-| `apps/server` | Express routes, input validation, hierarchy and revision rules, SQLite access, migrations, and production static serving. | Owns all persisted changes and validates them independently of the browser. |
-| `packages/shared` | Portable runtime schemas and inferred TypeScript types for documents and API data. | Contains no database access, server dependencies, or DOM-dependent editor code. |
+| Component         | Responsibility                                                                                                                                    | Boundary                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `apps/web`        | React navigation, editor, save coordination, Markdown conversion, and Mermaid previews. Vite supplies development tooling and the frontend build. | Calls the API; never accesses SQLite or imports server-only modules.            |
+| `apps/server`     | Express routes, input validation, hierarchy and revision rules, SQLite access, migrations, and production static serving.                         | Owns all persisted changes and validates them independently of the browser.     |
+| `packages/shared` | Portable runtime schemas and inferred TypeScript types for documents and API data.                                                                | Contains no database access, server dependencies, or DOM-dependent editor code. |
 
 Keep HTTP handlers focused on transport and validation. Application services enforce editing and hierarchy rules; repositories execute parameterized SQL and transactions. The browser loads tree metadata separately from full note bodies so navigation does not fetch every document.
 
@@ -36,10 +36,10 @@ The API covers tree metadata, note detail, and note/folder creation, updates, mo
 
 ## Persistence and document model
 
-| Record | Stored information |
-| --- | --- |
-| Folder | ID, name, optional parent folder ID, creation/update timestamps. |
-| Note | ID, title, optional folder ID, rich document JSON, document schema version, revision, creation/update timestamps. |
+| Record | Stored information                                                                                                |
+| ------ | ----------------------------------------------------------------------------------------------------------------- |
+| Folder | ID, name, optional parent folder ID, creation/update timestamps.                                                  |
+| Note   | ID, title, optional folder ID, rich document JSON, document schema version, revision, creation/update timestamps. |
 
 A null parent/folder represents the workspace root. IDs identify resources independently of their names or locations.
 
@@ -87,20 +87,24 @@ Because the app has no authentication, keep it bound to loopback, validate brows
 
 Store SQLite files in a configurable local data directory excluded from Git. Startup initializes the directory and applies migrations; shutdown closes the connection. Report inaccessible paths, locks, and migration failures without deleting existing content. Backup/restore instructions must account for SQLite sidecar files; the initial operational guidance will use a stopped server.
 
-No runtime version, port, environment variable name, or startup command is a verified interface yet. Publish tested installation and deployment instructions in the [README](../README.md) when they exist.
+The scaffold targets Node.js 24 LTS and ESM throughout. Shared code compiles to a portable package before either app; development watches shared output alongside both apps. Vite uses 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. Production serves the built frontend and health API from Express. See the [README](../README.md) for setup and command details. Data paths, migrations, write-origin checks, and operational hardening remain work for T03, T05, and T14.
 
 ## Design validation and remaining risks
 
-| Risk or unresolved detail | Validation needed |
-| --- | --- |
-| Tiptap, Markdown, and Mermaid compatibility | Round-trip representative blocks and diagrams; keep the document schema aligned across browser and API. |
-| Node.js and native SQLite compatibility | Select supported versions and verify installation on Windows before recording prerequisites. |
-| Save races and competing tabs | Exercise in-flight edits, delayed responses, navigation, retry, and revision conflicts against the real API. |
-| Invalid or expensive diagrams | Test syntax failures, complexity limits, stale render cleanup, and hostile content. |
-| API and input rules | Establish exact contracts, name rules, and compatible request/import limits in shared schemas with boundary tests. |
-| Local configuration and persistence | Verify the default data path, configuration, migration rollback, and reopen/restart behavior before documenting them as operational facts. |
+| Risk or unresolved detail                   | Validation needed                                                                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tiptap, Markdown, and Mermaid compatibility | Round-trip representative blocks and diagrams; keep the document schema aligned across browser and API.                                    |
+| Node.js and native SQLite compatibility     | Select supported versions and verify installation on Windows before recording prerequisites.                                               |
+| Save races and competing tabs               | Exercise in-flight edits, delayed responses, navigation, retry, and revision conflicts against the real API.                               |
+| Invalid or expensive diagrams               | Test syntax failures, complexity limits, stale render cleanup, and hostile content.                                                        |
+| API and input rules                         | Establish exact contracts, name rules, and compatible request/import limits in shared schemas with boundary tests.                         |
+| Local configuration and persistence         | Verify the default data path, configuration, migration rollback, and reopen/restart behavior before documenting them as operational facts. |
 
-Use Vitest for isolated logic, Supertest with temporary SQLite databases for API/persistence behavior, and Playwright for browser workflows. ESLint, Prettier, and strict TypeScript are the proposed quality tooling. Their commands belong in package manifests once implemented.
+Use Vitest for isolated logic, Supertest with temporary SQLite databases for API/persistence behavior, and Playwright for browser workflows. ESLint, Prettier, and strict TypeScript provide scaffold quality checks. Package manifests own their commands; later tasks extend behavioral verification.
+
+### Scaffold tooling choices
+
+T01 uses TypeScript 5.9 because the selected TypeScript ESLint integration supports versions below 6.1. The root minimatch override selects the patched 11.x line for GHSA-g3hv-75wg-m249; lint and typechecks pass with it. npm 12 install-script rules allow the pinned esbuild setup script and deny an unnecessary better-sqlite3 source build. SQLite 13 ships native prebuilds, and the scaffold test loads its Windows binary against Node.js 24.18.0. These are tooling choices, not validation of persistence or the editor.
 
 ## Decision status and evidence
 
@@ -112,12 +116,12 @@ Track consequential choices in the register below, with rationale and consequenc
 
 Update the relevant row when a task supplies evidence. If a material change invalidates that evidence, return the current choice to `proposed` until rechecked; preserve the earlier evidence as history. A validated choice does not imply that other choices or the whole application are validated. Introduce separate decision records only when their history warrants them.
 
-| Choice and rationale | Status | Validation / evidence |
-| --- | --- | --- |
-| [Workspace and shared-module boundaries](#components-and-responsibilities) | `proposed` | Pending: [T01](../roadmaps/initial-project.md#t01), [T02](../roadmaps/initial-project.md#t02). |
-| [SQLite storage and versioned documents](#persistence-and-document-model) | `proposed` | Pending: [T03](../roadmaps/initial-project.md#t03), [T04](../roadmaps/initial-project.md#t04), [compatibility checkpoint](../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint). |
-| [Tiptap and custom Mermaid conversion](#rich-editing) | `proposed` | Pending: [T06](../roadmaps/initial-project.md#t06), [T09](../roadmaps/initial-project.md#t09). |
-| [Save coordination and revision recovery](#save-lifecycle) | `proposed` | Pending: [T11](../roadmaps/initial-project.md#t11). |
-| [Markdown conversion and safe diagram rendering](#markdown-and-diagrams) | `proposed` | Pending: [T06](../roadmaps/initial-project.md#t06), [T10](../roadmaps/initial-project.md#t10), [T12](../roadmaps/initial-project.md#t12). |
-| [Loopback runtime and local data operations](#local-runtime-and-operations) | `proposed` | Pending: [T05](../roadmaps/initial-project.md#t05), [T14](../roadmaps/initial-project.md#t14). |
-| [Verification tooling](#design-validation-and-remaining-risks) | `proposed` | Pending: [T01](../roadmaps/initial-project.md#t01), [T15](../roadmaps/initial-project.md#t15). |
+| Choice and rationale                                                        | Status      | Validation / evidence                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Workspace and shared-module boundaries](#components-and-responsibilities)  | `proposed`  | Scaffold verified in [T01 evidence](../roadmaps/initial-project.md#t01) on 2026-11-07: ESM builds and shared imports resolve in both apps on Windows/Node 24.18.0. Contract boundaries remain pending [T02](../roadmaps/initial-project.md#t02).                                                                                                                                                            |
+| [SQLite storage and versioned documents](#persistence-and-document-model)   | `proposed`  | Pending: [T03](../roadmaps/initial-project.md#t03), [T04](../roadmaps/initial-project.md#t04), [compatibility checkpoint](../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).                                                                                                                                                                                                      |
+| [Tiptap and custom Mermaid conversion](#rich-editing)                       | `proposed`  | Pending: [T06](../roadmaps/initial-project.md#t06), [T09](../roadmaps/initial-project.md#t09).                                                                                                                                                                                                                                                                                                              |
+| [Save coordination and revision recovery](#save-lifecycle)                  | `proposed`  | Pending: [T11](../roadmaps/initial-project.md#t11).                                                                                                                                                                                                                                                                                                                                                         |
+| [Markdown conversion and safe diagram rendering](#markdown-and-diagrams)    | `proposed`  | Pending: [T06](../roadmaps/initial-project.md#t06), [T10](../roadmaps/initial-project.md#t10), [T12](../roadmaps/initial-project.md#t12).                                                                                                                                                                                                                                                                   |
+| [Loopback runtime and local data operations](#local-runtime-and-operations) | `proposed`  | Pending: [T05](../roadmaps/initial-project.md#t05), [T14](../roadmaps/initial-project.md#t14).                                                                                                                                                                                                                                                                                                              |
+| [Verification tooling](#design-validation-and-remaining-risks)              | `validated` | Scaffold scope only, 2026-11-07, Windows 11 x64 / Node 24.18.0 / npm 12.2.2: clean install, strict typechecks, ESLint, Prettier, two Vitest/Supertest/native SQLite checks, Chromium proxy smoke, and builds pass. See [T01 evidence](../roadmaps/initial-project.md#t01) and [scaffold tests](../apps/server/src/app.test.ts). Release workflows remain pending [T15](../roadmaps/initial-project.md#t15). |

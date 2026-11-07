@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** Planned; implementation has not started.
+**Status:** Implementation started; T01 is complete. Remaining tasks await implementation.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -143,23 +143,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID | Task | Status | Direct dependencies |
-| --- | --- | --- | --- |
-| [T01](#t01) | Workspaces and tooling | `todo` | None |
-| [T02](#t02) | Shared contracts | `todo` | [T01](#t01) |
-| [T03](#t03) | SQLite and migrations | `todo` | [T02](#t02) |
-| [T04](#t04) | Persistence services | `todo` | [T03](#t03) |
-| [T05](#t05) | Local REST API | `todo` | [T04](#t04) |
-| [T06](#t06) | Editor compatibility | `todo` | [T02](#t02) |
-| [T07](#t07) | Workspace navigation | `todo` | [T05](#t05) |
-| [T08](#t08) | Lifecycle controls | `todo` | [T07](#t07) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `todo` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `todo` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `todo` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `todo` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `todo` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `todo` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
 | [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering | `todo` | [T09](#t09) |
-| [T11](#t11) | Autosave and conflicts | `todo` | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export | `todo` | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review | `todo` | [T12](#t12) |
-| [T14](#t14) | Production execution | `todo` | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs | `todo` | [T13](#t13), [T14](#t14) |
+| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -182,7 +182,8 @@ Later changes to document contracts, editor extensions, or conversion adapters r
 
 Establish the backend, frontend, and shared package with reproducible root commands.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
+
 **Depends on:** None  
 **Requirements:** R1, R8
 
@@ -203,9 +204,9 @@ Establish the backend, frontend, and shared package with reproducible root comma
 
 **Acceptance criteria**
 
-- [ ] Dependencies install on the target Windows environment and shared types resolve from both apps.
-- [ ] Root dev starts both apps; typecheck, lint, format:check, and build succeed against the scaffold.
-- [ ] No real database, secret, or generated artifact is tracked; production and development configuration are distinct and documented.
+- [x] Dependencies install on the target Windows environment and shared types resolve from both apps.
+- [x] Root dev starts both apps; typecheck, lint, format:check, and build succeed against the scaffold.
+- [x] No real database, secret, or generated artifact is tracked; production and development configuration are distinct and documented.
 
 **Verification**
 
@@ -214,7 +215,17 @@ Establish the backend, frontend, and shared package with reproducible root comma
 
 **Evidence**
 
-No verification evidence recorded.
+Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2.
+
+- Installed dependencies and verified the final lockfile with a clean `npm ci --no-audit`. `npm ls --workspaces --depth=0` confirms both apps resolve the local shared package. Selected Express 5.3.0, React 19.3.1, Vite 8.3.6, and better-sqlite3 13.0.3; TypeScript 5.9.3 stays within TypeScript ESLint's supported range.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build` pass. Root typecheck also checks tooling configuration and browser test code. Shared code builds without Node/DOM ambient types; browser lint rejects server imports.
+- `npm test`: 2 checks pass in [app.test.ts](../apps/server/src/app.test.ts), covering real Express health/JSON API 404 responses and the native SQLite binding with an isolated in-memory database. No user database is created or opened.
+- `npx playwright install chromium` and `npm run test:e2e`: 1 Chromium check passes in [scaffold.spec.ts](../tests/e2e/scaffold.spec.ts). It starts root development (shared watcher, Express, Vite), loads React, reaches Express through the Vite proxy, and stops the process tree. The first attempt lacked the required Chromium version; installing it resolved the failure. This sandbox requires elevated process permissions for Windows browser/server cleanup.
+- Production smoke: built the workspaces, launched `npm start` with `PORT=3002`, and used Chromium to verify the built page reaches its same-origin API, unknown API paths return JSON 404, and no browser runtime errors occur. Visually inspected 1440x1000 and 375x812 screenshots; no horizontal overflow. Stopped the smoke server afterward. This verifies scaffold startup only; T14 still owns production hardening and data operations.
+- `npm audit --json`: 0 vulnerabilities after selecting patched minimatch 11.x through the root override. npm 12 script policy allows pinned esbuild setup and denies an unnecessary SQLite source build; the native load check passes after clean installation.
+- `git check-ignore` confirms environment, data, database, build, dependency, browser-result, and screenshot paths are ignored; source files and the lockfile remain reviewable. Checked local documentation links/anchors, package scripts, ESM exports, and distinct development/production instructions in [README](../README.md).
+
+No T01 acceptance blockers remain. Note/API contracts, persistence behavior, editor packages, and release workflows remain in their owning later tasks.
 
 <a id="t02"></a>
 
