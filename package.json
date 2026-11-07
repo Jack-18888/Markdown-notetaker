@@ -14,6 +14,8 @@
   ],
   "scripts": {
     "dev": "npm run build -w @markdown-note-taker/shared && concurrently --kill-others --names shared,server,web \"npm run dev -w @markdown-note-taker/shared\" \"npm run dev -w @markdown-note-taker/server\" \"npm run dev -w @markdown-note-taker/web\"",
+    "dev:frontend": "npm run build -w @markdown-note-taker/shared && npm run dev -w @markdown-note-taker/web",
+    "dev:backend": "npm run build -w @markdown-note-taker/shared && concurrently --kill-others --names shared,server \"npm run dev -w @markdown-note-taker/shared\" \"npm run dev -w @markdown-note-taker/server\"",
     "typecheck": "npm run build -w @markdown-note-taker/shared && npm run typecheck --workspaces && tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

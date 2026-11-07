@@ -8,11 +8,20 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: false,
-    timeout: 60_000,
-    env: { PORT: '3001' },
-  },
+  webServer: [
+    {
+      command: 'npm run dev:backend',
+      url: 'http://127.0.0.1:3001/api/health',
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env: { PORT: '3001' },
+    },
+    {
+      command: 'npm run dev:frontend',
+      url: 'http://127.0.0.1:5173',
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env: { PORT: '3001' },
+    },
+  ],
 });

@@ -225,6 +225,8 @@ Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2.
 - `npm audit --json`: 0 vulnerabilities after selecting patched minimatch 11.x through the root override. npm 12 script policy allows pinned esbuild setup and denies an unnecessary SQLite source build; the native load check passes after clean installation.
 - `git check-ignore` confirms environment, data, database, build, dependency, browser-result, and screenshot paths are ignored; source files and the lockfile remain reviewable. Checked local documentation links/anchors, package scripts, ESM exports, and distinct development/production instructions in [README](../README.md).
 
+Review follow-up, 2026-11-07: added independent root `dev:frontend` and `dev:backend` commands. Each builds shared code at startup; the backend also watches shared changes. Updated Playwright to launch the commands separately and wait for each service. `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run test:e2e` pass (1 Chromium check); `git diff --check` passes. README and architecture describe the two-terminal setup. The combined `dev` command remains available.
+
 No T01 acceptance blockers remain. Note/API contracts, persistence behavior, editor packages, and release workflows remain in their owning later tasks.
 
 <a id="t02"></a>
