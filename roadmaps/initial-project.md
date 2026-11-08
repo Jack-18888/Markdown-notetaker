@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** Implementation started; T01 and T02 are complete. Implementation continues with T03.
+**Status:** Implementation started; T01-T03 are complete. Implementation continues with T04.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -147,7 +147,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | ----------- | ---------------------------------------- | ------ | ------------------------ |
 | [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
 | [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `todo` | [T02](#t02)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
 | [T04](#t04) | Persistence services                     | `todo` | [T03](#t03)              |
 | [T05](#t05) | Local REST API                           | `todo` | [T04](#t04)              |
 | [T06](#t06) | Editor compatibility                     | `todo` | [T02](#t02)              |
@@ -265,7 +265,7 @@ Establish initial shared API contracts and runtime validation; finalize editor-s
 
 **Evidence**
 
-Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and approved for the T02 commit.
+Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and committed as 33705ec.
 
 - Added Zod 4.6.7 as the contracts package's sole runtime dependency. [Contract schemas](../packages/contracts/src/index.ts) define resource IDs/names/roots, folder and note metadata/detail, provisional version-1 documents, request revisions, strict errors, limits, and all initial route descriptors. [API contracts](../docs/api.md) document exact shapes, routes, statuses, duplicate-name policy, and service responsibilities.
 - Both apps consume the same health schema and route descriptor. Express validates health and fallback error envelopes; React validates the actual health response. The contracts workspace typechecks without Node/DOM ambient types, and `npm ls --workspace @markdown-note-taker/contracts --depth=0` confirms only Zod is required at runtime. Resource handlers and persistence remain in T03-T05.
@@ -293,7 +293,8 @@ No T02 acceptance blockers remain. The document validator deliberately accepts o
 
 Persist folders and canonical note documents safely across restarts.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
+
 **Depends on:** T02  
 **Requirements:** R8
 
@@ -312,9 +313,9 @@ Persist folders and canonical note documents safely across restarts.
 
 **Acceptance criteria**
 
-- [ ] An empty directory initializes successfully and rerunning startup does not rerun applied migrations.
-- [ ] Saved records survive closing/reopening the database; foreign keys reject invalid references.
-- [ ] A failed migration rolls back and produces an actionable startup error without deleting existing records.
+- [x] An empty directory initializes successfully and rerunning startup does not rerun applied migrations.
+- [x] Saved records survive closing/reopening the database; foreign keys reject invalid references.
+- [x] A failed migration rolls back and produces an actionable startup error without deleting existing records.
 
 **Verification**
 
@@ -323,7 +324,17 @@ Persist folders and canonical note documents safely across restarts.
 
 **Evidence**
 
-No verification evidence recorded.
+Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and approved for the T03 commit.
+
+- [openDatabase](../apps/server/src/database/open.ts) initializes data/workspace.sqlite by default, accepts DATA_DIR through [configuration](../apps/server/src/config.ts), and sets foreign_keys=ON, journal_mode=WAL, synchronous=FULL, and a 5000 ms busy timeout. Relative directories resolve from the repository root in source and bundled execution. [.env.example](../.env.example) and [README](../README.md) document verified startup/storage configuration.
+- [Versioned SQL](../apps/server/src/database/migrations/001-workspace.ts) creates strict folders/notes tables, parent-reference indexes, JSON/revision checks, and a migration journal. The [runner](../apps/server/src/database/migrations.ts) verifies version/name/SQL checksums and user_version, then applies all pending migrations in one immediate transaction. It rejects changed/newer/inconsistent history without reset or downgrade.
+- `npm test`: all 137 checks pass, including 38 new file-backed/lifecycle checks. [Connection tests](../apps/server/src/database/open.test.ts) verify actual settings, indexes, foreign keys, saved metadata/JSON after reopen, lock recovery, corruption preservation, invalid configuration, and unavailable paths. Path failures use blocking files/directories, not modified Windows ACLs. [Migration tests](../apps/server/src/database/migrations.test.ts) verify idempotence, successful upgrade of populated data, full pending-batch rollback, clean first-batch rollback/retry, unchanged existing notes, and incompatible journals/versions. [Runtime tests](../apps/server/src/server.test.ts) exercise real HTTP startup, shutdown, and occupied ports.
+- [Temporary-workspace helpers](../apps/server/test/temporary-workspace.ts) close owned connections and remove only their verified OS temporary directories. No normal workspace database is used by tests. Browser checks now use [an isolated launcher](../tests/e2e/run.mjs), which supplies a temporary DATA_DIR and cleans it after server teardown; direct Playwright test calls without the harness directory are rejected.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build` pass. `npm run test:e2e`: 1 Chromium check passes through React, the Vite proxy, and the newly initialized database-backed startup.
+- CLI smoke: started source from apps/server and `npm start` from the root using the same project-relative temporary DATA_DIR. The second startup preserved saved fixture JSON/revision and migration checksums/timestamps; production HTML/assets and API 404 responses worked. A blocked data path exited with code 1 before listening and preserved the blocking file. Temporary child processes/data were cleaned up.
+- Checked documentation links/anchors, API JSON examples, manifest/lockfile consistency, ignored database/sidecar/build paths, and `git diff --check`. SQLite remains server-only; the browser bundle is unchanged.
+
+No T03 acceptance blockers remain. Folder/note services, HTTP resource routes, and the finalized rich document compatibility checkpoint remain in their owning later tasks. Startup reports sanitized directory/lock/corruption/migration failures and never deletes or resets existing saved data.
 
 <a id="t04"></a>
 

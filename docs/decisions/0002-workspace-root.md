@@ -1,6 +1,6 @@
 # 0002: virtual workspace root and future ownership
 
-**Status:** Accepted for the current single-user contract; persistence behavior is pending T03/T04.
+**Status:** Accepted for the current single-user contract; nullable parent references and foreign keys are implemented; service hierarchy behavior is pending.
 
 ## Decision
 

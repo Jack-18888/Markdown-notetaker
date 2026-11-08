@@ -1,6 +1,6 @@
 # Architecture
 
-**Implementation state:** T01 supplies the TypeScript workspace scaffold, a React connection page, and an Express health endpoint. T02 adds portable shared API contracts and initial document validation. Resource handlers, note functionality, and persistence are not implemented. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
+**Implementation state:** T01 supplies the TypeScript workspace scaffold, a React connection page, and an Express health endpoint. T02 adds portable shared API contracts and initial document validation. SQLite initialization, versioned migrations, and database shutdown are implemented. Resource handlers and note functionality are not implemented. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
 
 The system supports the [product requirements](requirements.md): one person writes rich notes in a browser, organizes them in folders, and keeps saved content on their own computer. Individual documents in [roadmaps](../roadmaps/) define feature or release designs, detailed requirements, acceptance criteria, tasks, and verification evidence. The user specifies which roadmap governs the work.
 
