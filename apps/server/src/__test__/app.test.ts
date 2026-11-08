@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from './app.js';
+import { createApp } from '../app.js';
 import {
   errorDefinitions,
   errorResponseSchema,

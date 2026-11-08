@@ -1,10 +1,7 @@
 import { once } from 'node:events';
 import { afterEach, describe, expect, it } from 'vitest';
-import { startServer } from './server.js';
-import {
-  seedWorkspace,
-  temporaryWorkspace,
-} from '../test/temporary-workspace.js';
+import { startServer } from '../server.js';
+import { seedWorkspace, temporaryWorkspace } from './temporary-workspace.js';
 
 const running: ReturnType<typeof startServer>[] = [];
 const workspaces: ReturnType<typeof temporaryWorkspace>[] = [];

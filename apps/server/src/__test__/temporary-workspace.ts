@@ -2,8 +2,8 @@ import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve, sep } from 'node:path';
 import Database from 'better-sqlite3';
-import { databaseFileName } from '../src/config.js';
-import { openDatabase, type DatabaseOptions } from '../src/database/open.js';
+import { databaseFileName } from '../config.js';
+import { openDatabase, type DatabaseOptions } from '../database/open.js';
 
 /** Own every connection and file created by a persistence test. */
 export function temporaryWorkspace() {

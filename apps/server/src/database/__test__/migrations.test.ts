@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { DatabaseErrorCode } from './errors.js';
-import { workspaceMigrations, type Migration } from './migrations.js';
+import { DatabaseErrorCode } from '../errors.js';
+import { workspaceMigrations, type Migration } from '../migrations.js';
 import {
   seedWorkspace,
   temporaryWorkspace,
-} from '../../test/temporary-workspace.js';
+} from '../../__test__/temporary-workspace.js';
 
 const workspaces: ReturnType<typeof temporaryWorkspace>[] = [];
 function workspace() {

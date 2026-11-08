@@ -3,10 +3,10 @@ import {
   fixtureIds,
   fixtureTimestamp,
   temporaryWorkspace,
-} from '../../test/temporary-workspace.js';
-import { DatabaseErrorCode } from './errors.js';
-import { initialWorkspaceMigration } from './migrations/001-workspace.js';
-import { workspaceMigrations } from './migrations.js';
+} from '../../../__test__/temporary-workspace.js';
+import { DatabaseErrorCode } from '../../errors.js';
+import { initialWorkspaceMigration } from '../001-workspace.js';
+import { workspaceMigrations } from '../../migrations.js';
 
 const directories: ReturnType<typeof temporaryWorkspace>[] = [];
 function legacyWorkspace() {

@@ -2,14 +2,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveDataDirectory } from '../config.js';
-import { DatabaseErrorCode, DatabaseInitializationError } from './errors.js';
+import { resolveDataDirectory } from '../../config.js';
+import { DatabaseErrorCode, DatabaseInitializationError } from '../errors.js';
 import {
   fixtureIds,
   fixtureTimestamp,
   seedWorkspace,
   temporaryWorkspace,
-} from '../../test/temporary-workspace.js';
+} from '../../__test__/temporary-workspace.js';
 
 const workspaces: ReturnType<typeof temporaryWorkspace>[] = [];
 function workspace() {
@@ -252,7 +252,7 @@ describe('workspace database initialization', () => {
     vi.stubEnv('DATA_DIR', undefined);
     const standard = resolveDataDirectory();
     expect(standard).toBe(
-      fileURLToPath(new URL('../../../../data', import.meta.url)),
+      fileURLToPath(new URL('../../../../../data', import.meta.url)),
     );
     expect(standard).toBe(resolveDataDirectory('data'));
     expect(resolveDataDirectory('./data')).toBe(standard);
