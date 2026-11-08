@@ -20,4 +20,4 @@ Exact shapes are documented in [API contracts](../api.md), and the frontend conv
 
 ## Verification scope
 
-[Markdown contract tests](../../packages/contracts/test/markdown.test.ts) check raw source and UTF-8 limits. [Migration tests](../../apps/server/src/database/migrations/__test__/002-markdown.test.ts) verify text/metadata preservation, reopen, and complete rollback for unsupported legacy content. [Task evidence](../../roadmaps/initial-project.md#t04) records commands and outcomes. Rich editor conversion and rendering remain future work.
+[Markdown contract tests](../../packages/contracts/src/__test__/markdown.test.ts) check raw source and UTF-8 limits. [Migration tests](../../apps/server/src/database/migrations/__test__/002-markdown.test.ts) verify text/metadata preservation, reopen, and complete rollback for unsupported legacy content. [Task evidence](../../roadmaps/initial-project.md#t04) records commands and outcomes. Rich editor conversion and rendering remain future work.
