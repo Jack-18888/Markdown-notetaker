@@ -53,4 +53,5 @@ export const resourceParamsSchema = z.strictObject({ id: resourceIdSchema });
 export const noParamsSchema = z.strictObject({});
 
 export type ResourceId = z.infer<typeof resourceIdSchema>;
+export type ParentId = z.infer<typeof parentIdSchema>;
 export type Revision = z.infer<typeof revisionSchema>;

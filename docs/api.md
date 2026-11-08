@@ -1,6 +1,6 @@
 # Initial API contracts
 
-**Implementation status:** T02 defines contract schemas and route descriptors. Only `GET /api/health` and the API 404 fallback currently run. Resource handlers, persistence, and browser write protections belong to T03-T05. Editor-specific validation remains provisional until T06 and the T09 compatibility checkpoint.
+**Implementation status:** Contract schemas, route descriptors, SQLite persistence, and folder/note services are implemented. Only `GET /api/health` and the API 404 fallback currently run over HTTP. Resource handlers and browser write protections remain in T05. Raw Markdown is canonical; frontend rich editing and rendering remain in T06/T09.
 
 The source of truth is [the contracts package](../packages/contracts/src/index.ts). The private package exports TypeScript source directly; editor navigation, development, and tests need no package build. Both apps import it as `@markdown-note-taker/contracts`. Zod supplies runtime validation and inferred TypeScript types without Node, SQLite, React, or DOM dependencies. The [route registry](../packages/contracts/src/api.ts) pairs each method/path with parameter, request, successful response, and status contracts. A `null` body/response schema means no HTTP body, not JSON `null`.
 
@@ -15,51 +15,45 @@ The source of truth is [the contracts package](../packages/contracts/src/index.t
 
 Shapes in the tables below use exported schema/type names. Successful bodies contain the resource directly, without an extra `data` wrapper.
 
-## Resources and document envelope
+## Resources and content
 
-| Shape            | Fields                                                          |
-| ---------------- | --------------------------------------------------------------- |
-| `Folder`         | `id`, `name`, `parentId`, `createdAt`, `updatedAt`              |
-| `NoteMetadata`   | `id`, `title`, `folderId`, `revision`, `createdAt`, `updatedAt` |
-| `NoteDetail`     | All note metadata fields plus `document: DocumentEnvelope`      |
-| `TreeResponse`   | `{ folders: Folder[], notes: NoteMetadata[] }`                  |
-| `HealthResponse` | `{ status: "ok", application: "Markdown Note Taker" }`          |
+| Shape          | Fields                                               |
+| -------------- | ---------------------------------------------------- |
+| Folder         | id, name, parentId, createdAt, updatedAt             |
+| NoteMetadata   | id, title, folderId, revision, createdAt, updatedAt  |
+| NoteDetail     | All note metadata fields plus content: string        |
+| TreeResponse   | { folders: Folder[], notes: NoteMetadata[] }         |
+| HealthResponse | { status: "ok", application: "Markdown Note Taker" } |
 
-Tree responses are flat collections of all folder/note metadata. Their parent references describe the hierarchy; they never include note bodies. Ordering has no semantic meaning, so consumers choose display order. Tree consistency, destination existence, cycle checks, transactions, and timestamps belong to the service layer and database; shape validation alone cannot establish them.
+Tree responses omit note bodies. Parent references describe the hierarchy; ordering has no semantic meaning. See the [persistence design](architecture/persistence.md) for persistence rules.
 
-Paragraph blocks and inline text runs preserve editor structure; each note still stores one JSON tree, not separate rows for each node. See [why paragraphs contain text nodes](architecture/editor.md#why-paragraphs-contain-text-nodes). The root remains virtual for this release; see [the root decision](decisions/0002-workspace-root.md) for its relationship to possible future workspace ownership.
+The content field contains the entire raw Markdown source. Empty strings are valid. The backend preserves line endings, whitespace, fences, and syntax without parsing or normalizing Markdown. Rich editor conversion and safe rendering belong to the frontend. There is no editor-node envelope or per-note document schema version.
 
-The initial canonical document envelope is:
+For example, create a note with:
 
-```json
+````json
 {
-  "schemaVersion": 1,
-  "content": {
-    "type": "doc",
-    "content": [{ "type": "paragraph" }]
-  }
+  "title": "Example",
+  "folderId": null,
+  "content": "# Heading\n\n**Markdown**\n\n```mermaid\nflowchart LR\n A --> B\n```\n"
 }
-```
-
-This is also the fresh empty document returned by `createEmptyDocument()`. The root requires at least one paragraph. Paragraphs may omit `content`, use an empty array, or contain one or more `{ "type": "text", "text": "nonempty text" }` nodes. Multiple paragraphs are allowed. Text is retained verbatim, including Unicode and literal markup; a text string is never an instruction to render HTML.
-
-This **provisional paragraph-only subset** rejects all attributes, marks, and other nodes, including headings, links, and Mermaid. T06 will expand it using real editor fixtures; T09 must verify the final validator through the editor, API, reopened SQLite database, and Markdown conversion. This subset does not claim the complete R3/R4 schema. The later validator must preserve documents accepted here; incompatible persisted formats require a versioned migration. Unknown/missing/malformed versions are never coerced, downgraded, stripped, or replaced with empty content.
+````
 
 ## Routes
 
-| Contract       | Method and path           | JSON request body                                                                 | Success body     | Status |
-| -------------- | ------------------------- | --------------------------------------------------------------------------------- | ---------------- | ------ |
-| `health`       | `GET /api/health`         | None                                                                              | `HealthResponse` | 200    |
-| `tree`         | `GET /api/tree`           | None                                                                              | `TreeResponse`   | 200    |
-| `getNote`      | `GET /api/notes/:id`      | None                                                                              | `NoteDetail`     | 200    |
-| `createFolder` | `POST /api/folders`       | `{ name, parentId }`                                                              | `Folder`         | 201    |
-| `updateFolder` | `PATCH /api/folders/:id`  | `{ name?, parentId? }` (at least one)                                             | `Folder`         | 200    |
-| `deleteFolder` | `DELETE /api/folders/:id` | None                                                                              | None             | 204    |
-| `createNote`   | `POST /api/notes`         | `{ title, folderId, document? }`                                                  | `NoteDetail`     | 201    |
-| `updateNote`   | `PATCH /api/notes/:id`    | `{ expectedRevision, title?, folderId?, document? }` (at least one changed field) | `NoteDetail`     | 200    |
-| `deleteNote`   | `DELETE /api/notes/:id`   | `{ expectedRevision }`                                                            | None             | 204    |
+| Contract       | Method and path           | JSON request body                                                                | Success body     | Status |
+| -------------- | ------------------------- | -------------------------------------------------------------------------------- | ---------------- | ------ |
+| `health`       | `GET /api/health`         | None                                                                             | `HealthResponse` | 200    |
+| `tree`         | `GET /api/tree`           | None                                                                             | `TreeResponse`   | 200    |
+| `getNote`      | `GET /api/notes/:id`      | None                                                                             | `NoteDetail`     | 200    |
+| `createFolder` | `POST /api/folders`       | `{ name, parentId }`                                                             | `Folder`         | 201    |
+| `updateFolder` | `PATCH /api/folders/:id`  | `{ name?, parentId? }` (at least one)                                            | `Folder`         | 200    |
+| `deleteFolder` | `DELETE /api/folders/:id` | None                                                                             | None             | 204    |
+| `createNote`   | `POST /api/notes`         | `{ title, folderId, content? }`                                                  | `NoteDetail`     | 201    |
+| `updateNote`   | `PATCH /api/notes/:id`    | `{ expectedRevision, title?, folderId?, content? }` (at least one changed field) | `NoteDetail`     | 200    |
+| `deleteNote`   | `DELETE /api/notes/:id`   | `{ expectedRevision }`                                                           | None             | 204    |
 
-Creation without `document` uses a fresh empty document. An explicit invalid/null document fails; it never invokes that default. An optional field omitted in a note patch is preserved. Renaming, moving, and changing the body can happen in a single atomic note patch. The response contains committed metadata and content, including the new revision.
+Creation without content uses an empty string. Non-string content, including null and old JSON envelopes, fails. An explicit empty string clears a note. An optional field omitted in a note patch is preserved. Renaming, moving, and changing the body can happen in a single atomic note patch. The response contains committed metadata and content, including the new revision.
 
 For example, rename a note and move it to the root with `PATCH /api/notes/:id`:
 
@@ -69,42 +63,38 @@ For example, rename a note and move it to the root with `PATCH /api/notes/:id`:
 
 It succeeds only against revision 3 and returns revision 4. A competing update using revision 3 returns `REVISION_CONFLICT` and makes no changes. The client retains local edits and later offers the R5 recovery choices; a conflict response never includes another tab's note body. Deletion also checks the note revision so a stale confirmation cannot delete a subsequently edited note. Folder metadata has no revision in this release.
 
-Folder deletion removes its current subtree, including descendant notes, in one transaction. Confirmation belongs to the UI and can use tree metadata to describe descendants. A folder move must target an existing folder outside its own subtree. `null` moves a resource to the root. Invalid destinations or cycles must leave the workspace unchanged. These semantics are requirements for T04/T05, not handlers implemented by T02.
+Folder deletion removes its current subtree, including descendant notes, in one transaction. Confirmation belongs to the UI and can use tree metadata to describe descendants. A folder move must target an existing folder outside its own subtree. `null` moves a resource to the root. Invalid destinations or cycles leave the workspace unchanged. Persistence services implement these semantics; HTTP handlers remain pending.
 
 ## Limits
 
 The exported [limits](../packages/contracts/src/limits.ts) are authoritative:
 
-| Limit                  | Value           | Measurement / enforcement                                                                 |
-| ---------------------- | --------------- | ----------------------------------------------------------------------------------------- |
-| Name/title             | 200             | Unicode code points; contract schema                                                      |
-| Document envelope      | 1,048,576 bytes | UTF-8 of compact `JSON.stringify(envelope)`, including keys and escaping; contract schema |
-| Document nesting       | 32              | Object/array edges from the envelope root (depth 0); contract schema                      |
-| Document values        | 50,000          | Each JSON container or primitive, including property values but not keys; contract schema |
-| HTTP request body      | 2,097,152 bytes | Incoming JSON body bytes before parsing; T05 must apply it                                |
-| Markdown import source | 262,144 bytes   | Raw file bytes; T12 must apply it before conversion                                       |
+| Limit                  | Value           | Measurement / enforcement                                                   |
+| ---------------------- | --------------- | --------------------------------------------------------------------------- |
+| Name/title             | 200             | Unicode code points; contract schema                                        |
+| Markdown content       | 1,048,576 bytes | UTF-8 bytes of the raw string, excluding JSON escaping and request wrappers |
+| HTTP request body      | 2,097,152 bytes | Incoming JSON body bytes before parsing; T05 must apply it                  |
+| Markdown import source | 262,144 bytes   | Raw file bytes; T12 must apply it before creating a note                    |
 
-The document validator bounds depth, aggregate string length, and value count before serialization/structural validation. It rejects cyclic/non-JSON input and never silently truncates documents. Its custom Zod issues carry `params.documentReason`, a `DocumentValidationReason` enum value: `byte_limit`, `value_limit`, `depth_limit`, or `invalid_json`. Callers use members such as `DocumentValidationReason.BYTE_LIMIT` to distinguish failures without matching human-readable messages. These diagnostics are internal, not API error details. The HTTP limit leaves room around a maximum-sized compact envelope for titles, IDs, revision fields, and JSON wrappers. Excess wire whitespace/escaping can still exceed the HTTP limit. Response trees have no request-body size cap.
+Content must be a well-formed Unicode string. Markdown grammar, node structure, and rendering complexity are frontend concerns. The backend does not trim, sanitize, reformat, or parse the content. A custom Zod issue carries params.markdownReason = MarkdownValidationReason.BYTE_LIMIT for the byte cap. The API maps it to PAYLOAD_TOO_LARGE; non-string or malformed Unicode content maps to INVALID_INPUT. Request-body escaping and whitespace count against the separate HTTP limit.
 
-An import within the raw source limit may expand during conversion and exceed document/complexity limits. T12 must validate the converted envelope before creating any note and explain rejection without changing the source or workspace. Supported Markdown structure and security rules remain governed by [R6](../roadmaps/initial-project.md#r6--import-and-export-markdown) and the [architecture](architecture/editor.md#markdown-and-diagrams).
+All source remains untrusted when rendered: HTML and unsafe URLs must stay inert, and Mermaid follows the [frontend security rules](architecture/editor.md#markdown-and-diagrams). Import/export source preservation follows [R6](../roadmaps/initial-project.md#r6--import-and-export-markdown).
 
 ## Errors and failure behavior
 
-All failures use `{ "error": { "code": "...", "message": "..." } }`, with the fixed code-specific message in [errorDefinitions](../packages/contracts/src/errors.ts). `REVISION_CONFLICT` additionally requires `noteId`, `expectedRevision`, and `currentRevision` (different revisions). Unknown error details are rejected. SQL, exception messages, request values, and document content must never be copied into an API error.
+All failures use `{ "error": { "code": "...", "message": "..." } }`. The [ApiErrorCode string enum and errorDefinitions](../packages/contracts/src/errors.ts) define the codes and their fixed status/messages; TypeScript requires a definition for every enum member. Enum values serialize as the strings listed below. `REVISION_CONFLICT` additionally requires `noteId`, `expectedRevision`, and `currentRevision` (different revisions). Unknown error details are rejected. SQL, exception messages, request values, and document content must never be copied into an API error.
 
-| Code                           | HTTP status | Meaning                                                                                                  |
-| ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------- |
-| `INVALID_INPUT`                | 400         | Malformed JSON, invalid params/body/name/revision, unknown fields, or empty patch                        |
-| `INVALID_DOCUMENT`             | 400         | Malformed envelope/version, unsupported nodes/marks/attributes, non-JSON values, or excessive complexity |
-| `UNSUPPORTED_DOCUMENT_VERSION` | 400         | An integer document version other than the supported version                                             |
-| `NOT_FOUND`                    | 404         | Missing target resource or unknown API path                                                              |
-| `HIERARCHY_CONFLICT`           | 409         | Missing destination folder, a note used as destination, self-parenting, or a cyclic move                 |
-| `REVISION_CONFLICT`            | 409         | A note mutation's expected revision differs from its current saved revision                              |
-| `PAYLOAD_TOO_LARGE`            | 413         | HTTP body or serialized document exceeds its byte limit                                                  |
-| `UNSUPPORTED_MEDIA_TYPE`       | 415         | A mutation body is supplied without JSON content type                                                    |
-| `ORIGIN_FORBIDDEN`             | 403         | Browser write origin is not permitted                                                                    |
-| `INVALID_HOST`                 | 403         | Host is not permitted for this local app                                                                 |
-| `INTERNAL_ERROR`               | 500         | Unexpected failure, with a fixed content-free message                                                    |
+| Code                     | HTTP status | Meaning                                                                                   |
+| ------------------------ | ----------- | ----------------------------------------------------------------------------------------- |
+| `INVALID_INPUT`          | 400         | Malformed JSON, invalid params/body/name/revision/content, unknown fields, or empty patch |
+| `NOT_FOUND`              | 404         | Missing target resource or unknown API path                                               |
+| `HIERARCHY_CONFLICT`     | 409         | Missing destination folder, a note used as destination, self-parenting, or a cyclic move  |
+| `REVISION_CONFLICT`      | 409         | A note mutation's expected revision differs from its current saved revision               |
+| `PAYLOAD_TOO_LARGE`      | 413         | HTTP body or raw Markdown content exceeds its byte limit                                  |
+| `UNSUPPORTED_MEDIA_TYPE` | 415         | A mutation body is supplied without JSON content type                                     |
+| `ORIGIN_FORBIDDEN`       | 403         | Browser write origin is not permitted                                                     |
+| `INVALID_HOST`           | 403         | Host is not permitted for this local app                                                  |
+| `INTERNAL_ERROR`         | 500         | Unexpected failure, with a fixed content-free message                                     |
 
 For example:
 
@@ -120,6 +110,6 @@ For example:
 }
 ```
 
-T05 must enforce transport limits, Host/origin checks, and JSON content type for body-bearing mutations before writes. It must map byte-limit failures to 413, distinguish integer unsupported versions from malformed documents, and validate resource shapes independently of browser checks. Validation, hierarchy, revision, and unexpected errors must not cause partial writes. Folder renames/moves and all multi-step mutations follow the architecture's transaction rules. Unknown `/api` paths remain JSON 404 responses in development and production.
+T05 must enforce transport limits, Host/origin checks, and JSON content type for body-bearing mutations before writes. It must map byte-limit failures to 413, validate resource shapes independently of browser checks. Failed mutations must leave saved data unchanged. The [persistence design](architecture/persistence.md) explains service implementation. Unknown `/api` paths remain JSON 404 responses in development and production.
 
-The [contract schema tests](../packages/contracts/test/contracts.test.ts) verify contract boundaries; [server smoke tests](../apps/server/src/__test__/app.test.ts) exercise the implemented health/fallback responses. Full resource/API persistence behavior will be tested in T04/T05 and revisited at the [T09 checkpoint](../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).
+The [contract schema tests](../packages/contracts/test/contracts.test.ts) verify contract boundaries; [server smoke tests](../apps/server/src/__test__/app.test.ts) exercise the implemented health/fallback responses. Persistence verification is described in the [persistence design](architecture/persistence.md). Resource API integration remains in T05 and will be revisited at the [T09 checkpoint](../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).
