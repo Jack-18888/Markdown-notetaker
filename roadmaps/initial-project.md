@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** Implementation started; T01 is complete. Remaining tasks await implementation.
+**Status:** Implementation started; T01 and T02 are complete. Implementation continues with T03.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -21,23 +21,23 @@ One person using a local workspace on their own computer.
 
 Use a React workspace for folder navigation, rich editing, Markdown conversion, and diagram previews. A local Express API owns hierarchy rules, revision checks, and SQLite persistence. Portable shared TypeScript schemas keep browser and server contracts aligned without exposing server dependencies to the browser.
 
-Technical choices and their validation status belong to the [architecture decision register](../docs/architecture.md#decision-status-and-evidence). The summaries below link to the authoritative technical rules; this roadmap owns initial-release scope, acceptance criteria, and implementation work.
+Technical choices and their validation status belong to the [architecture decision register](../docs/decisions/README.md). The summaries below link to the authoritative technical rules; this roadmap owns initial-release scope, acceptance criteria, and implementation work.
 
 ### Documents and persistence
 
-SQLite stores the workspace hierarchy and canonical rich documents. Follow the architecture's [data model, revision, transaction, and migration rules](../docs/architecture.md#persistence-and-document-model).
+SQLite stores the workspace hierarchy and canonical rich documents. Follow the architecture's [data model, revision, transaction, and migration rules](../docs/architecture/persistence.md).
 
 ### Editing and save flow
 
-Autosave and recovery protect pending edits during navigation and failed requests. The architecture's [save lifecycle](../docs/architecture.md#save-lifecycle) owns the debounce interval, write ordering, snapshot acknowledgement, and conflict strategy.
+Autosave and recovery protect pending edits during navigation and failed requests. The architecture's [save lifecycle](../docs/architecture/editor.md#save-lifecycle) owns the debounce interval, write ordering, snapshot acknowledgement, and conflict strategy.
 
 ### Markdown and diagram flow
 
-Markdown provides explicit import/export, and diagrams retain editable source. Follow the architecture's [editor representation](../docs/architecture.md#rich-editing) and [conversion, rendering, and security rules](../docs/architecture.md#markdown-and-diagrams). [R6](#r6--import-and-export-markdown) owns this release's unsupported-content policy.
+Markdown provides explicit import/export, and diagrams retain editable source. Follow the architecture's [editor representation](../docs/architecture/editor.md#rich-editing) and [conversion, rendering, and security rules](../docs/architecture/editor.md#markdown-and-diagrams). [R6](#r6--import-and-export-markdown) owns this release's unsupported-content policy.
 
 ### Runtime and validation
 
-Use the architecture's [local runtime design](../docs/architecture.md#local-runtime-and-operations) and [verification approach](../docs/architecture.md#design-validation-and-remaining-risks). Task-level checks below apply them to this release.
+Use the architecture's [local runtime design](../docs/architecture/runtime.md) and [verification approach](../docs/architecture.md#design-validation-and-remaining-risks). Task-level checks below apply them to this release.
 
 Validate editor/Markdown compatibility early. Establish exact API contracts, input limits, runtime versions, ports, and data paths during their owning tasks. The tasks below specify where each choice is made and verified; this document does not invent working setup commands.
 
@@ -98,7 +98,7 @@ Validate editor/Markdown compatibility early. Establish exact API contracts, inp
 - Export the current note with its latest saved content, including Mermaid fenced blocks.
 - Preserve supported document structure and diagram source through export/reimport. Exact source whitespace is not guaranteed.
 - Reject the entire import before creating a note if it contains tables, images (including reference-style images), frontmatter, raw HTML, or another recognized construct outside R3/R4's supported set. Explain which construct is unsupported; do not silently remove it, flatten it into supported formatting, or offer a lossy-import path in this release.
-- Detect unsupported constructs in their Markdown context: examples inside inline or block code remain literal code and are allowed. Ordinary text remains text. Reject unsafe link destinations through the architecture's [conversion/security rules](../docs/architecture.md#markdown-and-diagrams) rather than silently removing them. Rejection leaves the source file and workspace unchanged; rich support for rejected constructs is outside this release.
+- Detect unsupported constructs in their Markdown context: examples inside inline or block code remain literal code and are allowed. Ordinary text remains text. Reject unsafe link destinations through the architecture's [conversion/security rules](../docs/architecture/editor.md#markdown-and-diagrams) rather than silently removing them. Rejection leaves the source file and workspace unchanged; rich support for rejected constructs is outside this release.
 
 **Acceptance criteria**
 
@@ -146,7 +146,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | ID          | Task                                     | Status | Direct dependencies      |
 | ----------- | ---------------------------------------- | ------ | ------------------------ |
 | [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
-| [T02](#t02) | Shared contracts                         | `todo` | [T01](#t01)              |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
 | [T03](#t03) | SQLite and migrations                    | `todo` | [T02](#t02)              |
 | [T04](#t04) | Persistence services                     | `todo` | [T03](#t03)              |
 | [T05](#t05) | Local REST API                           | `todo` | [T04](#t04)              |
@@ -191,7 +191,7 @@ Establish the backend, frontend, and shared package with reproducible root comma
 
 - apps/server
 - apps/web
-- packages/shared
+- packages/contracts
 - root scripts and lockfile
 - environment example and ignore rules
 
@@ -215,7 +215,7 @@ Establish the backend, frontend, and shared package with reproducible root comma
 
 **Evidence**
 
-Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2.
+Historical T01 verification, 2026-11-07, Windows 11 x64, Node.js 24.18.0, npm 12.2.2. The compiled shared-package workflow recorded here is replaced by T02 review follow-up; current source links point to the renamed contracts package.
 
 - Installed dependencies and verified the final lockfile with a clean `npm ci --no-audit`. `npm ls --workspaces --depth=0` confirms both apps resolve the local shared package. Selected Express 5.3.0, React 19.3.1, Vite 8.3.6, and better-sqlite3 13.0.3; TypeScript 5.9.3 stays within TypeScript ESLint's supported range.
 - `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build` pass. Root typecheck also checks tooling configuration and browser test code. Shared code builds without Node/DOM ambient types; browser lint rejects server imports.
@@ -235,7 +235,8 @@ No T01 acceptance blockers remain. Note/API contracts, persistence behavior, edi
 
 Establish initial shared API contracts and runtime validation; finalize editor-specific document validation with T06.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
+
 **Depends on:** T01  
 **Requirements:** R1, R3, R5
 
@@ -254,9 +255,9 @@ Establish initial shared API contracts and runtime validation; finalize editor-s
 
 **Acceptance criteria**
 
-- [ ] Both apps import identical contracts without server-only dependencies.
-- [ ] Initial validation covers invalid names/parents, malformed envelopes, unsupported schema versions, and revision requests; T06 verifies the final editor node/mark schema.
-- [ ] API contract documents paths, request/response shapes, and error codes.
+- [x] Both apps import identical contracts without server-only dependencies.
+- [x] Initial validation covers invalid names/parents, malformed envelopes, unsupported schema versions, and revision requests; T06 verifies the final editor node/mark schema.
+- [x] API contract documents paths, request/response shapes, and error codes.
 
 **Verification**
 
@@ -264,7 +265,27 @@ Establish initial shared API contracts and runtime validation; finalize editor-s
 
 **Evidence**
 
-No verification evidence recorded.
+Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and approved for the T02 commit.
+
+- Added Zod 4.6.7 as the contracts package's sole runtime dependency. [Contract schemas](../packages/contracts/src/index.ts) define resource IDs/names/roots, folder and note metadata/detail, provisional version-1 documents, request revisions, strict errors, limits, and all initial route descriptors. [API contracts](../docs/api.md) document exact shapes, routes, statuses, duplicate-name policy, and service responsibilities.
+- Both apps consume the same health schema and route descriptor. Express validates health and fallback error envelopes; React validates the actual health response. The contracts workspace typechecks without Node/DOM ambient types, and `npm ls --workspace @markdown-note-taker/contracts --depth=0` confirms only Zod is required at runtime. Resource handlers and persistence remain in T03-T05.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build` pass. Root typecheck includes contract tests. TypeScript, tests, and development resolve contracts source directly, so there is no package prebuild or stale compiled-contract output. Production builds bundle that source into each app.
+- `npm test`: 99 checks pass, including 75 [contract checks](../packages/contracts/test/contracts.test.ts), 22 [document-schema checks](../packages/contracts/test/document-schema.test.ts), and 2 [real Express/native SQLite smoke checks](../apps/server/src/app.test.ts). Covered Unicode/name/ID boundaries, explicit null roots, timestamps, empty/invalid patches, missing/coerced/unsafe revisions, metadata/body separation, fixed conflict/error envelopes, malformed documents/versions, unknown nodes/attributes/marks, inclusive UTF-8/JSON escaping limits, complexity limits, and cyclic/non-JSON inputs. SQLite uses only an isolated in-memory database.
+- `npm run test:e2e`: 1 Chromium check passes through the separate frontend/backend commands and Vite proxy with the shared runtime validator loaded in the browser. The test cleans up its server processes. Browser/server builds pass without importing persistence into the browser/contracts package.
+- Checked all local documentation links/anchors, all route paths against the registry, and all 3 JSON examples in API documentation against their real schemas. Reviewed manifest/lockfile dependency consistency and ignored generated output; `git diff --check` passes.
+
+Review revision, 2026-11-07:
+
+- Renamed the package/directory to `@markdown-note-taker/contracts` / `packages/contracts`, updated all consumers and lockfile entries, and exported TypeScript source directly. Removed package compilation/watch steps. TypeScript performs no-emit checks; Vite builds browser JavaScript and esbuild bundles contracts into the production server while leaving other npm dependencies external.
+- `npm ci --offline --no-audit` passes with the renamed workspace. Typecheck, lint, all 81 tests, both app builds, formatting, and the Chromium proxy check pass. Production `npm start` serves the built page/API on an isolated port without tsx or a contracts/dist directory.
+- Verified TypeScript language-service go-to-definition reaches `packages/contracts/src/api.ts`. Verified an actual contracts edit reloads the backend and restoration reloads it again. Verified the combined `npm run dev` command and Vite fetching an updated contracts source module after a source edit. Temporary probes were restored and test servers stopped.
+- Added module/schema/helper comments explaining note revisions versus format versions, parent references, input units, document work limits, validation stages, resource mutations, and safe error responses. Renamed the internal limit-check helper and JSON preflight schema to make their roles explicit.
+- Split architecture into a short [overview](../docs/architecture.md), focused [topic pages](../docs/architecture/), and [decision records](../docs/decisions/README.md). Feature/release plans remain in roadmaps. Documented why paragraphs contain text runs and why a virtual root remains appropriate for this single-user release; ownership remains a separate future design concern. No persisted format change is involved.
+- Checked all documentation links/anchors, route paths, all 3 API JSON examples against the source schemas, manifest/lockfile consistency, and the absence of generated contract output. The review revisions are included in the T02 change.
+
+Limit-check verification: concise walk/serialization comments and the `DocumentValidationReason` enum explain the preflight rules. The helper is private; 22 public `documentEnvelopeSchema` tests use `parse` for valid documents and `safeParse` with enum-reason assertions for failures. Covered inclusive byte/depth/value boundaries, UTF-8/escaping, key sizes, sibling containers, sparse arrays, non-JSON values, custom serializers, and cycles. Duplicate contract tests were consolidated. Typecheck, lint, all 99 tests, both builds, formatting, and diff checks pass; diagnostic strings remain unchanged. The previous Chromium and API documentation checks cover unchanged runtime behavior.
+
+No T02 acceptance blockers remain. The document validator deliberately accepts only the initial plain-paragraph subset. T06 must expand it against actual editor fixtures while preserving accepted documents, and T09 must run the finalized schema through shared validation, API, reopened SQLite, and Markdown conversion before calling the integrated API stable.
 
 <a id="t03"></a>
 
@@ -285,7 +306,7 @@ Persist folders and canonical note documents safely across restarts.
 **Implementation plan**
 
 1. Choose and document a configurable local data directory and default; create it when missing and open SQLite through better-sqlite3. Exclude runtime data from Git.
-2. Implement the architecture's [storage configuration and record model](../docs/architecture.md#persistence-and-document-model), including hierarchy indexes.
+2. Implement the architecture's [storage configuration and record model](../docs/architecture/persistence.md), including hierarchy indexes.
 3. Build the migration runner following those rules. Keep database construction injectable for isolated tests.
 4. Close connections during shutdown and report directory, lock, corruption, and migration errors without resetting existing data.
 
@@ -322,7 +343,7 @@ Implement atomic hierarchy operations and optimistic note updates independently 
 **Implementation plan**
 
 1. Implement metadata tree listing, note loading, creation with an empty document, rename/update, moving to a folder or root, and permanent deletion using parameterized SQL.
-2. Implement hierarchy validation and mutations according to the architecture's [transaction and persistence rules](../docs/architecture.md#persistence-and-document-model).
+2. Implement hierarchy validation and mutations according to the architecture's [transaction and persistence rules](../docs/architecture/persistence.md).
 3. Expose subtree deletion and the information needed for [R7's confirmation](#r7--delete-deliberately), without prescribing a new API metadata field here.
 4. Apply those revision rules using T02's contract and return committed metadata for note updates.
 
@@ -399,7 +420,7 @@ Validate the riskiest editor integration before building the full writing interf
 **Implementation plan**
 
 1. Install compatible open-source Tiptap packages and @tiptap/markdown; define extensions for every supported block and mark.
-2. Implement the Mermaid node and Markdown hooks using the architecture's [editor representation](../docs/architecture.md#rich-editing).
+2. Implement the Mermaid node and Markdown hooks using the architecture's [editor representation](../docs/architecture/editor.md#rich-editing).
 3. Finalize the shared runtime document schema against the editor extension set introduced here; adjust T02's initial contracts as needed and keep DOM-dependent editor code out of the server.
 4. Test nested lists, tasks, links, inline/code fences, quotes, headings, and Mermaid through Markdown -> JSON -> Markdown -> JSON; disable arbitrary HTML interpretation and unsafe URLs.
 5. Implement and test [R6's unsupported-content policy](#r6--import-and-export-markdown) before conversion can discard unsupported structure. Publish fixtures for the [backend compatibility checkpoint](#editor-and-backend-compatibility-checkpoint); identify affected contracts and migration needs for T09.
@@ -557,7 +578,7 @@ Show diagrams alongside their editable source without allowing invalid or stale 
 **Implementation plan**
 
 1. Add source editing and preview to the Mermaid node view, with clear edit/preview controls and a source fallback.
-2. Configure Mermaid according to the architecture's [rendering and security rules](../docs/architecture.md#markdown-and-diagrams).
+2. Configure Mermaid according to the architecture's [rendering and security rules](../docs/architecture/editor.md#markdown-and-diagrams).
 3. Implement the prescribed asynchronous render lifecycle in the node view, including unmount cleanup.
 4. Add inline empty/invalid-source states, render debouncing, and the prescribed complexity limits.
 
@@ -594,7 +615,7 @@ Prevent dropped or overwritten edits during ordinary navigation, failures, and c
 
 **Implementation plan**
 
-1. Implement the architecture's [save lifecycle](../docs/architecture.md#save-lifecycle) in the per-note coordinator.
+1. Implement the architecture's [save lifecycle](../docs/architecture/editor.md#save-lifecycle) in the per-note coordinator.
 2. Track saved, unsaved, saving, and failed/conflict states. A completed request only marks its own snapshot saved, never newer pending edits.
 3. Flush changes before selection changes or operations that could discard the active document. Failed flushes keep the document active with retry; prevent an old save from reverting a rename or move.
 4. On the API's revision-conflict response retain local content and offer explicit discard-and-reload or save-as-new-note recovery. Warn before discarding local content.
@@ -755,7 +776,7 @@ Verify the agreed release end to end and replace planning-only setup information
 2. Run typecheck, lint, format:check, and production build; resolve failures in scope and record actual outcomes rather than inferring success.
 3. Document verified installation and local deployment in README: Node version, commands, configuration, database location, and stopped-server backup/restore. Add docs/development.md or docs/deployment.md only if the actual instructions outgrow a short README section; link rather than duplicate command catalogs.
 4. Document permanent deletion, no crash recovery guarantee for unsaved text, Markdown limitations, loopback-only operation, and native SQLite setup requirements. Update task statuses only when their criteria pass.
-5. Confirm compatibility-checkpoint evidence covers the final document schema. Update the architecture's [decision register](../docs/architecture.md#decision-status-and-evidence) with implementation/test links and scoped verification evidence; retain proposed or superseded statuses where appropriate.
+5. Confirm compatibility-checkpoint evidence covers the final document schema. Update the architecture's [decision register](../docs/decisions/README.md) with implementation/test links and scoped verification evidence; retain proposed or superseded statuses where appropriate.
 
 **Acceptance criteria**
 

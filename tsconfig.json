@@ -6,5 +6,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["*.config.ts", "tests/**/*.ts"]
+  "include": ["*.config.ts", "tests/**/*.ts", "packages/contracts/test/**/*.ts"]
 }

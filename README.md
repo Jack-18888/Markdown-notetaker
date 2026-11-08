@@ -28,7 +28,7 @@ Start the frontend in a second terminal, also from the repository root:
 npm run dev:frontend
 ```
 
-Open http://127.0.0.1:5173. Vite serves React and proxies /api to Express at http://127.0.0.1:3001. Both processes bind to 127.0.0.1. Each command builds the shared package before starting; the backend command also watches shared changes. Stop each terminal with Ctrl+C. You can still use `npm run dev` to start everything together.
+Open http://127.0.0.1:5173. Vite serves React and proxies /api to Express at http://127.0.0.1:3001. Both processes bind to 127.0.0.1. Both apps import contracts directly from TypeScript source; there is no package build or separate compiler watcher. Stop each terminal with Ctrl+C. You can still use `npm run dev` to start everything together.
 
 Optionally copy .env.example to .env at the repository root and change PORT to select the Express port; Vite reads the same setting. Restart development after changing it. The frontend port is fixed at 5173 and startup fails if it is occupied. Environment files are ignored by Git except for .env.example. No database or data directory is created by the scaffold; persistence configuration belongs to T03.
 

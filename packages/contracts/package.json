@@ -1,0 +1,19 @@
+{
+  "name": "@markdown-note-taker/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "description": "Portable API and document contracts: runtime schemas, inferred types, routes, errors, and input limits."
+}

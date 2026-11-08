@@ -13,16 +13,16 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run build -w @markdown-note-taker/shared && concurrently --kill-others --names shared,server,web \"npm run dev -w @markdown-note-taker/shared\" \"npm run dev -w @markdown-note-taker/server\" \"npm run dev -w @markdown-note-taker/web\"",
-    "dev:frontend": "npm run build -w @markdown-note-taker/shared && npm run dev -w @markdown-note-taker/web",
-    "dev:backend": "npm run build -w @markdown-note-taker/shared && concurrently --kill-others --names shared,server \"npm run dev -w @markdown-note-taker/shared\" \"npm run dev -w @markdown-note-taker/server\"",
-    "typecheck": "npm run build -w @markdown-note-taker/shared && npm run typecheck --workspaces && tsc --noEmit",
+    "dev": "concurrently --kill-others --names server,web \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev -w @markdown-note-taker/web",
+    "dev:backend": "npm run dev -w @markdown-note-taker/server",
+    "typecheck": "npm run typecheck --workspaces && tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "build": "npm run build -w @markdown-note-taker/shared && npm run build -w @markdown-note-taker/server && npm run build -w @markdown-note-taker/web",
+    "build": "npm run build -w @markdown-note-taker/server && npm run build -w @markdown-note-taker/web",
     "start": "cross-env NODE_ENV=production node --env-file-if-exists=.env apps/server/dist/index.js"
   },
   "devDependencies": {

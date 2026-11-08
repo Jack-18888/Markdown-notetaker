@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env --watch --import tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "npm run typecheck && esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --packages=external --alias:@markdown-note-taker/contracts=../../packages/contracts/src/index.ts --outdir=dist --sourcemap"
   },
   "dependencies": {
-    "@markdown-note-taker/shared": "1.0.0",
+    "@markdown-note-taker/contracts": "1.0.0",
     "better-sqlite3": "^13.0.3",
     "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

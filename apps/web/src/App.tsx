@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   applicationName,
-  type HealthResponse,
-} from '@markdown-note-taker/shared';
+  apiContracts,
+  healthResponseSchema,
+} from '@markdown-note-taker/contracts';
 
 export default function App() {
   const [connection, setConnection] = useState('Checking local connection…');
@@ -10,20 +11,18 @@ export default function App() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // Ignore results from checks cancelled by retry or unmount.
     const controller = new AbortController();
     setConnection('Checking local connection…');
     setFailed(false);
 
     async function checkConnection() {
       try {
-        const response = await fetch('/api/health', {
+        const response = await fetch(apiContracts.health.path, {
           signal: controller.signal,
         });
         if (!response.ok) throw new Error('Health request failed');
-        const health = (await response.json()) as Partial<HealthResponse>;
-        if (health.status !== 'ok' || health.application !== applicationName) {
-          throw new Error('Unexpected health response');
-        }
+        healthResponseSchema.parse(await response.json());
         if (!controller.signal.aborted) setConnection('Local server connected');
       } catch {
         if (!controller.signal.aborted) {

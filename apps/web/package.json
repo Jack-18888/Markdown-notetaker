@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {
-    "@markdown-note-taker/shared": "1.0.0",
+    "@markdown-note-taker/contracts": "1.0.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
