@@ -25,7 +25,7 @@ Shapes in the tables below use exported schema/type names. Successful bodies con
 | TreeResponse   | { folders: Folder[], notes: NoteMetadata[] }         |
 | HealthResponse | { status: "ok", application: "Markdown Note Taker" } |
 
-Tree responses omit note bodies. Parent references describe the hierarchy; ordering has no semantic meaning. See the [persistence design](architecture/persistence.md) for persistence rules.
+Tree responses omit note bodies. Parent references describe the hierarchy; ordering has no semantic meaning. See the [workspace README](../apps/server/src/workspace/README.md) for persistence rules.
 
 The content field contains the entire raw Markdown source. Empty strings are valid. The backend preserves line endings, whitespace, fences, and syntax without parsing or normalizing Markdown. Rich editor conversion and safe rendering belong to the frontend. There is no editor-node envelope or per-note document schema version.
 
@@ -110,6 +110,6 @@ For example:
 }
 ```
 
-T05 must enforce transport limits, Host/origin checks, and JSON content type for body-bearing mutations before writes. It must map byte-limit failures to 413, validate resource shapes independently of browser checks. Failed mutations must leave saved data unchanged. The [persistence design](architecture/persistence.md) explains service implementation. Unknown `/api` paths remain JSON 404 responses in development and production.
+T05 must enforce transport limits, Host/origin checks, and JSON content type for body-bearing mutations before writes. It must map byte-limit failures to 413, validate resource shapes independently of browser checks. Failed mutations must leave saved data unchanged. The [workspace README](../apps/server/src/workspace/README.md) explains service implementation. Unknown `/api` paths remain JSON 404 responses in development and production.
 
-The [contract schema tests](../packages/contracts/src/__test__/contracts.test.ts) verify contract boundaries; [server smoke tests](../apps/server/src/__test__/app.test.ts) exercise the implemented health/fallback responses. Persistence verification is described in the [persistence design](architecture/persistence.md). Resource API integration remains in T05 and will be revisited at the [T09 checkpoint](../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).
+The [contract schema tests](../packages/contracts/src/__test__/contracts.test.ts) verify contract boundaries; [server smoke tests](../apps/server/src/__test__/app.test.ts) exercise the implemented health/fallback responses. Persistence verification is described in the [workspace README](../apps/server/src/workspace/README.md#migrations-and-tests). Resource API integration remains in T05 and will be revisited at the [T09 checkpoint](../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).
