@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { ApiErrorCode } from '@markdown-note-taker/contracts';
-import { temporaryWorkspace } from '../../test/temporary-workspace.js';
-import { openWorkspace } from './open.js';
-import type { Workspace } from './types.js';
+import { temporaryWorkspace } from '../../__test__/temporary-workspace.js';
+import { openWorkspace } from '../open.js';
+import type { Workspace } from '../types.js';
 
 const directories: ReturnType<typeof temporaryWorkspace>[] = [];
 const workspaces: Workspace[] = [];

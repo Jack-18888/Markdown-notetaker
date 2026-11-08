@@ -24,7 +24,7 @@ export default tseslint.config(
   {
     files: ['apps/server/src/**/*.ts'],
     ignores: [
-      'apps/server/src/**/*.test.ts',
+      'apps/server/src/**/__test__/**',
       'apps/server/src/database/**',
       'apps/server/src/workspace/open.ts',
       'apps/server/src/workspace/service.ts',
