@@ -75,6 +75,6 @@ describe('server database lifecycle', () => {
       code: 'EADDRINUSE',
     });
     await conflicting.close();
-    expect(second.open().pragma('user_version', { simple: true })).toBe(1);
+    expect(second.open().pragma('user_version', { simple: true })).toBe(2);
   });
 });

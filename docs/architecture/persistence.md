@@ -1,19 +1,17 @@
 # Persistence and document model
 
-| Record | Stored information                                                                                                |
-| ------ | ----------------------------------------------------------------------------------------------------------------- |
-| Folder | ID, name, optional parent folder ID, creation/update timestamps.                                                  |
-| Note   | ID, title, optional folder ID, rich document JSON, document schema version, revision, creation/update timestamps. |
+| Record | Stored information                                                                         |
+| ------ | ------------------------------------------------------------------------------------------ |
+| Folder | ID, name, optional parent folder ID, creation/update timestamps.                           |
+| Note   | ID, title, optional folder ID, raw Markdown content, revision, creation/update timestamps. |
 
-A null parent/folder represents the workspace root. Lowercase UUID v4 IDs identify resources independently of their names or locations. Initial shape/name/revision rules and the provisional version-1 paragraph document are defined in the contracts package and [API contracts](../api.md). These schemas do not validate database hierarchy or concurrency.
+A null parent/folder represents the workspace root. Lowercase UUID v4 IDs identify resources independently of their names or locations. The database now stores raw Markdown; the public contract transition follows separately.
 
-Rich JSON is canonical because the editor needs structured blocks and marks. Markdown is a conversion format: it preserves the supported content set and Mermaid source, but cannot promise exact source whitespace or arbitrary rich formatting. Version the stored document schema so incompatible content is detected rather than silently misread.
+This migration prepares raw Markdown storage while the public API and frontend design are updated separately. SQLite retains the complete source string, without normalization. The currently running API still provides only health and fallback responses.
 
-Finalize editor-specific validation during the compatibility spike, then validate it through the real API and reopened database before treating the integrated document API as stable. The initial release's [compatibility checkpoint](../../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint) defines ownership, checks, and required reruns.
+Verify frontend conversion against the raw Markdown API and reopened database at the initial release's [compatibility checkpoint](../../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).
 
 Use `better-sqlite3`, foreign keys, WAL, a busy timeout, and ordered SQL migrations as the storage implementation. Index parent references for hierarchy queries. SQLite suits a single local process and avoids operating another service. Its synchronous access is a simple fit for this workload; long-running work must stay out of request transactions.
-
-Enforce valid parents and reject cycles in the service layer. Validate and apply hierarchy changes in one transaction. Folder deletion removes descendants and notes atomically. Persist note changes only when their expected revision matches, incrementing that revision in the same write. Never reset an existing database to recover from a migration error.
 
 ## Workspace root
 
@@ -21,17 +19,21 @@ The current single-user workspace has a virtual root, represented by null parent
 
 ## Implemented storage schema
 
-The [initial migration](../../apps/server/src/database/migrations/001-workspace.ts) defines strict SQLite tables:
+The [initial migration](../../apps/server/src/database/migrations/001-workspace.ts) is retained unchanged. [Migration 2](../../apps/server/src/database/migrations/002-markdown.ts) defines the current note storage:
 
-| Table             | Columns                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| folders           | id, name, parent_id, created_at, updated_at                                                    |
-| notes             | id, title, folder_id, document_json, document_schema_version, revision, created_at, updated_at |
-| schema_migrations | version, name, checksum, applied_at                                                            |
+| Table             | Columns                                                         |
+| ----------------- | --------------------------------------------------------------- |
+| folders           | id, name, parent_id, created_at, updated_at                     |
+| notes             | id, title, folder_id, content, revision, created_at, updated_at |
+| schema_migrations | version, name, checksum, applied_at                             |
 
-The document_json column stores only the editor tree; document_schema_version is stored separately. Services reconstruct the API envelope from both fields. Database checks require an object-shaped valid JSON value, positive document versions, safe positive note revisions, and basic name lengths. Complete document/name validation still belongs to the contracts and services. Folder references have foreign keys with cascade deletion; parent_id and folder_id are indexed. A direct self-parent is rejected by a check constraint. General cycle/move rules and note write conflicts remain application-service responsibilities.
+The content column is non-null SQLite TEXT containing raw Markdown. Database checks require safe positive note revisions and basic name lengths. Folder references have foreign keys with cascade deletion; parent_id and folder_id are indexed. A direct self-parent is rejected by a check constraint. Application validation and mutation rules remain in T04.
 
-The SQL schema version (PRAGMA user_version), document format version (document_schema_version), and each note's edit counter (revision) are independent.
+PRAGMA user_version tracks the database storage format; each note's revision tracks its edits. There is no separate document schema version.
+
+## Folder and note services
+
+Application services and their lifecycle integration remain in [T04](../../roadmaps/initial-project.md#t04).
 
 ## Migration lifecycle
 
@@ -41,6 +43,8 @@ The [migration registry/runner](../../apps/server/src/database/migrations.ts) us
 
 Append a new migration for persisted changes. Never edit an applied migration's version, name, or SQL. SQL definitions are code-owned, run synchronously, and must not contain their own transaction control. SQL is embedded in versioned TypeScript modules so development and the production bundle use the same migration text without filesystem asset copying. The runner uses [better-sqlite3 transactions](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md#transactionfunction---function).
 
+A migration may register versioned SQLite helper functions before its SQL runs. Keep each helper immutable with its migration. Migration 2 registers a frozen reader for the original paragraph/text format, concatenates text runs verbatim, and separates paragraphs with blank lines. IDs, hierarchy, revisions, and timestamps remain unchanged. Unknown versions, unsupported nodes/attributes, or text that cannot be preserved abort the entire upgrade, retaining schema 1 and all original rows. [Migration tests](../../apps/server/src/database/markdown-migration.test.ts) verify upgrade, reopen, and rollback.
+
 [File-backed tests](../../apps/server/src/database/migrations.test.ts) cover idempotence, upgrades with existing records, complete rollback, incompatible/newer history, and reopening. [Connection tests](../../apps/server/src/database/open.test.ts) cover actual foreign keys/settings, hierarchy indexes, saved JSON/metadata, real locks, corruption, and unavailable paths. [Runtime tests](../../apps/server/src/server.test.ts) cover startup and HTTP/database shutdown. All use isolated temporary directories, never the normal workspace data.
 
-Initial storage is verified for the paragraph-only document format. Services and resource routes remain in later tasks, and the editor compatibility checkpoint must recheck the finalized document schema with persisted data.
+Storage upgrades are verified for raw Markdown; application services follow separately. Resource routes remain pending, and the editor compatibility checkpoint must verify frontend conversion against persisted source.

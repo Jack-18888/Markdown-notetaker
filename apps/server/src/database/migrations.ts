@@ -6,16 +6,20 @@ import {
   databaseFailure,
 } from './errors.js';
 import { initialWorkspaceMigration } from './migrations/001-workspace.js';
+import { markdownMigration } from './migrations/002-markdown.js';
 
 /** Code-owned SQL; the runner owns the transaction and version bookkeeping. */
 export interface Migration {
   readonly version: number;
   readonly name: string;
   readonly sql: string;
+  /** Register versioned SQL helpers before this migration runs. */
+  readonly registerFunctions?: (database: Database.Database) => void;
 }
 
 export const workspaceMigrations: readonly Migration[] = [
   initialWorkspaceMigration,
+  markdownMigration,
 ];
 
 interface AppliedMigration {
@@ -106,6 +110,7 @@ export function applyMigrations(
       );
       for (const migration of migrations.slice(applied.length)) {
         try {
+          migration.registerFunctions?.(database);
           database.exec(migration.sql);
           recordMigration.run(
             migration.version,
