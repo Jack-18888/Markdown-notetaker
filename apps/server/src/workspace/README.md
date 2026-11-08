@@ -8,6 +8,10 @@ Create and update requests are checked against the [contracts](../../../../packa
 
 The content field contains the entire Markdown source. Omitted content on creation defaults to an empty string; an explicit empty string clears a note. Omitted patch fields retain their saved values. Successful creates and updates return committed records.
 
+The portable [parseContract helper](../../../../packages/contracts/src/validation.ts) parses unknown input using a caller-supplied failure policy. The workspace [validation adapter](validation.ts) supplies the default `INVALID_INPUT` error; [note validation](note-validation.ts) maps Markdown byte-limit failures to `PAYLOAD_TOO_LARGE`.
+
+On updates, omitted or explicitly `undefined` fields retain their saved values. A `null` parent/folder moves the resource to the workspace root. Names, titles, and content reject `null`; an empty content string clears the body. Strict request schemas reject client-supplied IDs, saved revisions, timestamps, and other unknown fields.
+
 Reads return the saved content string directly, preserving whitespace, line endings, and source syntax. They do not parse JSON or repeat content validation. There is no per-note document schema version; persisted format changes use database migrations.
 
 ## Hierarchy and revisions
@@ -16,7 +20,7 @@ Reads return the saved content string directly, preserving whitespace, line endi
 
 Hierarchy checks, revision checks, and mutations share an immediate transaction. Folder deletion atomically removes its subtree through foreign-key cascades. Tree listing returns a consistent metadata snapshot without loading note bodies.
 
-Note rename, move, body update, and deletion require the caller's loaded `expectedRevision`. An update increments the saved revision and returns committed metadata. A stale revision produces a conflict without changing the note. Revisions track individual note changes; the database migration version tracks the storage format.
+Note rename, move, body update, and deletion require the caller's loaded `expectedRevision`. The shared service check `assertExpectedRevision` rejects stale updates and deletes with the loaded/current counters. SQL also requires the expected revision, increments it atomically on updates, and returns committed metadata through the service. These checks share the write transaction. Revisions track individual note changes; the database migration version tracks the storage format.
 
 ## Files
 
@@ -25,7 +29,7 @@ Note rename, move, body update, and deletion require the caller's loaded `expect
 | [types.ts](types.ts)                     | Typed service interface.                                                |
 | [service.ts](service.ts)                 | Validation, hierarchy rules, revisions, transactions, and reads.        |
 | [repository.ts](repository.ts)           | Internal prepared, parameterized SQL.                                   |
-| [validation.ts](validation.ts)           | Generic schema parsing with a caller-supplied failure policy.           |
+| [validation.ts](validation.ts)           | Workspace error policy for shared contract parsing.                     |
 | [note-validation.ts](note-validation.ts) | Note request validation and Markdown byte-limit error classification.   |
 | [errors.ts](errors.ts)                   | `WorkspaceError` construction and safe handling of unexpected failures. |
 
@@ -37,4 +41,4 @@ Note rename, move, body update, and deletion require the caller's loaded `expect
 
 The [Markdown migration](../database/migrations/002-markdown.ts) unwraps legacy paragraph/text records, concatenating text runs and separating paragraphs with blank lines. It preserves text verbatim and retains note IDs, hierarchy, revisions, and timestamps. Unsupported or invalid legacy content aborts the entire migration; the original database remains unchanged.
 
-[Service tests](service.test.ts) use isolated SQLite files to check rejected writes, rollback, conflicts, and durability after reopening. Persistence tests may use raw SQL to prepare temporary fixtures, inject failures, simulate other format versions, and inspect stored rows.
+[Service tests](__test__/service.test.ts) use isolated SQLite files to check rejected writes, rollback, conflicts, and durability after reopening. Persistence tests may use raw SQL to prepare temporary fixtures, inject failures, simulate other format versions, and inspect stored rows.

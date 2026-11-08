@@ -13,8 +13,10 @@ import {
   type DeleteNoteRequest,
   type Folder,
   type NoteDetail,
+  type NoteMetadata,
   type ParentId,
   type ResourceId,
+  type Revision,
   type TreeResponse,
   type UpdateFolderRequest,
   type UpdateNoteRequest,
@@ -46,6 +48,19 @@ export function createWorkspaceService(
     const note = repository.findNote(id);
     if (!note) throw new WorkspaceError(ApiErrorCode.NOT_FOUND);
     return note;
+  }
+
+  /** Reject writes based on a stale loaded note revision. */
+  function assertExpectedRevision(
+    note: Pick<NoteMetadata, 'id' | 'revision'>,
+    expectedRevision: Revision,
+  ): void {
+    if (note.revision !== expectedRevision)
+      throw new WorkspaceError(ApiErrorCode.REVISION_CONFLICT, {
+        noteId: note.id,
+        expectedRevision,
+        currentRevision: note.revision,
+      });
   }
 
   /** Require a path to root that excludes the folder being moved. */
@@ -153,12 +168,7 @@ export function createWorkspaceService(
       const body = validateNoteRequest(updateNoteRequestSchema, input);
       return write(() => {
         const current = requireNote(noteId);
-        if (current.revision !== body.expectedRevision)
-          throw new WorkspaceError(ApiErrorCode.REVISION_CONFLICT, {
-            noteId,
-            expectedRevision: body.expectedRevision,
-            currentRevision: current.revision,
-          });
+        assertExpectedRevision(current, body.expectedRevision);
         const folderId =
           body.folderId === undefined ? current.folderId : body.folderId;
         validateFolderDestination(folderId);
@@ -181,12 +191,7 @@ export function createWorkspaceService(
       return write(() => {
         const current = repository.findNoteMetadata(noteId);
         if (!current) throw new WorkspaceError(ApiErrorCode.NOT_FOUND);
-        if (current.revision !== body.expectedRevision)
-          throw new WorkspaceError(ApiErrorCode.REVISION_CONFLICT, {
-            noteId,
-            expectedRevision: body.expectedRevision,
-            currentRevision: current.revision,
-          });
+        assertExpectedRevision(current, body.expectedRevision);
         if (repository.deleteNote(noteId, body.expectedRevision).changes !== 1)
           throw new WorkspaceError(ApiErrorCode.INTERNAL_ERROR);
       });

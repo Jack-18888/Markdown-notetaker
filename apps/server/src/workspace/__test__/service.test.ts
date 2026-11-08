@@ -10,9 +10,9 @@ import {
 import {
   fixtureIds,
   temporaryWorkspace,
-} from '../../test/temporary-workspace.js';
-import { WorkspaceError } from './errors.js';
-import { createWorkspaceService } from './service.js';
+} from '../../__test__/temporary-workspace.js';
+import { WorkspaceError } from '../errors.js';
+import { createWorkspaceService } from '../service.js';
 
 type Workspace = ReturnType<typeof createWorkspaceService>;
 const temporaryDirectories: ReturnType<typeof temporaryWorkspace>[] = [];
@@ -416,6 +416,74 @@ describe('workspace persistence services', () => {
     ).toBe(4);
   });
 
+  it('preserves undefined patch fields and applies explicit root moves across reopen', () => {
+    const { service, database, temporary } = setup();
+    const { root, child, note } = hierarchy(service);
+    const renamed = service.updateFolder(child.id, {
+      name: 'Renamed section',
+      parentId: undefined,
+    });
+    expect(renamed).toMatchObject({ parentId: root.id });
+
+    const edited = service.updateNote(note.id, {
+      expectedRevision: note.revision,
+      title: undefined,
+      folderId: undefined,
+      content: 'Updated source',
+    });
+    expect(edited).toMatchObject({
+      title: note.title,
+      folderId: note.folderId,
+      content: 'Updated source',
+      revision: note.revision + 1,
+    });
+
+    const moved = service.updateNote(note.id, {
+      expectedRevision: edited.revision,
+      title: undefined,
+      folderId: null,
+      content: undefined,
+    });
+    expect(moved).toMatchObject({
+      title: note.title,
+      folderId: null,
+      content: edited.content,
+      revision: edited.revision + 1,
+    });
+    expect(
+      service.updateFolder(child.id, { name: undefined, parentId: null }),
+    ).toMatchObject({ name: renamed.name, parentId: null });
+
+    const before = state(service);
+    database.close();
+    expect(state(createWorkspaceService(temporary.open()))).toEqual(before);
+  });
+
+  it('rejects null labels without applying simultaneous moves', () => {
+    const { service, database, temporary } = setup();
+    const { child, note } = hierarchy(service);
+    const before = state(service);
+    expectError(
+      () =>
+        // @ts-expect-error Null names must be rejected at runtime too.
+        service.updateFolder(child.id, { name: null, parentId: null }),
+      ApiErrorCode.INVALID_INPUT,
+    );
+    expectError(
+      () =>
+        service.updateNote(note.id, {
+          expectedRevision: note.revision,
+          // @ts-expect-error Null titles must be rejected at runtime too.
+          title: null,
+          folderId: null,
+        }),
+      ApiErrorCode.INVALID_INPUT,
+    );
+    expect(state(service)).toEqual(before);
+    database.close();
+    expect(state(createWorkspaceService(temporary.open()))).toEqual(before);
+  });
+
   it('returns committed state and exactly one winner for two loaded revisions', () => {
     const { service: first, temporary, database } = setup();
     const note = first.createNote({ title: 'Example', folderId: null });
@@ -458,10 +526,15 @@ describe('workspace persistence services', () => {
       expectedRevision: 1,
       content: content('new text'),
     });
-    expectError(
+    const conflict = expectError(
       () => service.deleteNote(note.id, { expectedRevision: 1 }),
       ApiErrorCode.REVISION_CONFLICT,
     );
+    expect(conflict.error).toMatchObject({
+      noteId: note.id,
+      expectedRevision: 1,
+      currentRevision: updated.revision,
+    });
     expect(service.getNote(note.id)).toEqual(updated);
     service.deleteNote(note.id, { expectedRevision: 2 });
     expectError(() => service.getNote(note.id), ApiErrorCode.NOT_FOUND);

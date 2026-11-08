@@ -1,18 +1,18 @@
-import type { ZodError, ZodType } from 'zod';
-import { ApiErrorCode } from '@markdown-note-taker/contracts';
+import type { ZodType } from 'zod';
+import {
+  ApiErrorCode,
+  parseContract,
+  type ValidationFailureHandler,
+} from '@markdown-note-taker/contracts';
 import { WorkspaceError } from './errors.js';
 
-type ValidationFailureHandler = (issues: ZodError['issues']) => never;
-
-/** Parse typed input using the caller's failure policy. */
+/** Apply the workspace's default failure policy to shared contract parsing. */
 export function validate<Output, Input>(
   schema: ZodType<Output, Input>,
-  input: NoInfer<Input>,
+  input: unknown,
   onFailure: ValidationFailureHandler = () => {
     throw new WorkspaceError(ApiErrorCode.INVALID_INPUT);
   },
 ): Output {
-  const result = schema.safeParse(input);
-  if (result.success) return result.data;
-  return onFailure(result.error.issues);
+  return parseContract(schema, input, onFailure);
 }
