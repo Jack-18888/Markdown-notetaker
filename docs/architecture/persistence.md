@@ -27,13 +27,13 @@ The [initial migration](../../apps/server/src/database/migrations/001-workspace.
 | notes             | id, title, folder_id, content, revision, created_at, updated_at |
 | schema_migrations | version, name, checksum, applied_at                             |
 
-The content column is non-null SQLite TEXT containing raw Markdown. Database checks require safe positive note revisions and basic name lengths. Folder references have foreign keys with cascade deletion; parent_id and folder_id are indexed. A direct self-parent is rejected by a check constraint. Application validation and mutation rules remain in T04.
+The content column is non-null SQLite TEXT containing raw Markdown. Database checks require safe positive note revisions and basic name lengths. Folder references have foreign keys with cascade deletion; parent_id and folder_id are indexed. A direct self-parent is rejected by a check constraint. Application validation and mutation rules are documented in the [workspace README](../../apps/server/src/workspace/README.md).
 
 PRAGMA user_version tracks the database storage format; each note's revision tracks its edits. There is no separate document schema version.
 
 ## Folder and note services
 
-Application services and their lifecycle integration remain in [T04](../../roadmaps/initial-project.md#t04).
+The [workspace README](../../apps/server/src/workspace/README.md) owns the explanation of its public entry point, validation policy, hierarchy and revision rules, transactions, errors, file responsibilities, and tests. [Task evidence](../../roadmaps/initial-project.md#t04) records verification commands and results.
 
 ## Migration lifecycle
 
@@ -47,4 +47,4 @@ A migration may register versioned SQLite helper functions before its SQL runs. 
 
 [File-backed tests](../../apps/server/src/database/__test__/migrations.test.ts) cover idempotence, upgrades with existing records, complete rollback, incompatible/newer history, and reopening. [Connection tests](../../apps/server/src/database/__test__/open.test.ts) cover actual foreign keys/settings, hierarchy indexes, saved JSON/metadata, real locks, corruption, and unavailable paths. [Runtime tests](../../apps/server/src/__test__/server.test.ts) cover startup and HTTP/database shutdown. All use isolated temporary directories, never the normal workspace data.
 
-Storage upgrades are verified for raw Markdown; application services follow separately. Resource routes remain pending, and the editor compatibility checkpoint must verify frontend conversion against persisted source.
+Storage and services are verified for raw Markdown. Resource routes remain pending, and the editor compatibility checkpoint must verify frontend conversion against persisted source.

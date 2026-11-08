@@ -1,6 +1,6 @@
 # 0002: virtual workspace root and future ownership
 
-**Status:** Accepted for the current single-user contract; nullable parent references and foreign keys are implemented; service hierarchy behavior is pending.
+**Status:** Accepted for the current single-user contract. Nullable references, foreign keys, and service hierarchy rules are implemented and verified in [T04](../../roadmaps/initial-project.md#t04).
 
 ## Decision
 
