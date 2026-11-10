@@ -15,6 +15,51 @@ afterEach(async () => {
 });
 
 describe('server database lifecycle', () => {
+  it('retains HTTP-created notes across a production-mode server restart', async () => {
+    const temporary = temporaryWorkspace();
+    workspaces.push(temporary);
+    const content = '# Persisted\r\n\r\n```mermaid\nA --> B\n```\n';
+    const launch = async () => {
+      const runtime = startServer({
+        port: 0,
+        serveWeb: true,
+        dataDirectory: temporary.dataDirectory,
+      });
+      running.push(runtime);
+      await once(runtime.server, 'listening');
+      const address = runtime.server.address();
+      if (!address || typeof address === 'string')
+        throw new Error('Expected a TCP listener.');
+      return { runtime, origin: `http://127.0.0.1:${address.port}` };
+    };
+    const first = await launch();
+    const created = await fetch(`${first.origin}/api/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: first.origin },
+      body: JSON.stringify({ title: 'Persisted', folderId: null, content }),
+    });
+    expect(created.status).toBe(201);
+    const note = (await created.json()) as { id: string; content: string };
+    expect(note.content).toBe(content);
+    await first.runtime.close();
+    const second = await launch();
+    const result = await fetch(`${second.origin}/api/notes/${note.id}`);
+    expect(result.status).toBe(200);
+    expect(await result.json()).toEqual(note);
+    const denied = await fetch(`${second.origin}/api/notes/${note.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'http://127.0.0.1:5173',
+      },
+      body: JSON.stringify({ expectedRevision: 1 }),
+    });
+    expect(denied.status).toBe(403);
+    expect((await fetch(`${second.origin}/api/notes/${note.id}`)).status).toBe(
+      200,
+    );
+  });
+
   it('initializes before serving and reopens saved data after shutdown', async () => {
     const temporary = temporaryWorkspace();
     workspaces.push(temporary);
