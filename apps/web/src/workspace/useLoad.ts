@@ -27,5 +27,14 @@ export function useLoad<T>(load: (signal: AbortSignal) => Promise<T>) {
     );
     return () => controller.abort();
   }, [load, attempt]);
-  return { state, retry: () => setAttempt((value) => value + 1) };
+  return {
+    state,
+    retry: () => setAttempt((value) => value + 1),
+    update: (transform: (value: T) => T) =>
+      setState((current) =>
+        current.status === 'ready'
+          ? { status: 'ready', value: transform(current.value) }
+          : current,
+      ),
+  };
 }

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { applicationName } from '@markdown-note-taker/contracts';
+import {
+  applicationName,
+  type NoteDetail,
+} from '@markdown-note-taker/contracts';
 import { getTree } from './workspace/api.js';
 import Breadcrumbs from './workspace/Breadcrumbs.js';
 import FolderContents from './workspace/FolderContents.js';
@@ -14,10 +17,21 @@ const loadTree = async (signal: AbortSignal) =>
 const rootSelection: Selection = { kind: 'folder', id: null };
 
 export default function App() {
-  const { state, retry } = useLoad(loadTree);
+  const { state, retry, update } = useLoad(loadTree);
   const [selection, setSelection] = useState<Selection>(rootSelection);
   const [expanded, setExpanded] = useState(new Set<string>());
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [unsavedTitle, setUnsavedTitle] = useState(false);
+  const [navigationBlocked, setNavigationBlocked] = useState(false);
+  useEffect(() => {
+    if (!unsavedTitle) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsavedTitle]);
   const main = useRef<HTMLElement>(null);
   const focusSelection = useRef(false);
   useEffect(() => {
@@ -31,6 +45,12 @@ export default function App() {
   const active = missing ? rootSelection : selection;
 
   function select(next: Selection) {
+    if (next.kind === selection.kind && next.id === selection.id) return;
+    if (unsavedTitle) {
+      setNavigationBlocked(true);
+      return;
+    }
+    setNavigationBlocked(false);
     if (!tree || !tree.has(next)) return;
     focusSelection.current = true;
     setSelection(next);
@@ -55,6 +75,29 @@ export default function App() {
     });
   }
 
+  function refresh() {
+    if (unsavedTitle) {
+      setNavigationBlocked(true);
+      return;
+    }
+    setNavigationBlocked(false);
+    retry();
+  }
+  function noteUpdated(note: NoteDetail) {
+    const { id, title, folderId, revision, createdAt, updatedAt } = note;
+    update((tree) => {
+      if (folderId !== null && !tree.folders.has(folderId)) return tree;
+      return indexTree({
+        folders: [...tree.folders.values()],
+        notes: [...tree.notes.values()].map((current) =>
+          current.id === id
+            ? { id, title, folderId, revision, createdAt, updatedAt }
+            : current,
+        ),
+      });
+    });
+  }
+
   return (
     <div className="workspace" data-sidebar-open={sidebarOpen}>
       <a className="skip-link" href="#workspace-content">
@@ -72,7 +115,11 @@ export default function App() {
           >
             Folders
           </button>
-          <button type="button" aria-label="Refresh workspace" onClick={retry}>
+          <button
+            type="button"
+            aria-label="Refresh workspace"
+            onClick={refresh}
+          >
             Refresh
           </button>
         </div>
@@ -106,6 +153,11 @@ export default function App() {
         tabIndex={-1}
         ref={main}
       >
+        {navigationBlocked && unsavedTitle && (
+          <p role="alert" className="workspace-message">
+            Save or discard the title changes before leaving this note.
+          </p>
+        )}
         {state.status === 'loading' && (
           <p className="workspace-message">Loading your workspace…</p>
         )}
@@ -141,6 +193,8 @@ export default function App() {
                 key={active.id}
                 id={active.id}
                 tree={tree}
+                onDirtyChange={setUnsavedTitle}
+                onNoteUpdated={noteUpdated}
                 onNavigate={(id) => select({ kind: 'folder', id })}
               />
             )}

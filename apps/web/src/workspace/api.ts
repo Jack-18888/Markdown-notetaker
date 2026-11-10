@@ -4,8 +4,10 @@ import {
   errorResponseSchema,
   parseContract,
   resourceIdSchema,
-  type ApiErrorCode,
+  ApiErrorCode,
+  updateNoteRequestSchema,
   type ResourceId,
+  type Revision,
 } from '@markdown-note-taker/contracts';
 
 export class WorkspaceRequestError extends Error {
@@ -27,10 +29,11 @@ function invalidResponse(): never {
 async function requestJson(
   path: string,
   signal: AbortSignal,
+  options: RequestInit = {},
 ): Promise<unknown> {
   let response: Response;
   try {
-    response = await fetch(path, { signal, cache: 'no-store' });
+    response = await fetch(path, { ...options, signal, cache: 'no-store' });
   } catch (error) {
     if (signal.aborted) throw error;
     throw new WorkspaceRequestError(
@@ -74,6 +77,41 @@ export async function getNote(id: ResourceId, signal: AbortSignal) {
   const note = parseContract(
     apiContracts.getNote.response,
     await requestJson(path, signal),
+    invalidResponse,
+  );
+  if (note.id !== id) return invalidResponse();
+  return note;
+}
+
+export async function updateNoteTitle(
+  id: ResourceId,
+  title: string,
+  expectedRevision: Revision,
+  signal: AbortSignal,
+) {
+  const invalidInput = (): never => {
+    throw new WorkspaceRequestError(
+      ApiErrorCode.INVALID_INPUT,
+      errorDefinitions.INVALID_INPUT.message,
+    );
+  };
+  parseContract(resourceIdSchema, id, invalidInput);
+  const body = parseContract(
+    updateNoteRequestSchema,
+    { title, expectedRevision },
+    invalidInput,
+  );
+  const path = apiContracts.updateNote.path.replace(
+    ':id',
+    encodeURIComponent(id),
+  );
+  const note = parseContract(
+    apiContracts.updateNote.response,
+    await requestJson(path, signal, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
     invalidResponse,
   );
   if (note.id !== id) return invalidResponse();

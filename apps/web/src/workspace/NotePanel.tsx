@@ -1,10 +1,22 @@
-import { Component, lazy, Suspense, useCallback, type ReactNode } from 'react';
-import type { ParentId, ResourceId } from '@markdown-note-taker/contracts';
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useState,
+  type ReactNode,
+} from 'react';
+import type {
+  NoteDetail,
+  ParentId,
+  ResourceId,
+} from '@markdown-note-taker/contracts';
 import SourceFallback from '../editor/SourceFallback.js';
 import { getNote } from './api.js';
 import Breadcrumbs from './Breadcrumbs.js';
 import type { WorkspaceTree } from './tree.js';
 import { useLoad } from './useLoad.js';
+import TitleEditor from './TitleEditor.js';
 
 const NotePreview = lazy(() => import('./NotePreview.js'));
 
@@ -35,10 +47,14 @@ export default function NotePanel({
   id,
   tree,
   onNavigate,
+  onDirtyChange,
+  onNoteUpdated,
 }: {
   id: ResourceId;
   tree: WorkspaceTree;
   onNavigate(id: ParentId): void;
+  onDirtyChange(dirty: boolean): void;
+  onNoteUpdated(note: NoteDetail): void;
 }) {
   const load = useCallback((signal: AbortSignal) => getNote(id, signal), [id]);
   const { state, retry } = useLoad(load);
@@ -60,7 +76,31 @@ export default function NotePanel({
         </button>
       </div>
     );
-  const note = state.value;
+  return (
+    <NoteArticle
+      initial={state.value}
+      tree={tree}
+      onNavigate={onNavigate}
+      onDirtyChange={onDirtyChange}
+      onNoteUpdated={onNoteUpdated}
+    />
+  );
+}
+
+function NoteArticle({
+  initial,
+  tree,
+  onNavigate,
+  onDirtyChange,
+  onNoteUpdated,
+}: {
+  initial: NoteDetail;
+  tree: WorkspaceTree;
+  onNavigate(id: ParentId): void;
+  onDirtyChange(dirty: boolean): void;
+  onNoteUpdated(note: NoteDetail): void;
+}) {
+  const [note, setNote] = useState(initial);
   return (
     <>
       <Breadcrumbs
@@ -70,7 +110,14 @@ export default function NotePanel({
       />
       <article className="note-surface">
         <p className="workspace-eyebrow">Reading view</p>
-        <h1>{note.title}</h1>
+        <TitleEditor
+          note={note}
+          onDirtyChange={onDirtyChange}
+          onSaved={(saved) => {
+            setNote(saved);
+            onNoteUpdated(saved);
+          }}
+        />
         {note.folderId !== null && !tree.folders.has(note.folderId) && (
           <p role="status">
             This note's location changed. Refresh the workspace to update its
