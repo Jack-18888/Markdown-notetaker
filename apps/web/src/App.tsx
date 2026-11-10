@@ -13,8 +13,9 @@ import { useLoad } from './workspace/useLoad.js';
 import './workspace/workspace.css';
 import WorkspaceActions from './workspace/WorkspaceActions.js';
 import NameDialog from './workspace/NameDialog.js';
-import type { MoveAction, NameAction } from './workspace/lifecycle.js';
+import type { LifecycleAction } from './workspace/lifecycle.js';
 import MoveDialog from './workspace/MoveDialog.js';
+import DeleteDialog from './workspace/DeleteDialog.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -25,7 +26,7 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(rootSelection);
   const [expanded, setExpanded] = useState(new Set<string>());
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [action, setAction] = useState<NameAction | MoveAction | null>(null);
+  const [action, setAction] = useState<LifecycleAction | null>(null);
   const [noteEpoch, setNoteEpoch] = useState(0);
   const loadedNote = useRef<NoteDetail | null>(null);
   const [unsavedTitle, setUnsavedTitle] = useState(false);
@@ -127,7 +128,7 @@ export default function App() {
     [update],
   );
 
-  function openAction(next: NameAction | MoveAction) {
+  function openAction(next: LifecycleAction) {
     if (unsavedTitle) {
       setNavigationBlocked(true);
       return;
@@ -271,7 +272,14 @@ export default function App() {
       </main>
       {action &&
         tree &&
-        (action.kind === 'move' ? (
+        (action.kind === 'delete' ? (
+          <DeleteDialog
+            action={action}
+            tree={tree}
+            onCommit={commitAction}
+            onClose={closeAction}
+          />
+        ) : action.kind === 'move' ? (
           <MoveDialog
             action={action}
             tree={tree}
