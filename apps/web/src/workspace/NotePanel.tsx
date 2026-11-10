@@ -3,6 +3,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
   useState,
   type ReactNode,
 } from 'react';
@@ -101,6 +102,9 @@ function NoteArticle({
   onNoteUpdated(note: NoteDetail): void;
 }) {
   const [note, setNote] = useState(initial);
+  useEffect(() => {
+    onNoteUpdated(initial);
+  }, [initial, onNoteUpdated]);
   return (
     <>
       <Breadcrumbs

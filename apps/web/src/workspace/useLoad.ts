@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { WorkspaceRequestError } from './api.js';
 
 export type LoadState<T> =
@@ -27,14 +27,18 @@ export function useLoad<T>(load: (signal: AbortSignal) => Promise<T>) {
     );
     return () => controller.abort();
   }, [load, attempt]);
-  return {
-    state,
-    retry: () => setAttempt((value) => value + 1),
-    update: (transform: (value: T) => T) =>
+  const update = useCallback(
+    (transform: (value: T) => T) =>
       setState((current) =>
         current.status === 'ready'
           ? { status: 'ready', value: transform(current.value) }
           : current,
       ),
+    [],
+  );
+  return {
+    state,
+    retry: () => setAttempt((value) => value + 1),
+    update,
   };
 }
