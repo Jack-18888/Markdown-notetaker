@@ -33,6 +33,16 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [unsavedTitle]);
   const main = useRef<HTMLElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const focusSidebar = useRef(false);
+  useEffect(() => {
+    if (sidebarOpen && focusSidebar.current && sidebar.current) {
+      sidebar.current.scrollTop = 0;
+      sidebar.current.scrollIntoView({ block: 'start' });
+      sidebar.current.querySelector('button')?.focus({ preventScroll: true });
+      focusSidebar.current = false;
+    }
+  }, [sidebarOpen]);
   const focusSelection = useRef(false);
   useEffect(() => {
     if (focusSelection.current) {
@@ -111,7 +121,10 @@ export default function App() {
             aria-label={sidebarOpen ? 'Hide folders' : 'Show folders'}
             aria-expanded={sidebarOpen}
             aria-controls="workspace-sidebar"
-            onClick={() => setSidebarOpen((value) => !value)}
+            onClick={() => {
+              focusSidebar.current = !sidebarOpen;
+              setSidebarOpen((value) => !value);
+            }}
           >
             Folders
           </button>
@@ -127,6 +140,7 @@ export default function App() {
       <aside
         id="workspace-sidebar"
         className="workspace-sidebar"
+        ref={sidebar}
         hidden={!sidebarOpen}
       >
         <p className="sidebar-caption">Personal workspace</p>

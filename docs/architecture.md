@@ -1,6 +1,6 @@
 # Architecture
 
-**Implementation state:** The TypeScript workspace supplies a React connection page, portable API contracts, and raw Markdown validation. SQLite initialization, versioned migrations, database shutdown, folder/note services, HTTP transport protections, and all folder/note REST routes are implemented. Frontend Markdown conversion, source retention, Mermaid source nodes, and a safe read-only fallback are validated for the documented subset; workspace navigation and the writing UI remain pending. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
+**Implementation state:** The React workspace implements folder navigation, breadcrumbs, on-demand note reading, and explicit title saves. SQLite initialization, versioned migrations, database shutdown, folder/note services, shared contracts, and protected REST routes are implemented. Frontend Markdown conversion, source retention, Mermaid source nodes, and a safe read-only fallback are validated for the documented subset. Lifecycle controls and the writing UI remain pending. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
 
 The system supports the [product requirements](requirements.md): one person writes rich notes in a browser, organizes them in folders, and keeps saved content on their own computer. Individual documents in [roadmaps](../roadmaps/) define feature or release designs, detailed requirements, acceptance criteria, tasks, and verification evidence. The user specifies which roadmap governs the work.
 
@@ -40,6 +40,7 @@ The API implements health, tree metadata, note detail, and note/folder creation,
 | ------------------------------------------------------------- | ----------------------------------------------------------------- |
 | [Persistence and document model](architecture/persistence.md) | Record layout, storage configuration, and migrations              |
 | [Workspace services](../apps/server/src/workspace/README.md)  | Module interfaces, validation, mutations, revisions, and tests    |
+| [Workspace navigation](architecture/navigation.md)            | Client validation, ordering, selection, reading, and title saves  |
 | [Editing, saving, and conversion](architecture/editor.md)     | Editor structure, save ordering, Markdown, and diagram safety     |
 | [Local runtime and operations](architecture/runtime.md)       | Source imports, builds, loopback runtime, local data, and tooling |
 | [Technical decisions](decisions/README.md)                    | Choice status, rationale, alternatives, and verification evidence |
