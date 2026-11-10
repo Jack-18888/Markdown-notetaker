@@ -8,7 +8,7 @@ API Host accepts only `127.0.0.1` or `localhost`, optionally with a valid port; 
 
 Store SQLite files in a configurable local data directory excluded from Git. Startup initializes the directory and applies migrations; shutdown closes the connection. Report inaccessible paths, locks, and migration failures without deleting existing content. Backup/restore instructions must account for SQLite sidecar files; the initial operational guidance will use a stopped server.
 
-The scaffold targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. Resource handlers and full production verification remain in the API/runtime tasks.
+The scaffold targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. All resource handlers are implemented; full production execution and backup/restore acceptance remain in the runtime tasks.
 
 ## Source imports and production builds
 
