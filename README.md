@@ -2,7 +2,7 @@
 
 A local note-taking app for project notes, personal documentation, and technical writing. The planned first release combines nested folders, rich editing, Mermaid diagrams, and Markdown import/export, with raw Markdown saved in SQLite on your computer.
 
-**Status:** Runnable scaffold with shared Markdown/API contracts, SQLite migrations, and persistence services. The React page checks the local API; note editing and resource routes are not implemented yet. Follow progress in the [initial project roadmap](roadmaps/initial-project.md).
+**Status:** Runnable scaffold with shared Markdown/API contracts, SQLite migrations, persistence services, and a protected read API for tree metadata and note detail. The React page checks the local API; note editing and HTTP mutations are not implemented yet. Follow progress in the [initial project roadmap](roadmaps/initial-project.md).
 
 ## Development setup
 

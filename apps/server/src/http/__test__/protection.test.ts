@@ -1,16 +1,26 @@
 import express from 'express';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   ApiErrorCode,
   errorDefinitions,
   errorResponseSchema,
   limits,
 } from '@markdown-note-taker/contracts';
-import { createApp } from '../../app.js';
+import { temporaryApp } from '../../__test__/temporary-workspace.js';
 import { WorkspaceError } from '../../workspace/errors.js';
 import { apiErrorHandler } from '../errors.js';
 import { jsonBody, protectApi } from '../protection.js';
+
+const applications: ReturnType<typeof temporaryApp>[] = [];
+afterEach(() => {
+  for (const application of applications.splice(0)) application.cleanup();
+});
+function application() {
+  const temporary = temporaryApp();
+  applications.push(temporary);
+  return temporary.app;
+}
 
 // A transport probe: resource tests exercise the same middleware with SQLite.
 function probe(serveWeb = false) {
@@ -51,7 +61,7 @@ describe('local API transport', () => {
     'user@localhost',
     'localhost/path',
   ])('rejects unapproved Host %s on the real API', async (host) => {
-    const response = await request(createApp())
+    const response = await request(application())
       .get('/api/health')
       .set('Host', host)
       .set('X-Forwarded-Host', '127.0.0.1')
@@ -62,7 +72,7 @@ describe('local API transport', () => {
   it.each(['127.0.0.1:3001', 'localhost:3002', 'localhost', 'LOCALHOST:3001'])(
     'accepts loopback Host %s and prevents API caching',
     async (host) => {
-      await request(createApp())
+      await request(application())
         .get('/api/health')
         .set('Host', host)
         .expect('Cache-Control', 'no-store')

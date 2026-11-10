@@ -16,7 +16,10 @@ export function startServer({
   const workspace = openWorkspace(workspaceOptions);
   let server: Server;
   try {
-    server = createApp({ serveWeb }).listen(port, '127.0.0.1');
+    server = createApp({ workspace: workspace.service, serveWeb }).listen(
+      port,
+      '127.0.0.1',
+    );
   } catch (error) {
     workspace.close();
     throw error;

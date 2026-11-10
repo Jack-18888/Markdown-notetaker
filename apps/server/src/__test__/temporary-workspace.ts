@@ -4,6 +4,8 @@ import { basename, dirname, join, resolve, sep } from 'node:path';
 import Database from 'better-sqlite3';
 import { databaseFileName } from '../config.js';
 import { openDatabase, type DatabaseOptions } from '../database/open.js';
+import { openWorkspace } from '../workspace/open.js';
+import { createApp } from '../app.js';
 
 /** Own every connection and file created by a persistence test. */
 export function temporaryWorkspace() {
@@ -47,6 +49,21 @@ export function temporaryWorkspace() {
         maxRetries: 5,
         retryDelay: 100,
       });
+    },
+  };
+}
+
+/** Real application/service over a test-owned SQLite file; closes before removal. */
+export function temporaryApp({ serveWeb = false } = {}) {
+  const temporary = temporaryWorkspace();
+  const workspace = openWorkspace({ dataDirectory: temporary.dataDirectory });
+  return {
+    ...temporary,
+    workspace,
+    app: createApp({ workspace: workspace.service, serveWeb }),
+    cleanup() {
+      workspace.close();
+      temporary.cleanup();
     },
   };
 }
