@@ -1,5 +1,5 @@
 import type { NoteMetadata } from '@markdown-note-taker/contracts';
-import type { NameAction, ResourceTarget } from './lifecycle.js';
+import type { MoveAction, NameAction, ResourceTarget } from './lifecycle.js';
 import type { Selection, WorkspaceTree } from './tree.js';
 
 export default function WorkspaceActions({
@@ -11,7 +11,7 @@ export default function WorkspaceActions({
   tree: WorkspaceTree;
   selection: Selection;
   note: NoteMetadata | null;
-  onAction(action: NameAction): void;
+  onAction(action: NameAction | MoveAction): void;
 }) {
   const parentId =
     selection.kind === 'folder' ? selection.id : (note?.folderId ?? null);
@@ -55,6 +55,15 @@ export default function WorkspaceActions({
           onClick={() => onAction({ kind: 'rename', target })}
         >
           Rename {target.kind}
+        </button>
+      )}
+      {target && (
+        <button
+          type="button"
+          className="workspace-retry"
+          onClick={() => onAction({ kind: 'move', target })}
+        >
+          Move {target.kind}
         </button>
       )}
     </div>
