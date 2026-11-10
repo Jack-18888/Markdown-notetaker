@@ -3,32 +3,10 @@ import { Editor, getSchema } from '@tiptap/core';
 import { describe, expect, it } from 'vitest';
 import { editorExtensions, markdownManager } from '../extensions.js';
 import { isSafeLink } from '../links.js';
-
-const fixtures = [
-  ['paragraphs', 'First paragraph.\n\nSecond paragraph.'],
-  [
-    'headings',
-    '# One\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five\n\n###### Six',
-  ],
-  ['marks', '**bold** *italic* ~~strike~~ `literal <script>`'],
-  ['nested marks', '**bold and *italic* text**'],
-  ['links', '[Example](https://example.com/path "Title") and [jump](#section)'],
-  ['lists', '- one\n- two\n  - nested\n\n3. third\n4. fourth'],
-  ['tasks', '- [ ] pending\n- [x] done\n  - [ ] nested'],
-  ['quotes', '> Quoted **text**\n>\n> > Nested quote'],
-  ['rules', 'Above\n\n---\n\nBelow'],
-  ['hard breaks', 'one  \ntwo'],
-  ['literal code', '````text\n<script>alert(1)</script>\n```\n````'],
-  ['Mermaid', '```mermaid\nflowchart LR\n  A --> B\n```'],
-  ['invalid diagram', '```mermaid\nnot a valid diagram <script>\n```'],
-  [
-    'multiple diagrams',
-    '```mermaid\nA --> B\n```\n\nBetween\n\n```mermaid\nsequenceDiagram\nA->>B: Hi\n```',
-  ],
-] as const;
+import { supportedFixtures } from './fixtures.js';
 
 describe('editor extension compatibility', () => {
-  it.each(fixtures)(
+  it.each(supportedFixtures)(
     'round-trips %s through the real editor schema',
     (_name, source) => {
       const manager = markdownManager();
@@ -71,7 +49,20 @@ describe('editor extension compatibility', () => {
     'java\nscript:x',
     '\\evil.example',
     'javascript&colon;x',
-  ])('rejects unsafe link %#', (href) => expect(isSafeLink(href)).toBe(false));
+  ])('rejects unsafe link %# in both policy and editor commands', (href) => {
+    expect(isSafeLink(href)).toBe(false);
+    const editor = new Editor({
+      extensions: editorExtensions(),
+      content: '<p>Text</p>',
+    });
+    try {
+      editor.commands.selectAll();
+      expect(editor.commands.setLink({ href })).toBe(false);
+      expect(editor.view.dom.querySelector('a')).toBeNull();
+    } finally {
+      editor.destroy();
+    }
+  });
   it.each([
     'https://example.com',
     'http://localhost:3001',

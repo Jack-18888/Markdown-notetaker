@@ -1,6 +1,6 @@
 # Initial API contracts
 
-**Implementation status:** All routes below run over HTTP with shared contracts, SQLite-backed workspace services, transport protections, and public error handling. Raw Markdown is canonical; frontend rich editing and rendering remain in T06/T09. Full editor/backend compatibility remains provisional until the T09 checkpoint.
+**Implementation status:** All routes below run over HTTP with shared contracts, SQLite-backed workspace services, transport protections, and public error handling. Raw Markdown is canonical. T06 validates frontend conversion and source preservation for the documented subset; the writing UI and diagram previews remain T09/T10 work. Full editor/backend compatibility remains provisional until the T09 checkpoint.
 
 The source of truth is [the contracts package](../packages/contracts/src/index.ts). The private package exports TypeScript source directly; editor navigation, development, and tests need no package build. Both apps import it as `@markdown-note-taker/contracts`. Zod supplies runtime validation and inferred TypeScript types without Node, SQLite, React, or DOM dependencies. The [route registry](../packages/contracts/src/api.ts) pairs each method/path with parameter, request, successful response, and status contracts. A `null` body/response schema means no HTTP body, not JSON `null`.
 

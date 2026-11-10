@@ -1,8 +1,27 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { loadMarkdown, MarkdownConversionError } from '../markdown.js';
+import { supportedFixtures } from './fixtures.js';
 
 describe('source-retaining conversion boundary', () => {
+  it.each(supportedFixtures)(
+    'keeps %s editable through the public boundary',
+    (_name, source) => {
+      const loaded = loadMarkdown(source);
+      expect(loaded.mode).toBe('rich');
+      if (loaded.mode !== 'rich')
+        throw new Error('Supported fixture unexpectedly fell back.');
+      loaded.document.content!.push({
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Another paragraph' }],
+      });
+      const reopened = loadMarkdown(loaded.serialize(loaded.document));
+      expect(reopened.mode).toBe('rich');
+      if (reopened.mode !== 'rich')
+        throw new Error('Edited fixture unexpectedly fell back.');
+      expect(reopened.document).toEqual(loaded.document);
+    },
+  );
   it.each([
     '',
     '# Heading\r\n\r\nText.  \r\nNext\r\n',
