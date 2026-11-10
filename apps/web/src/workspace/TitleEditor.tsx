@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { nameSchema, type NoteDetail } from '@markdown-note-taker/contracts';
-import { updateNoteTitle, WorkspaceRequestError } from './api.js';
+import { updateNote, WorkspaceRequestError } from './api.js';
 import './title-editor.css';
 
 export default function TitleEditor({
@@ -53,10 +53,9 @@ export default function TitleEditor({
     setMessage('');
     onDirtyChange(true);
     try {
-      const saved = await updateNoteTitle(
+      const saved = await updateNote(
         note.id,
-        snapshot,
-        note.revision,
+        { title: snapshot, expectedRevision: note.revision },
         request.signal,
       );
       if (request.signal.aborted) return;

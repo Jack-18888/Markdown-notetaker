@@ -1,5 +1,7 @@
 # Workspace navigation
 
+T08's [lifecycle client and helpers](../../apps/web/src/workspace/lifecycle.ts) provide validated create/update/delete requests, descendant counts, and destination choices excluding moved subtrees. Note mutations use loaded revisions; metadata-only changes omit content. The lifecycle UI is being added above this foundation. Duplicate destination paths receive stable numbered labels while resource IDs remain their values.
+
 The [workspace client](../../apps/web/src/workspace/api.ts) loads tree metadata separately from note detail, checks shared runtime schemas, verifies note identity, and accepts only public error envelopes with matching HTTP statuses. Network/protocol errors use fixed user-facing messages. Reads disable browser caching and accept cancellation signals. The [app shell](../../apps/web/src/App.tsx) connects root/folder navigation and selected-note reading to this client.
 
 The [hierarchy index](../../apps/web/src/workspace/tree.ts) rejects duplicate IDs, missing parents, and cycles before navigation renders them. It builds parent/child maps iteratively so validation does not recurse through deep folder paths. The root has a null folder ID; selection and expansion use resource IDs, never labels.
