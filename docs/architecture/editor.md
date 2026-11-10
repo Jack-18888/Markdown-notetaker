@@ -6,6 +6,8 @@ The compatibility module uses open-source Tiptap 3.33.0 with `@tiptap/markdown`,
 
 [Schema/DOM fixtures](../../apps/web/src/editor/__test__/extensions.test.ts) verify supported block round trips and literal code/diagram rendering. Code fences grow to exceed any embedded backtick run. Imported HTML, unsupported-source detection, and original-source retention must be handled by the conversion boundary before application UI loads external Markdown.
 
+The [source policy](../../apps/web/src/editor/source-policy.ts) checks Marked tokens without generating HTML. Tables, images, embedded HTML/comments, YAML/TOML frontmatter, reference definitions, math, extra fence metadata, NUL/BOM, mixed task/plain lists, and diagrams nested inside containers require source fallback. Unsafe links also require fallback. Ordinary fenced and inline code stay literal and are not inspected as markup. Rich conversion is limited to 128 KiB of UTF-8 source, 10,000 tokens, and nesting depth 32; larger valid API notes remain available as raw source. These limits constrain conversion, not stored Markdown or import limits. Source retention and the read-only view are being added before editor UI integration.
+
 Saved content is raw Markdown. The frontend loads that source into the rich editor's internal representation and serializes edits back to Markdown. Editor trees remain frontend state; the backend stores the complete source string. See [the storage decision](../decisions/0003-raw-markdown.md).
 
 Represent a diagram as a dedicated editor block containing plain Mermaid source. Frontend conversion hooks map that block to and from fenced `mermaid` Markdown. Parser and serializer fixtures must cover every supported block and mark before the writing interface relies on them.
