@@ -12,6 +12,17 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              { name: 'markdown-parser', test: /node_modules[\\/]marked[\\/]/ },
+            ],
+          },
+        },
+      },
+    },
     // Keep the first lazy editor import from triggering a development-page reload.
     optimizeDeps: {
       include: [
