@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T03 are complete. T04 is in progress across the reviewed commit sequence.
+**Status:** T01-T04 are complete. T04 is committed in four reviewed changes; T05 is next.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status        | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------------- | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
-| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `in_progress` | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `todo`        | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `todo`        | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `todo`        | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `todo`        | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo`        | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `todo` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `todo` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `todo` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -337,7 +337,7 @@ These checks record storage schema 1. T04 adds migration 2 for raw Markdown; res
 
 Implement atomic hierarchy operations and optimistic note updates independently of HTTP.
 
-**Status:** `in_progress` · **Priority:** high
+**Status:** `done` · **Priority:** high
 
 **Depends on:** T03  
 **Requirements:** R1, R5, R7, R8
@@ -367,7 +367,15 @@ Implement atomic hierarchy operations and optimistic note updates independently 
 
 **Evidence**
 
-Transactional workspace services and their integration tests are verified. See the [workspace README](../apps/server/src/workspace/README.md). Server lifecycle integration and import restrictions remain in the final commit.
+Verified 2026-11-07 and rechecked 2026-11-08 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and committed as database migration, Markdown contracts, transactional services, and server persistence boundary changes.
+
+- Implementation and maintenance rules live in the [workspace README](../apps/server/src/workspace/README.md). Raw Markdown is canonical; the rich editor remains frontend work. Editor JSON envelopes, per-document schema versions, and node/depth/value validation are removed from the current API.
+- Migration 1 remains unchanged. [Migration 2](../apps/server/src/database/migrations/002-markdown.ts) unwraps supported legacy paragraph/text records into raw text, preserving IDs, hierarchy, revisions, and timestamps. Text runs concatenate verbatim; paragraph boundaries become blank lines. An unsupported version/node/attribute, malformed Unicode, or failed conversion rolls back the whole batch and leaves the original database usable with schema 1.
+- All 147 tests pass, including [Markdown boundaries](../packages/contracts/src/__test__/markdown.test.ts), [legacy migration/rollback checks](../apps/server/src/database/migrations/__test__/002-markdown.test.ts), [service persistence](../apps/server/src/workspace/__test__/service.test.ts), and [workspace lifecycle](../apps/server/src/workspace/__test__/open.test.ts). Tests cover empty content, CRLF, BOM, Unicode, NUL, Markdown syntax, unchanged metadata, byte-for-byte reopen, stale revisions, hierarchy checks, and rollback after SQL failures. Failure in a later pending migration also restores the original schema-1 notes and journal after conversion.
+- Invalid content is rejected before SQL writes; reads return stored text. The byte cap measures raw UTF-8 rather than JSON escaping. Resource handlers remain in T05. Import/export and rich conversion remain in T06/T09/T12.
+- Typecheck, lint, formatting, and builds pass. Documentation links/anchors, route descriptors, API examples, and manifest/lockfile consistency pass. Isolated source/production startup checks preserve raw Markdown and migration history; the compiled production server upgrades legacy notes without changing revisions. Production assets/API responses and invalid-path startup checks pass. The original migration is unchanged, and no database or generated artifacts are tracked.
+
+No T04 acceptance blockers remain. HTTP resource handlers, transport protections, and API integration checks remain in T05. Frontend workflows remain in their later tasks.
 
 <a id="t05"></a>
 

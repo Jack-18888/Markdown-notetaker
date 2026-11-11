@@ -21,3 +21,9 @@ export interface WorkspaceService {
   updateNote(id: ResourceId, input: UpdateNoteRequest): NoteDetail;
   deleteNote(id: ResourceId, input: DeleteNoteRequest): void;
 }
+
+/** Public workspace handle; the connection remains private. */
+export interface Workspace {
+  service: WorkspaceService;
+  close(): void;
+}

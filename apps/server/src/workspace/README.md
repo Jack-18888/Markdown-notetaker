@@ -2,6 +2,14 @@
 
 This module owns application access to saved notes and folders. All application note and folder mutations go through `WorkspaceService`.
 
+## Public entry point
+
+Application startup calls [openWorkspace](open.ts), passes its `service` to application code, and calls `close()` during shutdown. The handle exposes no database connection. Public options are limited to the data directory and busy timeout.
+
+Database settings, including foreign-key enforcement, are initialized by [openDatabase](../database/open.ts). The service relies on that setup instead of checking the same settings again.
+
+[ESLint import restrictions](../../../../eslint.config.js) keep direct SQLite, database, migration, and repository access inside persistence internals. New features must use service methods for persistence.
+
 ## Validate writes, trust reads
 
 Create and update requests are checked against the [contracts](../../../../packages/contracts/src/index.ts) before writing. Content is a raw Markdown string, checked for well-formed Unicode and its UTF-8 byte cap. The backend does not parse Markdown, validate editor nodes, or normalize source. All rendering and rich editor conversion belong to the frontend.
@@ -26,7 +34,8 @@ Note rename, move, body update, and deletion require the caller's loaded `expect
 
 | File                                     | Responsibility                                                          |
 | ---------------------------------------- | ----------------------------------------------------------------------- |
-| [types.ts](types.ts)                     | Typed service interface.                                                |
+| [open.ts](open.ts)                       | Public entry point and connection lifecycle.                            |
+| [types.ts](types.ts)                     | Workspace handle and typed service interface.                           |
 | [service.ts](service.ts)                 | Validation, hierarchy rules, revisions, transactions, and reads.        |
 | [repository.ts](repository.ts)           | Internal prepared, parameterized SQL.                                   |
 | [validation.ts](validation.ts)           | Workspace error policy for shared contract parsing.                     |
@@ -41,4 +50,4 @@ Note rename, move, body update, and deletion require the caller's loaded `expect
 
 The [Markdown migration](../database/migrations/002-markdown.ts) unwraps legacy paragraph/text records, concatenating text runs and separating paragraphs with blank lines. It preserves text verbatim and retains note IDs, hierarchy, revisions, and timestamps. Unsupported or invalid legacy content aborts the entire migration; the original database remains unchanged.
 
-[Service tests](__test__/service.test.ts) use isolated SQLite files to check rejected writes, rollback, conflicts, and durability after reopening. Persistence tests may use raw SQL to prepare temporary fixtures, inject failures, simulate other format versions, and inspect stored rows.
+[Service tests](__test__/service.test.ts) and [workspace lifecycle tests](__test__/open.test.ts) use isolated SQLite files to check rejected writes, rollback, conflicts, and durability after reopening. Persistence tests may use raw SQL to prepare temporary fixtures, inject failures, simulate other format versions, and inspect stored rows.
