@@ -4,6 +4,8 @@ The [workspace client](../../apps/web/src/workspace/api.ts) loads tree metadata 
 
 The [hierarchy index](../../apps/web/src/workspace/tree.ts) rejects duplicate IDs, missing parents, and cycles before navigation renders them. It builds parent/child maps iteratively so validation does not recurse through deep folder paths. The root has a null folder ID; selection and expansion use resource IDs, never labels.
 
+The [folder navigation](../../apps/web/src/workspace/FolderTree.tsx) uses nested lists, native buttons, explicit expansion state, and separate folder-selection controls. It marks the selected resource with `aria-current`. [Folder contents](../../apps/web/src/workspace/FolderContents.tsx) lists direct children and distinct empty-root/folder messages; [breadcrumbs](../../apps/web/src/workspace/Breadcrumbs.tsx) provide native buttons back to root and ancestors. Components are ready for shell integration; mounted note loading follows separately.
+
 Navigation ordering is folders first, then notes. Each group sorts by label using an English numeric, case-insensitive collator; ties use the original spelling and then the resource ID. This is a display policy, not a persistence order. Duplicate names remain distinct resources. Breadcrumbs follow parent IDs from root to the selected resource's folder.
 
 [Client tests](../../apps/web/src/workspace/__test__/api.test.ts) verify validation, identity, cancellation options, and safe failures. [Hierarchy tests](../../apps/web/src/workspace/__test__/tree.test.ts) cover nesting, ordering, duplicate labels, and invalid references. Real API/browser checks belong to the completed navigation workflow.
