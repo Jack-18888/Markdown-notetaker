@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T04 are complete. T04 is committed in four reviewed changes; T05 is next.
+**Status:** T01-T05 are implemented. T05 is delivered in five stacked PRs awaiting review. The editor/backend compatibility checkpoint remains pending.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -148,7 +148,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
 | [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
 | [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `todo` | [T04](#t04)              |
+| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
 | [T06](#t06) | Editor compatibility                     | `todo` | [T02](#t02)              |
 | [T07](#t07) | Workspace navigation                     | `todo` | [T05](#t05)              |
 | [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
@@ -383,7 +383,8 @@ No T04 acceptance blockers remain. HTTP resource handlers, transport protections
 
 Connect shared contracts and persistence to Express with predictable failures and local browser protections. Integrated editor/Markdown compatibility remains provisional until the [T09 checkpoint](#editor-and-backend-compatibility-checkpoint) passes.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
+
 **Depends on:** T04  
 **Requirements:** R1, R5, R7, R8
 
@@ -402,10 +403,10 @@ Connect shared contracts and persistence to Express with predictable failures an
 
 **Acceptance criteria**
 
-- [ ] Every documented endpoint passes success and failure integration scenarios.
-- [ ] Tree responses omit document bodies; note detail loads them on demand.
-- [ ] Malformed JSON, oversized bodies, hostile origins/hosts, cycles, and revision conflicts receive appropriate responses.
-- [ ] Unhandled failures do not expose stack traces or stored document content to clients.
+- [x] Every documented endpoint passes success and failure integration scenarios.
+- [x] Tree responses omit document bodies; note detail loads them on demand.
+- [x] Malformed JSON, oversized bodies, hostile origins/hosts, cycles, and revision conflicts receive appropriate responses.
+- [x] Unhandled failures do not expose stack traces or stored document content to clients.
 
 **Verification**
 
@@ -414,7 +415,14 @@ Connect shared contracts and persistence to Express with predictable failures an
 
 **Evidence**
 
-No verification evidence recorded.
+Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered above the persistence stack as transport, read API, folder mutations, note mutations, and runtime verification PRs, pending review.
+
+- [HTTP adapters](../apps/server/src/http/workspace.ts) implement every shared route through an injected workspace service. [Transport tests](../apps/server/src/http/__test__/protection.test.ts) cover loopback Host validation, development/production origins, cross-site writes, JSON media/encoding, inclusive request-byte limits, and fixed public errors. API responses disable caching; no permissive CORS headers are added.
+- Real temporary SQLite tests cover [metadata-only reads](../apps/server/src/http/__test__/workspace.test.ts), [folder hierarchy and rollback](../apps/server/src/http/__test__/folders.test.ts), and [note source/revisions](../apps/server/src/http/__test__/notes.test.ts). Raw Markdown survives HTTP create/rename/move/reopen byte-for-byte. Competing HTTP saves yield one success and one conflict; stale deletion and rejected writes preserve saved content. Forced subtree-delete failure leaves the tree and notes intact.
+- `npm run typecheck`, `npm run lint`, `npm test` (211 tests), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes both Chromium checks, including [browser writes through Vite](../tests/e2e/workspace-api.spec.ts). [Server lifecycle tests](../apps/server/src/__test__/server.test.ts) verify loopback binding, startup failure, occupied ports, and production-mode HTTP persistence after restart.
+- A compiled production smoke check launched the built entry with plain Node and an isolated temporary data directory. Static assets, JSON API fallback, Host/origin rejection, note writes, restart durability, stale revision conflicts, and deletion pass. Its processes and temporary data were removed. Local documentation link targets and all three API JSON examples validate; `git diff --check` passes. No database format or dependency changes were needed.
+
+The [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint) remains pending. These checks validate raw Markdown transport and persistence; rich editor conversion and rendering are later work. Full production backup/restore acceptance remains in T14.
 
 <a id="t06"></a>
 
