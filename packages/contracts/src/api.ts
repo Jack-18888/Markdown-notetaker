@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { documentEnvelopeSchema } from './document.ts';
+import { markdownSchema } from './markdown.ts';
 import {
   expectedRevisionSchema,
   nameSchema,
@@ -35,9 +35,9 @@ export const noteMetadataSchema = z.strictObject({
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
 });
-/** Full note, including its document. */
+/** Full note, including its raw Markdown. */
 export const noteDetailSchema = noteMetadataSchema.extend({
-  document: documentEnvelopeSchema,
+  content: markdownSchema,
 });
 /** Flat metadata lists linked by parent IDs. */
 export const treeResponseSchema = z.strictObject({
@@ -61,11 +61,11 @@ export const updateFolderRequestSchema = z
     'Supply a name or destination.',
   );
 
-/** Omitted document creates a blank note; invalid documents are rejected. */
+/** Omitted content creates a blank note. */
 export const createNoteRequestSchema = z.strictObject({
   title: nameSchema,
   folderId: parentIdSchema,
-  document: documentEnvelopeSchema.optional(),
+  content: markdownSchema.optional(),
 });
 /** Rename, move, or edit against the client's loaded revision. */
 export const updateNoteRequestSchema = z
@@ -73,14 +73,14 @@ export const updateNoteRequestSchema = z
     expectedRevision: expectedRevisionSchema,
     title: nameSchema.optional(),
     folderId: parentIdSchema.optional(),
-    document: documentEnvelopeSchema.optional(),
+    content: markdownSchema.optional(),
   })
   .refine(
     (body) =>
       body.title !== undefined ||
       body.folderId !== undefined ||
-      body.document !== undefined,
-    'Supply a title, destination, or document.',
+      body.content !== undefined,
+    'Supply a title, destination, or content.',
   );
 /** Revision check protects against stale delete confirmations. */
 export const deleteNoteRequestSchema = z.strictObject({

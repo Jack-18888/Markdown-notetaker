@@ -5,44 +5,64 @@ import {
   revisionSchema,
 } from './primitives.ts';
 
-/** Public codes, statuses, and fixed messages; never include note contents. */
+/** Stable error codes serialized in API responses. */
+export enum ApiErrorCode {
+  INVALID_INPUT = 'INVALID_INPUT',
+  NOT_FOUND = 'NOT_FOUND',
+  HIERARCHY_CONFLICT = 'HIERARCHY_CONFLICT',
+  REVISION_CONFLICT = 'REVISION_CONFLICT',
+  PAYLOAD_TOO_LARGE = 'PAYLOAD_TOO_LARGE',
+  UNSUPPORTED_MEDIA_TYPE = 'UNSUPPORTED_MEDIA_TYPE',
+  ORIGIN_FORBIDDEN = 'ORIGIN_FORBIDDEN',
+  INVALID_HOST = 'INVALID_HOST',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+}
+
+export interface ApiErrorDefinition {
+  status: number;
+  message: string;
+}
+
+/** Fixed status/message for each public code; never include note contents. */
 export const errorDefinitions = {
-  INVALID_INPUT: { status: 400, message: 'The request is invalid.' },
-  INVALID_DOCUMENT: { status: 400, message: 'The document is invalid.' },
-  UNSUPPORTED_DOCUMENT_VERSION: {
+  [ApiErrorCode.INVALID_INPUT]: {
     status: 400,
-    message: 'This document schema version is not supported.',
+    message: 'The request is invalid.',
   },
-  NOT_FOUND: { status: 404, message: 'The requested resource was not found.' },
-  HIERARCHY_CONFLICT: {
+  [ApiErrorCode.NOT_FOUND]: {
+    status: 404,
+    message: 'The requested resource was not found.',
+  },
+  [ApiErrorCode.HIERARCHY_CONFLICT]: {
     status: 409,
     message:
       'The destination must be an existing folder outside the moved subtree.',
   },
-  REVISION_CONFLICT: {
+  [ApiErrorCode.REVISION_CONFLICT]: {
     status: 409,
     message: 'The note changed since it was loaded.',
   },
-  PAYLOAD_TOO_LARGE: {
+  [ApiErrorCode.PAYLOAD_TOO_LARGE]: {
     status: 413,
-    message: 'The request or document exceeds its size limit.',
+    message: 'The request or Markdown content exceeds its size limit.',
   },
-  UNSUPPORTED_MEDIA_TYPE: {
+  [ApiErrorCode.UNSUPPORTED_MEDIA_TYPE]: {
     status: 415,
     message: 'A JSON request body is required.',
   },
-  ORIGIN_FORBIDDEN: {
+  [ApiErrorCode.ORIGIN_FORBIDDEN]: {
     status: 403,
     message: 'This browser origin is not allowed.',
   },
-  INVALID_HOST: { status: 403, message: 'This host is not allowed.' },
-  INTERNAL_ERROR: {
+  [ApiErrorCode.INVALID_HOST]: {
+    status: 403,
+    message: 'This host is not allowed.',
+  },
+  [ApiErrorCode.INTERNAL_ERROR]: {
     status: 500,
     message: 'The operation could not be completed.',
   },
-} as const;
-
-export type ApiErrorCode = keyof typeof errorDefinitions;
+} as const satisfies Record<ApiErrorCode, ApiErrorDefinition>;
 
 function errorShape<Code extends ApiErrorCode>(code: Code) {
   return {
@@ -53,14 +73,12 @@ function errorShape<Code extends ApiErrorCode>(code: Code) {
 
 /** Error variants; conflicts include IDs and revision counters only. */
 export const apiErrorSchema = z.discriminatedUnion('code', [
-  z.strictObject(errorShape('INVALID_INPUT')),
-  z.strictObject(errorShape('INVALID_DOCUMENT')),
-  z.strictObject(errorShape('UNSUPPORTED_DOCUMENT_VERSION')),
-  z.strictObject(errorShape('NOT_FOUND')),
-  z.strictObject(errorShape('HIERARCHY_CONFLICT')),
+  z.strictObject(errorShape(ApiErrorCode.INVALID_INPUT)),
+  z.strictObject(errorShape(ApiErrorCode.NOT_FOUND)),
+  z.strictObject(errorShape(ApiErrorCode.HIERARCHY_CONFLICT)),
   z
     .strictObject({
-      ...errorShape('REVISION_CONFLICT'),
+      ...errorShape(ApiErrorCode.REVISION_CONFLICT),
       noteId: resourceIdSchema,
       expectedRevision: expectedRevisionSchema,
       currentRevision: revisionSchema,
@@ -69,11 +87,11 @@ export const apiErrorSchema = z.discriminatedUnion('code', [
       (error) => error.expectedRevision !== error.currentRevision,
       'Conflicting revisions must differ.',
     ),
-  z.strictObject(errorShape('PAYLOAD_TOO_LARGE')),
-  z.strictObject(errorShape('UNSUPPORTED_MEDIA_TYPE')),
-  z.strictObject(errorShape('ORIGIN_FORBIDDEN')),
-  z.strictObject(errorShape('INVALID_HOST')),
-  z.strictObject(errorShape('INTERNAL_ERROR')),
+  z.strictObject(errorShape(ApiErrorCode.PAYLOAD_TOO_LARGE)),
+  z.strictObject(errorShape(ApiErrorCode.UNSUPPORTED_MEDIA_TYPE)),
+  z.strictObject(errorShape(ApiErrorCode.ORIGIN_FORBIDDEN)),
+  z.strictObject(errorShape(ApiErrorCode.INVALID_HOST)),
+  z.strictObject(errorShape(ApiErrorCode.INTERNAL_ERROR)),
 ]);
 
 export const errorResponseSchema = z.strictObject({ error: apiErrorSchema });

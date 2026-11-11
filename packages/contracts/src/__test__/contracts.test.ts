@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createEmptyDocument,
+  ApiErrorCode,
   createFolderRequestSchema,
   createNoteRequestSchema,
   deleteNoteRequestSchema,
-  documentEnvelopeSchema,
-  documentSchemaVersion,
   errorDefinitions,
   errorResponseSchema,
   expectedRevisionSchema,
@@ -42,16 +40,6 @@ const note = {
   createdAt: timestamp,
   updatedAt: timestamp,
 };
-
-function documentWithText(text: string) {
-  return {
-    schemaVersion: documentSchemaVersion,
-    content: {
-      type: 'doc',
-      content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
-    },
-  };
-}
 
 describe('names and identifiers', () => {
   it.each([
@@ -132,105 +120,13 @@ describe('names and identifiers', () => {
   });
 });
 
-describe('initial document validation', () => {
-  it('preserves empty paragraphs, multiple paragraphs, Unicode, and literal markup', () => {
-    const document = documentWithText('<script>alert(1)</script>\n\u{1f4dd}');
-    document.content.content.push({ type: 'paragraph', content: [] });
-    expect(documentEnvelopeSchema.parse(document)).toEqual(document);
-    expect(documentEnvelopeSchema.parse(createEmptyDocument())).toEqual(
-      createEmptyDocument(),
-    );
-    const first = createEmptyDocument();
-    first.content.content.push({ type: 'paragraph' });
-    expect(createEmptyDocument().content.content).toHaveLength(1);
-  });
-
-  it.each([
-    null,
-    {},
-    { schemaVersion: 1 },
-    { ...createEmptyDocument(), extra: true },
-    { schemaVersion: 1, content: { type: 'doc', content: [] } },
-    {
-      schemaVersion: 1,
-      content: { type: 'unknown', content: [{ type: 'paragraph' }] },
-    },
-    {
-      schemaVersion: 1,
-      content: {
-        type: 'doc',
-        content: [{ type: 'heading', attrs: { level: 1 } }],
-      },
-    },
-    {
-      schemaVersion: 1,
-      content: {
-        type: 'doc',
-        content: [{ type: 'paragraph', attrs: { onclick: 'run()' } }],
-      },
-    },
-    {
-      schemaVersion: 1,
-      content: {
-        type: 'doc',
-        content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
-      },
-    },
-    {
-      schemaVersion: 1,
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'paragraph',
-            content: [
-              { type: 'text', text: 'Example', marks: [{ type: 'bold' }] },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      schemaVersion: 1,
-      content: {
-        type: 'doc',
-        content: [{ type: 'paragraph', content: [{ type: 'paragraph' }] }],
-      },
-    },
-    {
-      schemaVersion: 1,
-      content: {
-        type: 'doc',
-        content: [{ type: 'paragraph', content: 'text' }],
-      },
-    },
-  ])(
-    'rejects malformed or unsupported structures without stripping them (%#)',
-    (document) => {
-      expect(documentEnvelopeSchema.safeParse(document).success).toBe(false);
-    },
-  );
-
-  it.each([0, 2, -1, 1.5, '1', null, undefined])(
-    'rejects unsupported or malformed document versions (%#)',
-    (schemaVersion) => {
-      expect(
-        documentEnvelopeSchema.safeParse({
-          ...createEmptyDocument(),
-          schemaVersion,
-        }).success,
-      ).toBe(false);
-    },
-  );
-});
-
 describe('requests and revisions', () => {
   it('supports combined title/body/location writes with an expected revision', () => {
     const body = {
       expectedRevision: 1,
       title: 'Renamed',
       folderId: null,
-      document: createEmptyDocument(),
+      content: '',
     };
     expect(updateNoteRequestSchema.parse(body)).toEqual(body);
     expect(
@@ -283,11 +179,11 @@ describe('requests and revisions', () => {
     expect(updateFolderRequestSchema.safeParse({}).success).toBe(false);
   });
 
-  it('rejects missing roots, malformed documents, and server-owned/unknown fields', () => {
+  it('rejects missing roots, non-string content, and server-owned/unknown fields', () => {
     for (const body of [
       { title: 'Name' },
       { title: 'Name', folderId: '' },
-      { title: 'Name', folderId: null, document: {} },
+      { title: 'Name', folderId: null, content: {} },
       { title: 'Name', folderId: null, revision: 10 },
       { title: 'Name', folderId: null, id },
     ]) {
@@ -312,7 +208,7 @@ describe('requests and revisions', () => {
     expect(
       deleteNoteRequestSchema.safeParse({
         expectedRevision: 1,
-        document: createEmptyDocument(),
+        content: '',
       }).success,
     ).toBe(false);
   });
@@ -320,7 +216,7 @@ describe('requests and revisions', () => {
 
 describe('responses, errors, and route registry', () => {
   it('separates tree metadata from note bodies', () => {
-    const detail = { ...note, document: createEmptyDocument() };
+    const detail = { ...note, content: '' };
     expect(folderSchema.parse(folder)).toEqual(folder);
     expect(noteMetadataSchema.parse(note)).toEqual(note);
     expect(noteDetailSchema.parse(detail)).toEqual(detail);
@@ -333,11 +229,12 @@ describe('responses, errors, and route registry', () => {
     expect(noteDetailSchema.safeParse(note).success).toBe(false);
   });
 
-  it.each(Object.entries(errorDefinitions))(
+  it.each(Object.values(ApiErrorCode))(
     'validates the fixed %s error envelope',
-    (code, definition) => {
+    (code) => {
+      const definition = errorDefinitions[code];
       const conflict =
-        code === 'REVISION_CONFLICT'
+        code === ApiErrorCode.REVISION_CONFLICT
           ? { noteId: id, expectedRevision: 1, currentRevision: 2 }
           : {};
       const body = {
@@ -359,7 +256,7 @@ describe('responses, errors, and route registry', () => {
   it('requires differing conflict revisions and excludes content/unknown error details', () => {
     const conflict = {
       code: 'REVISION_CONFLICT',
-      message: errorDefinitions.REVISION_CONFLICT.message,
+      message: errorDefinitions[ApiErrorCode.REVISION_CONFLICT].message,
       noteId: id,
       expectedRevision: 1,
       currentRevision: 2,
@@ -376,7 +273,7 @@ describe('responses, errors, and route registry', () => {
     ).toBe(false);
     expect(
       errorResponseSchema.safeParse({
-        error: { ...conflict, document: createEmptyDocument() },
+        error: { ...conflict, content: '' },
       }).success,
     ).toBe(false);
     expect(

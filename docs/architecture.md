@@ -1,10 +1,10 @@
 # Architecture
 
-**Implementation state:** T01 supplies the TypeScript workspace scaffold, a React connection page, and an Express health endpoint. T02 adds portable shared API contracts and initial document validation. SQLite initialization, versioned migrations, and database shutdown are implemented. Resource handlers and note functionality are not implemented. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
+**Implementation state:** The TypeScript workspace supplies a React connection page, an Express health endpoint, portable API contracts, and raw Markdown validation. SQLite initialization, versioned migrations, database shutdown, and raw Markdown storage are implemented. Application services remain in T04. HTTP resource handlers and the rich editor UI remain pending. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
 
 The system supports the [product requirements](requirements.md): one person writes rich notes in a browser, organizes them in folders, and keeps saved content on their own computer. Individual documents in [roadmaps](../roadmaps/) define feature or release designs, detailed requirements, acceptance criteria, tasks, and verification evidence. The user specifies which roadmap governs the work.
 
-This document is the system overview and navigation index. Topic pages own the current technical design; decision records explain choices and alternatives. Roadmaps own release requirements, acceptance tasks, and verification history. Runtime schemas own exact document/API contracts, and package manifests own commands.
+This document is the system overview and navigation index. Topic pages own the current technical design; module READMEs explain local interfaces and invariants. Decision records explain choices and alternatives. Roadmaps own release requirements, acceptance tasks, and verification history. Runtime schemas own exact document/API contracts, and package manifests own commands.
 
 ## System boundary
 
@@ -18,7 +18,7 @@ flowchart LR
     Web <-->|"user-selected import / download"| MD["Markdown files"]
 ```
 
-Markdown crosses the system boundary only through explicit import/export. SQLite documents remain the source of truth. Mermaid source is stored with the note; rendering happens in the browser.
+Raw Markdown crosses the API boundary as each note's content and is stored in SQLite. Rich editor conversion and rendering happen in the browser. Mermaid source remains in fenced Markdown blocks. See [the canonical storage decision](decisions/0003-raw-markdown.md).
 
 ## Components and responsibilities
 
@@ -30,7 +30,7 @@ The repository uses npm workspaces with three packages:
 | `apps/server`        | Express routes, input validation, hierarchy and revision rules, SQLite access, migrations, and production static serving.                         | Owns all persisted changes and validates them independently of the browser.     |
 | `packages/contracts` | Portable runtime schemas and inferred TypeScript types for documents and API data.                                                                | Contains no database access, server dependencies, or DOM-dependent editor code. |
 
-Keep HTTP handlers focused on transport and validation. Application services enforce editing and hierarchy rules; repositories execute parameterized SQL and transactions. The browser loads tree metadata separately from full note bodies so navigation does not fetch every document.
+Keep HTTP handlers focused on transport and validation. The [persistence design](architecture/persistence.md) explains the persistence service and its boundaries. The browser loads tree metadata separately from full note bodies so navigation does not fetch every document.
 
 The API covers tree metadata, note detail, and note/folder creation, updates, moves, and deletion. The [shared schemas](../packages/contracts/src/index.ts) now define initial routes, payloads, limits, and errors, described in [API contracts](api.md). Only health and API 404 handling are implemented; T05 owns resource handlers. Errors must distinguish invalid input, missing resources, invalid hierarchy changes, and revision conflicts without exposing database details or note content.
 
@@ -38,7 +38,7 @@ The API covers tree metadata, note detail, and note/folder creation, updates, mo
 
 | Document                                                      | Owns                                                              |
 | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Persistence and document model](architecture/persistence.md) | Record layout, transactions, migrations, and revisions            |
+| [Persistence and document model](architecture/persistence.md) | Record layout, storage configuration, and migrations              |
 | [Editing, saving, and conversion](architecture/editor.md)     | Editor structure, save ordering, Markdown, and diagram safety     |
 | [Local runtime and operations](architecture/runtime.md)       | Source imports, builds, loopback runtime, local data, and tooling |
 | [Technical decisions](decisions/README.md)                    | Choice status, rationale, alternatives, and verification evidence |

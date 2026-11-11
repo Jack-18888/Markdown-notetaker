@@ -24,7 +24,7 @@ Protect existing content and pending edits during normal use and recoverable fai
 
 Keep the core workflow usable by keyboard and maintain a readable interface across browser widths. Treat imported text, links, and diagrams as untrusted content.
 
-Support local operation without requiring an external account or service. Keep data ownership explicit: SQLite holds working documents, while Markdown is the interchange format.
+Support local operation without requiring an external account or service. SQLite holds the canonical raw Markdown source for each note. The frontend provides rich editing and safe rendering; importing or exporting an untouched note preserves its source.
 
 ## Technical constraints
 

@@ -5,9 +5,9 @@
 | Folder | ID, name, optional parent folder ID, creation/update timestamps.                           |
 | Note   | ID, title, optional folder ID, raw Markdown content, revision, creation/update timestamps. |
 
-A null parent/folder represents the workspace root. Lowercase UUID v4 IDs identify resources independently of their names or locations. The database now stores raw Markdown; the public contract transition follows separately.
+A null parent/folder represents the workspace root. Lowercase UUID v4 IDs identify resources independently of their names or locations. Shape, name, revision, and Markdown text limits are defined in the contracts package and [API contracts](../api.md).
 
-This migration prepares raw Markdown storage while the public API and frontend design are updated separately. SQLite retains the complete source string, without normalization. The currently running API still provides only health and fallback responses.
+Raw Markdown is canonical. SQLite stores the entire source string without parsing, normalization, or editor-node validation. Rich editor conversion and rendering remain frontend responsibilities. See [the storage decision](../decisions/0003-raw-markdown.md).
 
 Verify frontend conversion against the raw Markdown API and reopened database at the initial release's [compatibility checkpoint](../../roadmaps/initial-project.md#editor-and-backend-compatibility-checkpoint).
 

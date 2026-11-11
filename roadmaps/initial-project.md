@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** Implementation started; T01-T03 are complete. Implementation continues with T04.
+**Status:** T01-T03 are complete. T04 is in progress across the reviewed commit sequence.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -25,7 +25,7 @@ Technical choices and their validation status belong to the [architecture decisi
 
 ### Documents and persistence
 
-SQLite stores the workspace hierarchy and canonical rich documents. Follow the architecture's [data model, revision, transaction, and migration rules](../docs/architecture/persistence.md).
+SQLite stores the workspace hierarchy and complete raw Markdown source. The frontend retains rich editing and owns conversion and rendering. Follow the architecture's [data model and migration rules](../docs/architecture/persistence.md) and the [persistence design](../docs/architecture/persistence.md).
 
 ### Editing and save flow
 
@@ -94,16 +94,15 @@ Validate editor/Markdown compatibility early. Establish exact API contracts, inp
 
 ### R6 — Import and export Markdown
 
-- Import an individual `.md` file as a new note in the selected folder or root, using the filename as its initial title.
-- Export the current note with its latest saved content, including Mermaid fenced blocks.
-- Preserve supported document structure and diagram source through export/reimport. Exact source whitespace is not guaranteed.
-- Reject the entire import before creating a note if it contains tables, images (including reference-style images), frontmatter, raw HTML, or another recognized construct outside R3/R4's supported set. Explain which construct is unsupported; do not silently remove it, flatten it into supported formatting, or offer a lossy-import path in this release.
-- Detect unsupported constructs in their Markdown context: examples inside inline or block code remain literal code and are allowed. Ordinary text remains text. Reject unsafe link destinations through the architecture's [conversion/security rules](../docs/architecture/editor.md#markdown-and-diagrams) rather than silently removing them. Rejection leaves the source file and workspace unchanged; rich support for rejected constructs is outside this release.
+- Import an individual UTF-8 .md file as a new note in the selected folder or root, using the filename as its initial title.
+- Store the entire Markdown source verbatim, including whitespace, line endings, unsupported syntax, and Mermaid fences. Export the latest saved source without another conversion pass.
+- Rich editing supports R3/R4. If a note contains constructs the rich editor cannot preserve, keep its raw source and show a safe read-only preview/source fallback with an explanation. Never save a reduced conversion or silently remove content.
+- Keep raw HTML and unsafe URLs inert in previews and editor views. New link controls reject unsafe protocols. Code examples remain literal code. Rich body edits must preserve all supported structure and exact Mermaid source; untouched notes, title changes, and moves retain the original source bytes.
 
 **Acceptance criteria**
 
-- Import a note containing the supported blocks and Mermaid, edit it, export it, and reimport it. The supported structure and diagram source remain equivalent. A failed import creates no partial note, and a canceled file picker changes nothing.
-- Attempt imports containing each unsupported construct above, including mixed supported/unsupported content: each reports the reason and creates no note. Code examples containing the same syntax import and round-trip as code; ordinary text, escaped syntax, and horizontal rules are not misclassified as unsupported constructs. Cover unsafe links separately.
+- Import and export an untouched note containing Markdown, tables, images, frontmatter, HTML source, and Mermaid: the downloaded source matches the imported UTF-8 content exactly. Unsupported rich constructs produce a usable fallback and remain saved.
+- Edit supported content through the rich editor, save, reopen, and verify equivalent structure and exact Mermaid source. Failed or canceled imports create no partial note. Hostile HTML/links/diagrams cannot execute scripts.
 
 ### R7 — Delete deliberately
 
@@ -143,38 +142,34 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------ | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
-| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `todo` | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `todo` | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `todo` | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `todo` | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status        | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------------- | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
+| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `in_progress` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `todo`        | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `todo`        | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `todo`        | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `todo`        | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `todo`        | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
-T03–T05 may finish against T02's initial contracts while T06 runs independently. Their completion does not make the integrated document API stable. T09 owns this checkpoint: run it once T05 and T06 are available, and pass it before marking T09 done. Record commands, results, tested document schema version, and fixture/test links under T09's Evidence; reference that record from T05 and T06.
+T09 owns this checkpoint once T05 and T06 are available. Record commands, results, and fixture/test links under T09's Evidence; reference that record from T05 and T06. The backend contract is a Markdown string, independent of editor-specific trees.
 
-After T06 finalizes or changes the schema, rerun these checks against the finalized contracts, even if the corresponding backend tasks are already done:
+- **Shared contracts:** Accept empty and arbitrary well-formed Markdown strings verbatim; reject non-string, malformed Unicode, and oversized content. Verify UTF-8 boundaries independently of HTTP JSON encoding.
+- **Persistence:** Create/update raw source in temporary SQLite databases and compare content byte-for-byte after reopening, including line endings, whitespace, Mermaid, and unsupported rich constructs. Verify revision conflicts and rejected writes leave saved content unchanged.
+- **API:** Exercise the same strings through real create/update/read requests. Verify body limits, invalid input, and conflict responses without partial writes.
+- **Frontend:** Load API content into the rich editor and serialize supported edits back to Markdown. Verify semantic equivalence, exact Mermaid source, unchanged-source preservation, and safe read-only fallback for unsupported content. Run browser/server typechecks and rendering security checks.
 
-- **T02/shared validation:** Accept fixtures produced by every supported editor block/mark, including empty documents, nested content, and Mermaid; reject malformed documents, unknown nodes/marks, invalid attributes, and unsupported schema versions.
-- **T03/T04 persistence:** Create and update those documents in isolated SQLite databases, close/reopen, and compare structure and Mermaid source. Rerun revision-conflict checks and verify rejected writes leave saved content unchanged.
-- **T05/API:** Exercise real create/update/read requests for the same fixtures with Supertest and SQLite. Check invalid-document/version responses, conflicting updates, and applicable request-size boundaries without partial writes.
-- **Integrated editor/conversion:** Load API-returned documents after reopening the database into the configured editor, then export/reimport supported content. Assert semantic equivalence and exact Mermaid source preservation; rerun browser/server typechecks.
-
-If the change alters an existing persisted document format or database schema, add versioned migrations and rerun migration, rollback, and reopen checks using pre-change records; verify that existing content survives. A validator-only change must not silently strand previously valid saved documents. Never reset a database to pass the checkpoint.
-
-Later changes to document contracts, editor extensions, or conversion adapters require the affected checkpoint checks to pass again before calling the integrated API stable. Record fresh evidence in the task making the change and link it from T09; T15 confirms evidence covers the release's final schema. Earlier task completion remains historical evidence.
+Persisted format changes require versioned migrations and upgrade/rollback/reopen checks against pre-change notes. Never reset a database or discard content to pass the checkpoint. Later changes to contracts, editor extensions, conversion, or rendering require the affected checks again. Earlier task evidence remains historical.
 
 <a id="t01"></a>
 
@@ -233,7 +228,7 @@ No T01 acceptance blockers remain. Note/API contracts, persistence behavior, edi
 
 ### T02 — Define shared API and document contracts
 
-Establish initial shared API contracts and runtime validation; finalize editor-specific document validation with T06.
+Historical initial contracts were introduced here. The paragraph/JSON storage contract is superseded by raw Markdown in T04; see [the storage decision](../docs/decisions/0003-raw-markdown.md).
 
 **Status:** `done` · **Priority:** high
 
@@ -270,7 +265,7 @@ Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and
 - Added Zod 4.6.7 as the contracts package's sole runtime dependency. [Contract schemas](../packages/contracts/src/index.ts) define resource IDs/names/roots, folder and note metadata/detail, provisional version-1 documents, request revisions, strict errors, limits, and all initial route descriptors. [API contracts](../docs/api.md) document exact shapes, routes, statuses, duplicate-name policy, and service responsibilities.
 - Both apps consume the same health schema and route descriptor. Express validates health and fallback error envelopes; React validates the actual health response. The contracts workspace typechecks without Node/DOM ambient types, and `npm ls --workspace @markdown-note-taker/contracts --depth=0` confirms only Zod is required at runtime. Resource handlers and persistence remain in T03-T05.
 - `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build` pass. Root typecheck includes contract tests. TypeScript, tests, and development resolve contracts source directly, so there is no package prebuild or stale compiled-contract output. Production builds bundle that source into each app.
-- `npm test`: 99 checks pass, including 75 [contract checks](../packages/contracts/test/contracts.test.ts), 22 [document-schema checks](../packages/contracts/test/document-schema.test.ts), and 2 [real Express/native SQLite smoke checks](../apps/server/src/__test__/app.test.ts). Covered Unicode/name/ID boundaries, explicit null roots, timestamps, empty/invalid patches, missing/coerced/unsafe revisions, metadata/body separation, fixed conflict/error envelopes, malformed documents/versions, unknown nodes/attributes/marks, inclusive UTF-8/JSON escaping limits, complexity limits, and cyclic/non-JSON inputs. SQLite uses only an isolated in-memory database.
+- `npm test`: 99 checks pass, including 75 [contract checks](../packages/contracts/src/__test__/contracts.test.ts), 22 historical document-schema checks (now replaced by [Markdown checks](../packages/contracts/src/__test__/markdown.test.ts)), and 2 [real Express/native SQLite smoke checks](../apps/server/src/__test__/app.test.ts). Covered Unicode/name/ID boundaries, explicit null roots, timestamps, empty/invalid patches, missing/coerced/unsafe revisions, metadata/body separation, fixed conflict/error envelopes, malformed documents/versions, unknown nodes/attributes/marks, inclusive UTF-8/JSON escaping limits, complexity limits, and cyclic/non-JSON inputs. SQLite uses only an isolated in-memory database.
 - `npm run test:e2e`: 1 Chromium check passes through the separate frontend/backend commands and Vite proxy with the shared runtime validator loaded in the browser. The test cleans up its server processes. Browser/server builds pass without importing persistence into the browser/contracts package.
 - Checked all local documentation links/anchors, all route paths against the registry, and all 3 JSON examples in API documentation against their real schemas. Reviewed manifest/lockfile dependency consistency and ignored generated output; `git diff --check` passes.
 
@@ -285,7 +280,7 @@ Review revision, 2026-11-07:
 
 Limit-check verification: concise walk/serialization comments and the `DocumentValidationReason` enum explain the preflight rules. The helper is private; 22 public `documentEnvelopeSchema` tests use `parse` for valid documents and `safeParse` with enum-reason assertions for failures. Covered inclusive byte/depth/value boundaries, UTF-8/escaping, key sizes, sibling containers, sparse arrays, non-JSON values, custom serializers, and cycles. Duplicate contract tests were consolidated. Typecheck, lint, all 99 tests, both builds, formatting, and diff checks pass; diagnostic strings remain unchanged. The previous Chromium and API documentation checks cover unchanged runtime behavior.
 
-No T02 acceptance blockers remain. The document validator deliberately accepts only the initial plain-paragraph subset. T06 must expand it against actual editor fixtures while preserving accepted documents, and T09 must run the finalized schema through shared validation, API, reopened SQLite, and Markdown conversion before calling the integrated API stable.
+These results record the original contracts. T04 replaces the provisional paragraph envelope and JSON limits with raw Markdown text; T06/T09 verify frontend conversion without adding editor-node persistence.
 
 <a id="t03"></a>
 
@@ -324,7 +319,7 @@ Persist folders and canonical note documents safely across restarts.
 
 **Evidence**
 
-Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and approved for the T03 commit.
+Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and committed as `08d64bf`.
 
 - [openDatabase](../apps/server/src/database/open.ts) initializes data/workspace.sqlite by default, accepts DATA_DIR through [configuration](../apps/server/src/config.ts), and sets foreign_keys=ON, journal_mode=WAL, synchronous=FULL, and a 5000 ms busy timeout. Relative directories resolve from the repository root in source and bundled execution. [.env.example](../.env.example) and [README](../README.md) document verified startup/storage configuration.
 - [Versioned SQL](../apps/server/src/database/migrations/001-workspace.ts) creates strict folders/notes tables, parent-reference indexes, JSON/revision checks, and a migration journal. The [runner](../apps/server/src/database/migrations.ts) verifies version/name/SQL checksums and user_version, then applies all pending migrations in one immediate transaction. It rejects changed/newer/inconsistent history without reset or downgrade.
@@ -334,7 +329,7 @@ Verified 2026-11-07 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Reviewed and
 - CLI smoke: started source from apps/server and `npm start` from the root using the same project-relative temporary DATA_DIR. The second startup preserved saved fixture JSON/revision and migration checksums/timestamps; production HTML/assets and API 404 responses worked. A blocked data path exited with code 1 before listening and preserved the blocking file. Temporary child processes/data were cleaned up.
 - Checked documentation links/anchors, API JSON examples, manifest/lockfile consistency, ignored database/sidecar/build paths, and `git diff --check`. SQLite remains server-only; the browser bundle is unchanged.
 
-No T03 acceptance blockers remain. Folder/note services, HTTP resource routes, and the finalized rich document compatibility checkpoint remain in their owning later tasks. Startup reports sanitized directory/lock/corruption/migration failures and never deletes or resets existing saved data.
+These checks record storage schema 1. T04 adds migration 2 for raw Markdown; resource routes and the rich editor compatibility checkpoint remain in their owning tasks. Startup reports sanitized directory/lock/corruption/migration failures and never deletes or resets existing saved data.
 
 <a id="t04"></a>
 
@@ -342,7 +337,8 @@ No T03 acceptance blockers remain. Folder/note services, HTTP resource routes, a
 
 Implement atomic hierarchy operations and optimistic note updates independently of HTTP.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `in_progress` · **Priority:** high
+
 **Depends on:** T03  
 **Requirements:** R1, R5, R7, R8
 
@@ -354,7 +350,7 @@ Implement atomic hierarchy operations and optimistic note updates independently 
 **Implementation plan**
 
 1. Implement metadata tree listing, note loading, creation with an empty document, rename/update, moving to a folder or root, and permanent deletion using parameterized SQL.
-2. Implement hierarchy validation and mutations according to the architecture's [transaction and persistence rules](../docs/architecture/persistence.md).
+2. Implement hierarchy validation and mutations according to the [persistence design](../docs/architecture/persistence.md).
 3. Expose subtree deletion and the information needed for [R7's confirmation](#r7--delete-deliberately), without prescribing a new API metadata field here.
 4. Apply those revision rules using T02's contract and return committed metadata for note updates.
 
@@ -371,13 +367,13 @@ Implement atomic hierarchy operations and optimistic note updates independently 
 
 **Evidence**
 
-No verification evidence recorded.
+Raw Markdown contracts and schema-1 upgrade/rollback are verified. Workspace services and server persistence boundaries remain in the next commits.
 
 <a id="t05"></a>
 
 ### T05 — Expose the validated local REST API
 
-Connect shared contracts and persistence to Express with predictable failures and local browser protections. Integrated document compatibility remains provisional until the [T09 checkpoint](#editor-and-backend-compatibility-checkpoint) passes.
+Connect shared contracts and persistence to Express with predictable failures and local browser protections. Integrated editor/Markdown compatibility remains provisional until the [T09 checkpoint](#editor-and-backend-compatibility-checkpoint) passes.
 
 **Status:** `todo` · **Priority:** high  
 **Depends on:** T04  
@@ -391,7 +387,7 @@ Connect shared contracts and persistence to Express with predictable failures an
 
 **Implementation plan**
 
-1. Implement the T02 routes with shared body/parameter validation and service calls; keep app creation separate from listening so tests inject a database.
+1. Implement the T02 routes with shared body/parameter validation and service calls; keep app creation separate from listening so tests inject a workspace service backed by isolated SQLite.
 2. Map validation, missing-resource, hierarchy conflict, revision conflict, payload limit, and unexpected errors to the documented error envelope without leaking SQL or note content.
 3. Listen only on loopback, validate Host, reject unapproved browser origins for writes, require JSON for mutation bodies, and avoid permissive CORS. Allow configured development and production origins.
 4. Return health/startup errors in a usable form and shut down HTTP and SQLite cleanly.
@@ -432,20 +428,20 @@ Validate the riskiest editor integration before building the full writing interf
 
 1. Install compatible open-source Tiptap packages and @tiptap/markdown; define extensions for every supported block and mark.
 2. Implement the Mermaid node and Markdown hooks using the architecture's [editor representation](../docs/architecture/editor.md#rich-editing).
-3. Finalize the shared runtime document schema against the editor extension set introduced here; adjust T02's initial contracts as needed and keep DOM-dependent editor code out of the server.
-4. Test nested lists, tasks, links, inline/code fences, quotes, headings, and Mermaid through Markdown -> JSON -> Markdown -> JSON; disable arbitrary HTML interpretation and unsafe URLs.
-5. Implement and test [R6's unsupported-content policy](#r6--import-and-export-markdown) before conversion can discard unsupported structure. Publish fixtures for the [backend compatibility checkpoint](#editor-and-backend-compatibility-checkpoint); identify affected contracts and migration needs for T09.
+3. Keep editor nodes/marks and conversion in the frontend. The shared backend contract remains raw Markdown text; do not add an editor-tree envelope to storage or API payloads.
+4. Test Markdown -> frontend editor state -> Markdown for every supported feature, with exact Mermaid source and original-source retention when unedited. Keep arbitrary HTML and unsafe URLs inert.
+5. Implement [R6's preservation/fallback policy](#r6--import-and-export-markdown) before conversion can discard source. Publish supported, unsupported, and hostile fixtures for the [compatibility checkpoint](#editor-and-backend-compatibility-checkpoint).
 
 **Acceptance criteria**
 
 - [ ] All supported content round-trips semantically using only open-source packages and no service credentials.
-- [ ] Mermaid source survives JSON serialization and fenced Markdown conversion; T09 verifies real persistence through the checkpoint.
-- [ ] Unsupported constructs are rejected according to R6, including mixed-content files; equivalent syntax inside code is preserved and unsafe links are rejected.
-- [ ] Compatibility constraints, finalized document validation, and conversion limitations are documented before editor UI implementation.
+- [ ] Mermaid source survives frontend editor conversion and raw Markdown persistence; T09 verifies the integrated checkpoint.
+- [ ] Unsupported rich constructs retain their raw Markdown and use the safe fallback from R6; code examples remain literal and unsafe links cannot execute.
+- [ ] Frontend conversion constraints, source retention, fallback behavior, and rendering limits are documented before editor UI implementation.
 
 **Verification**
 
-- Run fixture-based conversion tests and shared document validation tests, including R6 rejection and literal-code cases. Record finalized schema details and affected backend checks for T09.
+- Run frontend conversion fixtures and shared Markdown string tests, including R6 source-preservation/fallback and literal-code cases. Record affected checkpoint checks for T09.
 
 **Evidence**
 
@@ -547,19 +543,19 @@ Integrate the validated editor with a Notion-like editing workflow.
 
 **Implementation plan**
 
-1. Render the canonical note document with all agreed blocks/marks, Markdown typing shortcuts, undo/redo, and a placeholder for an empty document.
+1. Load raw Markdown into the rich editor with all agreed blocks/marks, typing shortcuts, undo/redo, and a blank-note placeholder. Retain the original source until the body is edited.
 2. Add an accessible slash menu for block insertion and contextual formatting/link controls, including Mermaid insertion.
 3. Keep the title separate from the document body; reset editor history when switching notes and avoid replacing the document during active typing after saves.
 4. Use clear heading/list/code styles and a spacious readable canvas; keep implementation details out of writing flows.
-5. Run the [editor and backend compatibility checkpoint](#editor-and-backend-compatibility-checkpoint) against T06's finalized schema and resolve failures in shared contracts, persistence, or API validation before completing this task. Update relevant architecture decision statuses with scoped evidence.
+5. Run the [editor and backend compatibility checkpoint](#editor-and-backend-compatibility-checkpoint) against T06's frontend Markdown conversion and resolve failures in shared contracts, persistence, or API validation before completing this task. Update relevant architecture decision statuses with scoped evidence.
 
 **Acceptance criteria**
 
 - [ ] Each agreed block/mark can be created, edited, removed, and restored with undo/redo.
 - [ ] Slash menu selection works by keyboard and mouse and dismisses correctly.
 - [ ] Switching notes does not carry text or undo history into another document.
-- [ ] Only safe link protocols are accepted and malformed editor documents show a recoverable loading error.
-- [ ] The compatibility checkpoint passes against the finalized schema, with evidence linked from T05 and T06.
+- [ ] Unsafe links and HTML remain inert; unsupported rich content retains its saved source and shows a usable read-only fallback.
+- [ ] The Markdown/editor compatibility checkpoint passes, with evidence linked from T05 and T06.
 
 **Verification**
 
@@ -667,22 +663,22 @@ Make supported note content portable through individual .md files.
 
 **Implementation plan**
 
-1. Read a user-selected UTF-8 .md file in the browser, choose an import size limit compatible with the API limits established in T02, convert through the validated adapter, and create a new note in the selected folder/root.
-2. Derive the title from the filename without its extension, choose a fallback for empty names, and apply the shared title rules. Report conversion/API failures without creating a partial note.
-3. Flush pending changes before export, serialize the current document with Mermaid fenced blocks, and download using a safe .md filename.
-4. Surface conversion rejections according to [R6](#r6--import-and-export-markdown), before any create request. Explain supported-format limitations concisely; do not upload assets or attempt exact source-whitespace preservation.
+1. Read a user-selected UTF-8 .md file in the browser, apply the shared import size/Unicode limits and create a new note with the entire raw source in the selected folder/root.
+2. Derive the title from the filename without its extension, choose a fallback for empty names, and apply the shared title rules. Report input/API failures without creating a partial note.
+3. Flush pending rich edits before export, then download the latest saved Markdown string verbatim using a safe .md filename.
+4. Preserve unsupported source according to [R6](#r6--import-and-export-markdown) and show a safe rich-editor fallback without rewriting it. Do not upload assets; retain source whitespace and line endings for untouched notes.
 
 **Acceptance criteria**
 
 - [ ] Import creates one correctly titled note in the chosen destination and opens it after successful save.
-- [ ] Exported Markdown reimports with the same supported structure and Mermaid source.
+- [ ] Untouched Markdown exports byte-for-byte; supported rich edits reimport with equivalent structure and exact Mermaid source.
 - [ ] Canceled, oversized, invalid, or failed imports leave existing notes unchanged and show a useful message.
 - [ ] Export contains the latest edits and fails visibly if its prerequisite save fails.
-- [ ] Every R6 unsupported-content fixture is rejected before a create request, with a useful explanation; supported code examples containing the same syntax still import.
+- [ ] Every R6 unsupported-content fixture imports and exports without source loss, with a useful rich-editor fallback; hostile source cannot execute.
 
 **Verification**
 
-- Run fixture round-trip tests and Playwright file-upload/download scenarios, including all R6 rejection/literal-code cases, hostile HTML, and unsafe links. Verify rejected imports create no note through the real API/database.
+- Run fixture and Playwright import/export scenarios for exact source preservation, supported rich edits, fallback, literal code, hostile HTML, unsafe links, and invalid/failed imports. Verify failures create no partial note through the real API/database.
 
 **Evidence**
 
@@ -787,7 +783,7 @@ Verify the agreed release end to end and replace planning-only setup information
 2. Run typecheck, lint, format:check, and production build; resolve failures in scope and record actual outcomes rather than inferring success.
 3. Document verified installation and local deployment in README: Node version, commands, configuration, database location, and stopped-server backup/restore. Add docs/development.md or docs/deployment.md only if the actual instructions outgrow a short README section; link rather than duplicate command catalogs.
 4. Document permanent deletion, no crash recovery guarantee for unsaved text, Markdown limitations, loopback-only operation, and native SQLite setup requirements. Update task statuses only when their criteria pass.
-5. Confirm compatibility-checkpoint evidence covers the final document schema. Update the architecture's [decision register](../docs/decisions/README.md) with implementation/test links and scoped verification evidence; retain proposed or superseded statuses where appropriate.
+5. Confirm compatibility-checkpoint evidence covers the final Markdown contract and frontend conversion. Update the architecture's [decision register](../docs/decisions/README.md) with implementation/test links and scoped verification evidence; retain proposed or superseded statuses where appropriate.
 
 **Acceptance criteria**
 

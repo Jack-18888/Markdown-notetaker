@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import {
   apiContracts,
+  ApiErrorCode,
   applicationName,
   errorDefinitions,
   errorResponseSchema,
@@ -24,11 +25,11 @@ export function createApp({ serveWeb = false } = {}) {
   });
 
   app.use('/api', (_request, response) => {
-    response.status(errorDefinitions.NOT_FOUND.status).json(
+    response.status(errorDefinitions[ApiErrorCode.NOT_FOUND].status).json(
       errorResponseSchema.parse({
         error: {
-          code: 'NOT_FOUND',
-          message: errorDefinitions.NOT_FOUND.message,
+          code: ApiErrorCode.NOT_FOUND,
+          message: errorDefinitions[ApiErrorCode.NOT_FOUND].message,
         },
       }),
     );
