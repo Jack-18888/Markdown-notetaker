@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -12,7 +12,8 @@ import {
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 const entry = join(project, 'apps/server/dist/index.js');
-const dataDirectory = process.env.NOTE_TAKER_E2E_DATA_DIR!;
+const temporaryDirectory = process.env.NOTE_TAKER_E2E_DATA_DIR!;
+const dataDirectory = join(temporaryDirectory, 'workspace');
 
 async function freePort() {
   const server = createServer();
@@ -29,7 +30,7 @@ async function freePort() {
   return address.port;
 }
 
-async function launch() {
+async function launch(directory = dataDirectory) {
   const port = await freePort();
   const origin = `http://127.0.0.1:${port}`;
   const npmCli = process.env.npm_execpath;
@@ -41,7 +42,7 @@ async function launch() {
       ...process.env,
       NODE_ENV: 'production',
       PORT: String(port),
-      DATA_DIR: dataDirectory,
+      DATA_DIR: directory,
     },
     stdio: 'ignore',
     windowsHide: true,
@@ -236,6 +237,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
 });
 
 test('built CLI fails cleanly on invalid port and data-directory configuration', async () => {
+  await mkdir(dataDirectory, { recursive: true });
   const blockedPath = join(dataDirectory, 'blocked-directory');
   await writeFile(blockedPath, 'A file, not a data directory.');
   for (const [overrides, expected] of [
@@ -259,5 +261,61 @@ test('built CLI fails cleanly on invalid port and data-directory configuration',
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(expected);
     expect(result.stderr).not.toContain(' at ');
+  }
+});
+
+test('a stopped-server directory backup restores hierarchy and exact source in a separate directory', async ({
+  request,
+}) => {
+  const original = join(temporaryDirectory, 'backup-original');
+  const backup = join(temporaryDirectory, 'backup-copy');
+  const restored = join(temporaryDirectory, 'backup-restored');
+  let runtime = await launch(original);
+  try {
+    const folder = folderSchema.parse(
+      await (
+        await request.post(`${runtime.origin}/api/folders`, {
+          data: { name: 'Backup folder', parentId: null },
+        })
+      ).json(),
+    );
+    const source =
+      '\ufeff# Backup 雪 😀\r\n\r\n```mermaid\r\nflowchart LR\r\n A --> B  \r\n```\r\n';
+    const note = noteDetailSchema.parse(
+      await (
+        await request.post(`${runtime.origin}/api/notes`, {
+          data: { title: 'Backup note', folderId: folder.id, content: source },
+        })
+      ).json(),
+    );
+    const tree = treeResponseSchema.parse(
+      await (await request.get(`${runtime.origin}/api/tree`)).json(),
+    );
+    await runtime.stop();
+    await cp(original, backup, {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+    });
+    await cp(backup, restored, {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+    });
+    runtime = await launch(restored);
+    expect(
+      treeResponseSchema.parse(
+        await (await request.get(`${runtime.origin}/api/tree`)).json(),
+      ),
+    ).toEqual(tree);
+    expect(
+      noteDetailSchema.parse(
+        await (
+          await request.get(`${runtime.origin}/api/notes/${note.id}`)
+        ).json(),
+      ),
+    ).toEqual(note);
+  } finally {
+    await runtime.stop();
   }
 });
