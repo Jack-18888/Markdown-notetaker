@@ -22,7 +22,6 @@ import {
   type UpdateNoteRequest,
 } from '@markdown-note-taker/contracts';
 import { guarded, WorkspaceError } from './errors.js';
-import { validateNoteRequest } from './note-validation.js';
 import { createWorkspaceRepository } from './repository.js';
 import type { WorkspaceService } from './types.js';
 import { validate } from './validation.js';
@@ -145,7 +144,7 @@ export function createWorkspaceService(
     },
 
     createNote(input: CreateNoteRequest): NoteDetail {
-      const body = validateNoteRequest(createNoteRequestSchema, input);
+      const body = validate(createNoteRequestSchema, input);
       return write(() => {
         validateFolderDestination(body.folderId);
         const timestamp = new Date().toISOString();
@@ -165,7 +164,7 @@ export function createWorkspaceService(
 
     updateNote(id: ResourceId, input: UpdateNoteRequest): NoteDetail {
       const noteId = validate(resourceIdSchema, id);
-      const body = validateNoteRequest(updateNoteRequestSchema, input);
+      const body = validate(updateNoteRequestSchema, input);
       return write(() => {
         const current = requireNote(noteId);
         assertExpectedRevision(current, body.expectedRevision);

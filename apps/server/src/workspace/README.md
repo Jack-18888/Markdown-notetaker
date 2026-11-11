@@ -16,7 +16,7 @@ Create and update requests are checked against the [contracts](../../../../packa
 
 The content field contains the entire Markdown source. Omitted content on creation defaults to an empty string; an explicit empty string clears a note. Omitted patch fields retain their saved values. Successful creates and updates return committed records.
 
-The portable [parseContract helper](../../../../packages/contracts/src/validation.ts) parses unknown input using a caller-supplied failure policy. The workspace [validation adapter](validation.ts) supplies the default `INVALID_INPUT` error; [note validation](note-validation.ts) maps Markdown byte-limit failures to `PAYLOAD_TOO_LARGE`.
+The portable [parseContract helper](../../../../packages/contracts/src/validation.ts) parses unknown input using a caller-supplied failure policy. The workspace [validation adapter](validation.ts) owns error classification: Markdown content byte-limit failures map to `PAYLOAD_TOO_LARGE`; other invalid input maps to `INVALID_INPUT`. Services and HTTP parameter adapters use this policy directly, without a separate note-validation wrapper.
 
 On updates, omitted or explicitly `undefined` fields retain their saved values. A `null` parent/folder moves the resource to the workspace root. Names, titles, and content reject `null`; an empty content string clears the body. Strict request schemas reject client-supplied IDs, saved revisions, timestamps, and other unknown fields.
 
@@ -32,15 +32,14 @@ Note rename, move, body update, and deletion require the caller's loaded `expect
 
 ## Files
 
-| File                                     | Responsibility                                                          |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| [open.ts](open.ts)                       | Public entry point and connection lifecycle.                            |
-| [types.ts](types.ts)                     | Workspace handle and typed service interface.                           |
-| [service.ts](service.ts)                 | Validation, hierarchy rules, revisions, transactions, and reads.        |
-| [repository.ts](repository.ts)           | Internal prepared, parameterized SQL.                                   |
-| [validation.ts](validation.ts)           | Workspace error policy for shared contract parsing.                     |
-| [note-validation.ts](note-validation.ts) | Note request validation and Markdown byte-limit error classification.   |
-| [errors.ts](errors.ts)                   | `WorkspaceError` construction and safe handling of unexpected failures. |
+| File                           | Responsibility                                                          |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| [open.ts](open.ts)             | Public entry point and connection lifecycle.                            |
+| [types.ts](types.ts)           | Workspace handle and typed service interface.                           |
+| [service.ts](service.ts)       | Validation, hierarchy rules, revisions, transactions, and reads.        |
+| [repository.ts](repository.ts) | Internal prepared, parameterized SQL.                                   |
+| [validation.ts](validation.ts) | Workspace error policy and Markdown byte-limit classification.          |
+| [errors.ts](errors.ts)         | `WorkspaceError` construction and safe handling of unexpected failures. |
 
 `WorkspaceError` selects the fixed message for an `ApiErrorCode` and validates the public error envelope. Its constructor requires note ID and revision details for `REVISION_CONFLICT`. Errors never include SQL diagnostics or saved content.
 

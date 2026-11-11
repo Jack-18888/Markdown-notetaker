@@ -1,6 +1,14 @@
-import express, { type RequestHandler } from 'express';
+import express, {
+  type NextFunction,
+  type Request,
+  type RequestHandler,
+  type Response,
+} from 'express';
 import { ApiErrorCode, limits } from '@markdown-note-taker/contracts';
 import { WorkspaceError } from '../workspace/errors.js';
+
+const developmentOrigins = ['http://127.0.0.1:5173', 'http://localhost:5173'];
+const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
 
 /** Loopback authorities only; reject URL syntax and forwarded Host headers. */
 function localOrigin(host: string | undefined): string | undefined {
@@ -18,21 +26,17 @@ export function protectApi({
 }: {
   serveWeb: boolean;
 }): RequestHandler {
-  const developmentOrigins = serveWeb
-    ? []
-    : ['http://127.0.0.1:5173', 'http://localhost:5173'];
-
-  return (request, response, next) => {
+  return function checkLocalRequest(request, response, next) {
     const origin = localOrigin(request.get('host'));
     if (!origin) throw new WorkspaceError(ApiErrorCode.INVALID_HOST);
     // Do not let caches supply stale note bodies or revision counters.
     response.set('Cache-Control', 'no-store');
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+    if (!safeMethods.includes(request.method)) {
       const browserOrigin = request.get('origin');
       if (
         (browserOrigin !== undefined &&
           browserOrigin !== origin &&
-          !developmentOrigins.includes(browserOrigin)) ||
+          (serveWeb || !developmentOrigins.includes(browserOrigin))) ||
         request.get('sec-fetch-site') === 'cross-site'
       )
         throw new WorkspaceError(ApiErrorCode.ORIGIN_FORBIDDEN);
@@ -44,8 +48,12 @@ export function protectApi({
 const parseJson = express.json({ limit: limits.requestBytes, inflate: false });
 
 /** Apply only to routes with JSON request contracts, before service calls. */
-export const jsonBody: RequestHandler = (request, response, next) => {
+export function jsonBody(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): void {
   if (request.is('application/json') === false)
     throw new WorkspaceError(ApiErrorCode.UNSUPPORTED_MEDIA_TYPE);
   parseJson(request, response, next);
-};
+}
