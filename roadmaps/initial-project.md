@@ -609,7 +609,8 @@ Integrate the validated editor with a Notion-like editing workflow.
 **Evidence**
 
 - The [shared command layer](../apps/web/src/editor/commands.ts) supplies block insertion, formatting/history actions, search labels, and validated link changes for the toolbar/slash UI. [24 real-editor checks](../apps/web/src/editor/__test__/commands.test.ts) pass for supported blocks/marks, single-update mutations, guarded serialization, undo/redo, slash-query replacement, rejected nested diagrams/ranges, read-only protection, and safe link changes.
-- The command layer is not yet connected to selected-note writing. The canvas, toolbar, slash menu, save integration, browser interaction checks, and integrated compatibility checkpoint remain required before T09 is complete.
+- The command layer now drives the [toolbar](../apps/web/src/editor/EditorToolbar.tsx), [validated link dialog](../apps/web/src/editor/LinkDialog.tsx), [slash menu](../apps/web/src/editor/SlashMenu.tsx), and [selected-note canvas](../apps/web/src/editor/NoteEditor.tsx). Explicit body saves retain in-flight edits and coordinate revisions with title saves; dirty writing blocks navigation and lifecycle actions. [Body-save browser checks](../tests/e2e/writing-save.spec.ts) cover ordering, source retention, retry, and conflicts against real API/temporary SQLite data. T11 still owns autosave, navigation flushing, and conflict recovery.
+- Full control interaction coverage and the integrated compatibility checkpoint remain required before T09 is complete.
 
 <a id="t10"></a>
 

@@ -4,7 +4,7 @@ import { Markdown, MarkdownManager } from '@tiptap/markdown';
 import { MermaidBlock, SourceCodeBlock } from './code-blocks.js';
 import { isSafeLink } from './links.js';
 
-/** One extension set for compatibility checks and the future mounted editor. */
+/** One extension set for compatibility checks and the mounted writing interface. */
 export function editorExtensions() {
   return [
     StarterKit.configure({

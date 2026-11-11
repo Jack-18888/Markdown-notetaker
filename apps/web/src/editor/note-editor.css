@@ -1,0 +1,46 @@
+.note-editor .tiptap {
+  min-height: 260px;
+  padding: 12px 16px 40px;
+  margin-inline: -16px;
+  border-radius: 2px;
+}
+.note-editor .tiptap:focus-visible {
+  outline: 2px solid #788465;
+  outline-offset: 3px;
+}
+.note-editor
+  .tiptap
+  > p:only-child:has(> br.ProseMirror-trailingBreak)::before {
+  content: 'Your next idea starts here…';
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #737b69;
+}
+.writing-help {
+  font-size: 0.78rem;
+  color: #5c6254;
+  line-height: 1.6;
+}
+.body-save-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 28px;
+  border-top: 1px solid #d8d8ca;
+  padding-top: 20px;
+}
+.body-save-row p {
+  flex: 1 1 200px;
+  font-size: 0.8rem;
+  color: #5c6254;
+  line-height: 1.6;
+}
+.body-save-row [role='alert'] {
+  color: #8a3e1b;
+}
+.body-save-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

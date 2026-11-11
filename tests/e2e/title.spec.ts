@@ -52,7 +52,7 @@ test('title saves retain in-flight edits and protect navigation without changing
       .click();
     await expect(
       page.getByText(
-        'Save or discard the title changes before leaving this note.',
+        'Save your writing and finish title changes before leaving this note.',
       ),
     ).toBeVisible();
     expect(
