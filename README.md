@@ -1,8 +1,8 @@
 # Markdown Note Taker
 
-A local note-taking app for project notes, personal documentation, and technical writing. The planned first release combines nested folders, rich editing, Mermaid diagrams, and Markdown import/export, with raw Markdown saved in SQLite on your computer.
+A local note-taking app for project notes, personal documentation, and technical writing. Organize nested folders, write in a rich editor, edit Mermaid diagrams, and import or export Markdown. Raw Markdown stays in SQLite on your computer.
 
-**Status:** Local workspace with folder navigation, breadcrumbs, create/rename/move/delete controls, rich body editing, formatting and slash controls, editable Mermaid previews, title/body autosave, conflict recovery, Markdown import/export, SQLite persistence, and protected folder/note REST routes. Deletion is permanent and requires confirmation. Unsupported Markdown stays available as original source. Accessibility review, production verification, and release acceptance remain in the [initial project roadmap](roadmaps/initial-project.md).
+**Status:** The initial release is implemented in the PR stack and awaiting review. Folder navigation, lifecycle controls, rich writing, diagrams, autosave/conflict recovery, Markdown portability, keyboard interaction, and local production execution have recorded verification in the [initial project roadmap](roadmaps/initial-project.md).
 
 ## Development setup
 
@@ -42,18 +42,28 @@ npm test
 npx playwright install chromium
 npm run test:e2e
 npm run build
+npm run test:production
 ```
 
-The browser check starts and stops the development stack against an isolated temporary database; ports 5173 and 3001 must be free. Use npm run test:e2e so its launcher manages the temporary workspace. Chromium installation is only needed once per Playwright browser version. Unit/integration checks use isolated in-memory or temporary file-backed databases, including migration rollback, foreign keys, and reopen durability. Use npm run format to apply formatting.
+The development browser suite uses an isolated temporary database; ports 5173 and 3001 must be free. After building, the production suite starts the built app on available loopback ports and verifies restart and stopped-server backup/restore with temporary storage. Both launchers clean up their own processes and data. Chromium installation is only needed once per Playwright browser version. Unit/integration checks use isolated databases, including migration rollback, foreign keys, and reopen durability. Use npm run format to apply formatting.
 
-## Built scaffold
+## Run a production build locally
 
 ```powershell
 npm run build
 npm start
 ```
 
-Open http://127.0.0.1:3001 (or the configured PORT). The production process serves the built React page and API together, without Vite. Development uses watched source files; production uses dist output and must be rebuilt after changes. Production hardening and full operational acceptance remain in the roadmap. The app is intended for one person on their own computer.
+Open http://127.0.0.1:3001 (or the configured PORT). Express serves the built page, editor/diagram assets, and API together without Vite or a runtime CDN. Rebuild after changing source or dependencies. Stop with Ctrl+C before backing up or restoring the database; see [storage and backup guidance](docs/architecture/runtime.md#data-directory-and-backup). Missing frontend output and invalid port/data settings produce startup errors. Keep the project and installed dependencies alongside the build.
+
+## Limits to know
+
+- This is a local, single-user app bound to loopback. It has no authentication or shared/hosted mode.
+- Deletion is permanent. The dirty-tab warning protects ordinary navigation; unsaved text has no crash-recovery guarantee or version history.
+- Import one UTF-8 `.md` file up to 256 KiB. Unsupported Markdown remains readable/copyable as original source and can be exported unchanged. Rich body edits may normalize Markdown syntax; supported structure and Mermaid payloads are preserved.
+- Very large or complex diagrams may not preview; their source is retained. Rendering uses the browser's main thread. See [conversion and diagram limits](docs/architecture/editor.md).
+- Retrying a create whose response was lost can produce a duplicate. A confirmed creation retries opening without another create.
+- Installation and browser validation cover Windows 11 x64 with the versions above; other operating systems and screen readers have not been certified. SQLite requires its native binary to load.
 
 ## Project documentation
 
