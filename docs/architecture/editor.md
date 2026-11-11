@@ -2,7 +2,9 @@
 
 ## Rich editing
 
-The proposed editor is open-source Tiptap with `@tiptap/markdown`, chosen for extensible rich blocks and local Markdown conversion. Verify the full supported block set and custom Mermaid conversion before committing the rest of the interface to it.
+The compatibility module uses open-source Tiptap 3.33.0 with `@tiptap/markdown`, chosen for extensible rich blocks and local Markdown conversion. The [extension configuration](../../apps/web/src/editor/extensions.ts) covers the release's rich blocks and marks, including nested tasks and a dedicated Mermaid node. Underline and automatic trailing paragraphs are disabled because they have no reliable source representation here. The full editor UI remains pending.
+
+[Schema/DOM fixtures](../../apps/web/src/editor/__test__/extensions.test.ts) verify supported block round trips and literal code/diagram rendering. Code fences grow to exceed any embedded backtick run. Imported HTML, unsupported-source detection, and original-source retention must be handled by the conversion boundary before application UI loads external Markdown.
 
 Saved content is raw Markdown. The frontend loads that source into the rich editor's internal representation and serializes edits back to Markdown. Editor trees remain frontend state; the backend stores the complete source string. See [the storage decision](../decisions/0003-raw-markdown.md).
 

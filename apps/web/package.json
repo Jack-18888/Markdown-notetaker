@@ -10,11 +10,18 @@
   },
   "dependencies": {
     "@markdown-note-taker/contracts": "1.0.0",
+    "@tiptap/core": "3.33.0",
+    "@tiptap/extension-code-block": "3.33.0",
+    "@tiptap/extension-list": "3.33.0",
+    "@tiptap/markdown": "3.33.0",
+    "@tiptap/starter-kit": "3.33.0",
+    "marked": "18.2.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.2.1",
+    "happy-dom": "21.0.4",
     "vite": "^8.3.6"
   }
 }
