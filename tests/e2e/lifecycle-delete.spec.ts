@@ -173,7 +173,7 @@ test('refuses to delete a newer note revision until it is reopened', async ({
       .getByRole('button', { name: 'Refresh workspace', exact: true })
       .click();
     await expect(
-      page.getByRole('document', { name: 'Note content' }),
+      page.getByRole('textbox', { name: 'Note content', exact: true }),
     ).toContainText('Newer saved source.');
     await page
       .getByRole('button', { name: 'Delete note', exact: true })

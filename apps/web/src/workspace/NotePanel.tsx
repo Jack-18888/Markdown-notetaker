@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -19,7 +20,7 @@ import type { WorkspaceTree } from './tree.js';
 import { useLoad } from './useLoad.js';
 import TitleEditor from './TitleEditor.js';
 
-const NotePreview = lazy(() => import('./NotePreview.js'));
+const NoteContent = lazy(() => import('./NoteContent.js'));
 
 class PreviewBoundary extends Component<
   { source: string; children: ReactNode },
@@ -102,6 +103,27 @@ function NoteArticle({
   onNoteUpdated(note: NoteDetail): void;
 }) {
   const [note, setNote] = useState(initial);
+  const dirty = useRef({ title: false, body: false });
+  const [titleSaving, setTitleSaving] = useState(false);
+  const [bodySaving, setBodySaving] = useState(false);
+  const titleDirty = useCallback(
+    (value: boolean) => {
+      dirty.current.title = value;
+      onDirtyChange(value || dirty.current.body);
+    },
+    [onDirtyChange],
+  );
+  const bodyDirty = useCallback(
+    (value: boolean) => {
+      dirty.current.body = value;
+      onDirtyChange(value || dirty.current.title);
+    },
+    [onDirtyChange],
+  );
+  function saved(next: NoteDetail) {
+    setNote(next);
+    onNoteUpdated(next);
+  }
   useEffect(() => {
     onNoteUpdated(initial);
   }, [initial, onNoteUpdated]);
@@ -113,14 +135,13 @@ function NoteArticle({
         onNavigate={onNavigate}
       />
       <article className="note-surface">
-        <p className="workspace-eyebrow">Reading view</p>
+        <p className="workspace-eyebrow">Your writing</p>
         <TitleEditor
           note={note}
-          onDirtyChange={onDirtyChange}
-          onSaved={(saved) => {
-            setNote(saved);
-            onNoteUpdated(saved);
-          }}
+          onDirtyChange={titleDirty}
+          saveDisabled={bodySaving}
+          onSavingChange={setTitleSaving}
+          onSaved={saved}
         />
         {note.folderId !== null && !tree.folders.has(note.folderId) && (
           <p role="status">
@@ -136,7 +157,13 @@ function NoteArticle({
               </p>
             }
           >
-            <NotePreview source={note.content} />
+            <NoteContent
+              note={note}
+              saveDisabled={titleSaving}
+              onSaved={saved}
+              onDirtyChange={bodyDirty}
+              onSavingChange={setBodySaving}
+            />
           </Suspense>
         </PreviewBoundary>
       </article>

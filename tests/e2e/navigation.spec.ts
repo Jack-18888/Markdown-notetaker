@@ -58,7 +58,10 @@ test('opens deep notes on demand, shows breadcrumbs, and handles deleted selecti
     await expect(
       page.getByRole('heading', { level: 1, name: 'Navigation note' }),
     ).toBeVisible();
-    const body = page.getByRole('document', { name: 'Note content' });
+    const body = page.getByRole('textbox', {
+      name: 'Note content',
+      exact: true,
+    });
     await expect(body).toContainText('Read safely');
     await expect(body.locator('[data-mermaid]')).toHaveText('A --> B');
     expect(noteReads.length).toBeGreaterThan(0);

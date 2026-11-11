@@ -45,7 +45,7 @@ test('narrow navigation works by keyboard and keeps the reading surface reachabl
       .focus();
     await page.keyboard.press('Enter');
     await expect(
-      page.getByRole('document', { name: 'Note content' }),
+      page.getByRole('textbox', { name: 'Note content', exact: true }),
     ).toContainText('Readable on a narrow screen.');
     await expect(sidebar).toBeHidden();
     await expect(page.getByRole('main')).toBeFocused();
@@ -59,7 +59,7 @@ test('narrow navigation works by keyboard and keeps the reading surface reachabl
       fullPage: true,
     });
     await page
-      .getByRole('document', { name: 'Note content' })
+      .getByRole('textbox', { name: 'Note content', exact: true })
       .locator('p')
       .last()
       .scrollIntoViewIfNeeded();

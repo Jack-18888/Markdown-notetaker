@@ -7,10 +7,14 @@ export default function TitleEditor({
   note,
   onSaved,
   onDirtyChange,
+  saveDisabled,
+  onSavingChange,
 }: {
   note: NoteDetail;
   onSaved(note: NoteDetail): void;
   onDirtyChange(dirty: boolean): void;
+  saveDisabled: boolean;
+  onSavingChange(saving: boolean): void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.title);
@@ -26,8 +30,9 @@ export default function TitleEditor({
     () => () => {
       controller.current?.abort();
       onDirtyChange(false);
+      onSavingChange(false);
     },
-    [onDirtyChange],
+    [onDirtyChange, onSavingChange],
   );
   useEffect(() => {
     if (editing) {
@@ -38,7 +43,7 @@ export default function TitleEditor({
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (controller.current || draft === note.title) return;
+    if (controller.current || saveDisabled || draft === note.title) return;
     if (!nameSchema.safeParse(draft).success) {
       setError(
         'Use 1–200 characters without surrounding spaces or control characters.',
@@ -49,6 +54,7 @@ export default function TitleEditor({
     controller.current = request;
     const snapshot = draft;
     setPending(true);
+    onSavingChange(true);
     setError('');
     setMessage('');
     onDirtyChange(true);
@@ -78,6 +84,7 @@ export default function TitleEditor({
     } finally {
       if (!request.signal.aborted) {
         setPending(false);
+        onSavingChange(false);
         if (controller.current === request) controller.current = null;
       }
     }
@@ -140,7 +147,7 @@ export default function TitleEditor({
             <button
               type="submit"
               className="workspace-retry title-save"
-              disabled={pending || draft === note.title}
+              disabled={pending || saveDisabled || draft === note.title}
             >
               {pending ? 'Saving title…' : 'Save title'}
             </button>

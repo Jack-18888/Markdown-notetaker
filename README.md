@@ -2,7 +2,7 @@
 
 A local note-taking app for project notes, personal documentation, and technical writing. The planned first release combines nested folders, rich editing, Mermaid diagrams, and Markdown import/export, with raw Markdown saved in SQLite on your computer.
 
-**Status:** Local workspace with folder navigation, breadcrumbs, create/rename/move/delete controls, title editing, read-only note bodies, SQLite persistence, and protected folder/note REST routes. Deletion is permanent and requires confirmation. Unsupported Markdown stays available as original source. Body editing, diagram previews, autosave, and import/export remain in the [initial project roadmap](roadmaps/initial-project.md).
+**Status:** Local workspace with folder navigation, breadcrumbs, create/rename/move/delete controls, rich body editing, formatting and slash controls, explicit title/body saves, SQLite persistence, and protected folder/note REST routes. Deletion is permanent and requires confirmation. Unsupported Markdown stays available as original source. Diagram previews, autosave, conflict recovery, and import/export remain in the [initial project roadmap](roadmaps/initial-project.md).
 
 ## Development setup
 

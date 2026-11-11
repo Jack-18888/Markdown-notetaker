@@ -29,17 +29,17 @@ export default function App() {
   const [action, setAction] = useState<LifecycleAction | null>(null);
   const [noteEpoch, setNoteEpoch] = useState(0);
   const loadedNote = useRef<NoteDetail | null>(null);
-  const [unsavedTitle, setUnsavedTitle] = useState(false);
+  const [unsavedNote, setUnsavedNote] = useState(false);
   const [navigationBlocked, setNavigationBlocked] = useState(false);
   useEffect(() => {
-    if (!unsavedTitle) return;
+    if (!unsavedNote) return;
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [unsavedTitle]);
+  }, [unsavedNote]);
   const main = useRef<HTMLElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const focusSidebar = useRef(false);
@@ -66,7 +66,7 @@ export default function App() {
 
   function select(next: Selection) {
     if (next.kind === selection.kind && next.id === selection.id) return;
-    if (unsavedTitle) {
+    if (unsavedNote) {
       setNavigationBlocked(true);
       return;
     }
@@ -102,7 +102,7 @@ export default function App() {
   }
 
   function refresh() {
-    if (unsavedTitle) {
+    if (unsavedNote) {
       setNavigationBlocked(true);
       return;
     }
@@ -129,7 +129,7 @@ export default function App() {
   );
 
   function openAction(next: LifecycleAction) {
-    if (unsavedTitle) {
+    if (unsavedNote) {
       setNavigationBlocked(true);
       return;
     }
@@ -222,9 +222,9 @@ export default function App() {
         tabIndex={-1}
         ref={main}
       >
-        {navigationBlocked && unsavedTitle && (
+        {navigationBlocked && unsavedNote && (
           <p role="alert" className="workspace-message">
-            Save or discard the title changes before leaving this note.
+            Save your writing and finish title changes before leaving this note.
           </p>
         )}
         {state.status === 'loading' && (
@@ -262,7 +262,7 @@ export default function App() {
                 key={`${active.id}:${noteEpoch}`}
                 id={active.id}
                 tree={tree}
-                onDirtyChange={setUnsavedTitle}
+                onDirtyChange={setUnsavedNote}
                 onNoteUpdated={noteUpdated}
                 onNavigate={(id) => select({ kind: 'folder', id })}
               />
