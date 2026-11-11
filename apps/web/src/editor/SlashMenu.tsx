@@ -23,6 +23,15 @@ export default function SlashMenu({ editor }: { editor: Editor }) {
   const key = query
     ? `${query.range.from}:${query.range.to}:${query.query}`
     : '';
+  useEffect(() => {
+    const resetDismissal = () => {
+      if (!slashQuery(editor)) setDismissed(null);
+    };
+    editor.on('transaction', resetDismissal);
+    return () => {
+      editor.off('transaction', resetDismissal);
+    };
+  }, [editor]);
   const commands = useMemo(
     () =>
       query

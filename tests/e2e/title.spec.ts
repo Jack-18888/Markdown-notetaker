@@ -85,6 +85,8 @@ test('failed and competing title saves retain the draft until retry or confirmed
   ).toBeVisible();
   await page.getByRole('button', { name: 'Edit title', exact: true }).click();
   await input.fill('Competing title');
+  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  await body.fill('Local body survives discarding the title');
   await request.patch(`/api/notes/${note.id}`, {
     data: { expectedRevision: 2, title: 'Other tab title' },
   });
@@ -93,6 +95,14 @@ test('failed and competing title saves retain the draft until retry or confirmed
     errorDefinitions.REVISION_CONFLICT.message,
   );
   await expect(input).toHaveValue('Competing title');
+  await page
+    .getByRole('button', { name: 'Discard title changes', exact: true })
+    .click();
+  await expect(body).toHaveText('Local body survives discarding the title');
+  await expect(
+    page.getByRole('button', { name: 'Save as new note', exact: true }),
+  ).toBeVisible();
+  expect((await notes.read(note.id)).content).toBe('Untouched source\r\n');
   await page
     .getByRole('button', { name: 'Reload saved note', exact: true })
     .click();

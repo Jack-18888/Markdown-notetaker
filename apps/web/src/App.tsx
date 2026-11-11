@@ -67,7 +67,10 @@ export default function App() {
   const active = missing ? rootSelection : selection;
 
   function select(next: Selection) {
-    if (next.kind === selection.kind && next.id === selection.id) return;
+    if (next.kind === selection.kind && next.id === selection.id) {
+      transition.cancel();
+      return;
+    }
     if (!tree || !tree.has(next)) return;
     void transition.run(() => reveal(next, tree));
   }

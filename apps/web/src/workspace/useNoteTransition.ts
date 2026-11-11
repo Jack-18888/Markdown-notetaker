@@ -39,5 +39,9 @@ export function useNoteTransition() {
     },
     [],
   );
-  return { register, run, state };
+  const cancel = useCallback(() => {
+    version.current++;
+    setState('idle');
+  }, []);
+  return { register, run, cancel, state };
 }

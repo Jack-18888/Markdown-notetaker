@@ -166,4 +166,55 @@ test('reload requires confirmation, retains local edits on failure, and resets h
     page.getByRole('button', { name: 'Undo', exact: true }),
   ).toBeDisabled();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Edit title', exact: true }),
+  ).toBeFocused();
+});
+
+test('confirmed reload restores focus for a note with read-only source', async ({
+  page,
+  request,
+  notes,
+}) => {
+  const content = '<script>Retained literal source</script>';
+  const note = await notes.create('Fallback reload focus', content);
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: 'Open note Fallback reload focus',
+      exact: true,
+    })
+    .click();
+  await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+  await request.patch(`/api/notes/${note.id}`, {
+    data: { expectedRevision: 1, title: 'Remote fallback title' },
+  });
+  await page
+    .getByRole('textbox', { name: 'Note title', exact: true })
+    .fill('Conflicting local title');
+  await page.getByRole('button', { name: 'Save title', exact: true }).click();
+  const reload = page.getByRole('button', {
+    name: 'Reload saved note',
+    exact: true,
+  });
+  await reload.focus();
+  await page.keyboard.press('Enter');
+  const confirm = page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Discard and reload', exact: true });
+  await confirm.focus();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('heading', { name: 'Remote fallback title', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Edit title', exact: true }),
+  ).toBeFocused();
+  expect((await notes.read(note.id)).content).toBe(content);
+  await page
+    .getByRole('button', { name: 'Refresh workspace', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Remote fallback title', exact: true }),
+  ).toBeVisible();
 });

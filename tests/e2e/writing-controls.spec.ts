@@ -1,5 +1,82 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './note-fixtures.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
+
+test('a fresh slash invocation reopens after dismissal in the same paragraph', async ({
+  page,
+  notes,
+}) => {
+  await notes.create('Fresh slash invocation', '');
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: 'Open note Fresh slash invocation',
+      exact: true,
+    })
+    .click();
+  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const menu = page.getByRole('listbox', { name: 'Insert block' });
+  await body.fill('/');
+  await expect(menu).toBeVisible();
+  await body.press('Escape');
+  await expect(menu).toBeHidden();
+  await body.press('Backspace');
+  await expect(body).toHaveText('');
+  await body.press('/');
+  await expect(menu).toBeVisible();
+  await body.press('Enter');
+  await expect(menu).toBeHidden();
+  await body.type('First block');
+  await body.press('Enter');
+  await body.press('/');
+  await expect(menu).toBeVisible();
+});
+
+for (const [label, source, selector] of [
+  ['Bullet list', '- **Keep my text**', 'ul'],
+  ['Numbered list', '1. **Keep my text**', 'ol'],
+  ['Checklist', '- [ ] **Keep my text**', 'ul'],
+  ['Quote', '> **Keep my text**', 'blockquote'],
+] as const) {
+  test(`Text removes ${label} formatting and persists the plain block`, async ({
+    page,
+    notes,
+  }) => {
+    const note = await notes.create(`Plain block from ${label}`, source);
+    await page.goto('/');
+    await page
+      .getByRole('button', {
+        name: `Open note Plain block from ${label}`,
+        exact: true,
+      })
+      .click();
+    const body = page.getByRole('textbox', {
+      name: 'Note content',
+      exact: true,
+    });
+    await body.locator('p').first().click();
+    const select = page.getByRole('combobox', {
+      name: 'Block type',
+      exact: true,
+    });
+    await expect(select.locator('option:checked')).toHaveText(label);
+    await select.selectOption({ label: 'Text' });
+    await expect(body.locator(selector)).toHaveCount(0);
+    await expect(body.locator('strong')).toHaveText('Keep my text');
+    await expect(select).toHaveValue('paragraph');
+    await expect
+      .poll(async () => (await notes.read(note.id)).content)
+      .toBe('**Keep my text**');
+    await page.reload();
+    await page
+      .getByRole('button', {
+        name: `Open note Plain block from ${label}`,
+        exact: true,
+      })
+      .click();
+    await expect(body.locator(selector)).toHaveCount(0);
+    await expect(body.locator('strong')).toHaveText('Keep my text');
+  });
+}
 
 test('slash insertion supports keyboard, pointer, dismissal, and fresh note history', async ({
   page,

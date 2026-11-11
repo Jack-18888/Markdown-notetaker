@@ -24,6 +24,52 @@ function open(source = 'Original text') {
 }
 
 describe('shared writing commands', () => {
+  it.each([
+    '- **item**',
+    '1. **item**',
+    '- [ ] **item**',
+    '> **item**',
+    '> - **item**',
+    '- first\n  - **nested**',
+  ])(
+    'turns selected containers into plain blocks without losing marks or undo: %s',
+    (source) => {
+      const { editor, loaded } = open(source);
+      try {
+        const before = editor.state.doc;
+        expect(runCommand(editor, blockCommands[0]!)).toBe(true);
+        expect(
+          editor.getJSON().content!.every((node) => node.type === 'paragraph'),
+        ).toBe(true);
+        expect(loaded.serialize(editor.getJSON())).toContain(
+          source.includes('nested') ? '**nested**' : '**item**',
+        );
+        expect(editor.commands.undo()).toBe(true);
+        expect(editor.state.doc.eq(before)).toBe(true);
+      } finally {
+        editor.destroy();
+      }
+    },
+  );
+
+  it('removes only the selected list item and leaves the other items in their list', () => {
+    const { editor, loaded } = open('- first\n- second');
+    try {
+      editor.commands.setTextSelection(3);
+      const before = editor.state.doc;
+      expect(runCommand(editor, blockCommands[0]!)).toBe(true);
+      expect(editor.getJSON().content!.map((node) => node.type)).toEqual([
+        'paragraph',
+        'bulletList',
+      ]);
+      expect(loaded.serialize(editor.getJSON())).toBe('first\n\n- second');
+      expect(editor.commands.undo()).toBe(true);
+      expect(editor.state.doc.eq(before)).toBe(true);
+    } finally {
+      editor.destroy();
+    }
+  });
+
   it.each(blockCommands)(
     'converts $label with a single update and reversible history',
     (command) => {
