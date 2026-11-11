@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useState,
   type ReactNode,
 } from 'react';
 import type {
@@ -20,6 +21,7 @@ import TitleEditor from './TitleEditor.js';
 import SaveStatus from './SaveStatus.js';
 import { useNoteSession } from './useNoteSession.js';
 import type { SaveCoordinator } from './SaveCoordinator.js';
+import ConflictRecovery from './ConflictRecovery.js';
 
 const NoteContent = lazy(() => import('./NoteContent.js'));
 
@@ -53,6 +55,7 @@ export default function NotePanel({
   onDirtyChange,
   onNoteUpdated,
   onSession,
+  onRecoveryCopy,
 }: {
   id: ResourceId;
   tree: WorkspaceTree;
@@ -60,9 +63,14 @@ export default function NotePanel({
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
   onSession(session: SaveCoordinator | null): void;
+  onRecoveryCopy(note: NoteDetail, signal: AbortSignal): Promise<void>;
 }) {
   const load = useCallback((signal: AbortSignal) => getNote(id, signal), [id]);
   const { state, retry } = useLoad(load);
+  const [replacement, setReplacement] = useState<{
+    note: NoteDetail;
+    epoch: number;
+  } | null>(null);
   if (state.status === 'loading')
     return (
       <p role="status" className="workspace-message">
@@ -83,12 +91,20 @@ export default function NotePanel({
     );
   return (
     <NoteArticle
-      initial={state.value}
+      key={replacement?.epoch ?? 0}
+      initial={replacement?.note ?? state.value}
       tree={tree}
       onNavigate={onNavigate}
       onDirtyChange={onDirtyChange}
       onNoteUpdated={onNoteUpdated}
       onSession={onSession}
+      onReload={(note) =>
+        setReplacement((current) => ({
+          note,
+          epoch: (current?.epoch ?? 0) + 1,
+        }))
+      }
+      onRecoveryCopy={onRecoveryCopy}
     />
   );
 }
@@ -100,6 +116,8 @@ function NoteArticle({
   onDirtyChange,
   onNoteUpdated,
   onSession,
+  onReload,
+  onRecoveryCopy,
 }: {
   initial: NoteDetail;
   tree: WorkspaceTree;
@@ -107,6 +125,8 @@ function NoteArticle({
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
   onSession(session: SaveCoordinator | null): void;
+  onReload(note: NoteDetail): void;
+  onRecoveryCopy(note: NoteDetail, signal: AbortSignal): Promise<void>;
 }) {
   const { session, state } = useNoteSession(
     initial,
@@ -146,6 +166,13 @@ function NoteArticle({
           </Suspense>
         </PreviewBoundary>
         <SaveStatus session={session} state={state} />
+        {state.status === 'conflict' && (
+          <ConflictRecovery
+            session={session}
+            onReload={onReload}
+            onCopy={onRecoveryCopy}
+          />
+        )}
       </article>
     </>
   );
