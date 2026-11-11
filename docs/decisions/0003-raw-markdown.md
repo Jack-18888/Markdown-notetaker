@@ -16,7 +16,7 @@ The frontend parses Markdown for rich editing and safe rendering, and serializes
 
 There is no per-note document schema version. Database migrations manage persisted format changes. The original migration remains unchanged; migration 2 converts the supported legacy paragraph/text format without dropping notes. A conversion failure rolls back the complete upgrade and preserves the previous database.
 
-Exact shapes are documented in [API contracts](../api.md), and the frontend conversion policy in [editor architecture](../architecture/editor.md). Workspace application services remain in T04.
+Module behavior is documented in the [workspace README](../../apps/server/src/workspace/README.md), exact shapes in [API contracts](../api.md), and the frontend conversion policy in [editor architecture](../architecture/editor.md).
 
 ## Verification scope
 

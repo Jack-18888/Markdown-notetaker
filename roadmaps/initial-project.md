@@ -25,7 +25,7 @@ Technical choices and their validation status belong to the [architecture decisi
 
 ### Documents and persistence
 
-SQLite stores the workspace hierarchy and complete raw Markdown source. The frontend retains rich editing and owns conversion and rendering. Follow the architecture's [data model and migration rules](../docs/architecture/persistence.md) and the [persistence design](../docs/architecture/persistence.md).
+SQLite stores the workspace hierarchy and complete raw Markdown source. The frontend retains rich editing and owns conversion and rendering. Follow the architecture's [data model and migration rules](../docs/architecture/persistence.md) and the [workspace service guide](../apps/server/src/workspace/README.md).
 
 ### Editing and save flow
 
@@ -350,16 +350,16 @@ Implement atomic hierarchy operations and optimistic note updates independently 
 **Implementation plan**
 
 1. Implement metadata tree listing, note loading, creation with an empty document, rename/update, moving to a folder or root, and permanent deletion using parameterized SQL.
-2. Implement hierarchy validation and mutations according to the [persistence design](../docs/architecture/persistence.md).
+2. Implement hierarchy validation and mutations according to the [workspace service rules](../apps/server/src/workspace/README.md#hierarchy-and-revisions).
 3. Expose subtree deletion and the information needed for [R7's confirmation](#r7--delete-deliberately), without prescribing a new API metadata field here.
 4. Apply those revision rules using T02's contract and return committed metadata for note updates.
 
 **Acceptance criteria**
 
-- [ ] Root notes and folders plus at least three nesting levels work correctly.
-- [ ] Missing parents, invalid moves, and cyclic moves leave stored content unchanged.
-- [ ] Subtree deletion preserves siblings and is all-or-nothing.
-- [ ] Two updates using the same revision yield exactly one success and one conflict.
+- [x] Root notes and folders plus at least three nesting levels work correctly.
+- [x] Missing parents, invalid moves, and cyclic moves leave stored content unchanged.
+- [x] Subtree deletion preserves siblings and is all-or-nothing.
+- [x] Two updates using the same revision yield exactly one success and one conflict.
 
 **Verification**
 
@@ -367,7 +367,7 @@ Implement atomic hierarchy operations and optimistic note updates independently 
 
 **Evidence**
 
-Raw Markdown contracts and schema-1 upgrade/rollback are verified. Workspace services and server persistence boundaries remain in the next commits.
+Transactional workspace services and their integration tests are verified. See the [workspace README](../apps/server/src/workspace/README.md). Server lifecycle integration and import restrictions remain in the final commit.
 
 <a id="t05"></a>
 
