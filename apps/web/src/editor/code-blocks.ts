@@ -12,7 +12,7 @@ export function fencedSource(source: string, language = ''): string {
   return `${fence}${language}\n${source}${separator}${fence}`;
 }
 
-/** Plain source only. Diagram rendering and source editing belong to later UI work. */
+/** Literal conversion representation; the writing interface adds an optional node view. */
 export const MermaidBlock = Node.create({
   name: 'mermaid',
   group: 'block',

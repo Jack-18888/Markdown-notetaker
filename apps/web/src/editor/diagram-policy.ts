@@ -21,9 +21,17 @@ export function diagramIssue(source: string): string | null {
 }
 
 export function sanitizeDiagram(svg: string): string {
-  return DOMPurify.sanitize(svg, {
+  const safe = DOMPurify.sanitize(svg, {
     USE_PROFILES: { svg: true, svgFilters: true },
     FORBID_TAGS: ['foreignObject', 'script', 'a', 'image', 'iframe'],
     FORBID_ATTR: ['href', 'xlink:href'],
   });
+  const template = document.createElement('template');
+  template.innerHTML = safe;
+  for (const element of template.content.querySelectorAll('svg')) {
+    // The node view provides the accessible image name for the entire preview.
+    element.setAttribute('aria-hidden', 'true');
+    element.setAttribute('focusable', 'false');
+  }
+  return template.innerHTML;
 }

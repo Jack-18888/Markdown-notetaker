@@ -3,9 +3,10 @@ import { TaskItem, TaskList } from '@tiptap/extension-list';
 import { Markdown, MarkdownManager } from '@tiptap/markdown';
 import { MermaidBlock, SourceCodeBlock } from './code-blocks.js';
 import { isSafeLink } from './links.js';
+import { MermaidEditorBlock } from './mermaid-node-view.js';
 
 /** One extension set for compatibility checks and the mounted writing interface. */
-export function editorExtensions() {
+export function editorExtensions({ diagramViews = false } = {}) {
   return [
     StarterKit.configure({
       codeBlock: false,
@@ -19,7 +20,7 @@ export function editorExtensions() {
       },
     }),
     SourceCodeBlock,
-    MermaidBlock,
+    diagramViews ? MermaidEditorBlock : MermaidBlock,
     TaskList,
     TaskItem.configure({ nested: true }),
     Markdown,
