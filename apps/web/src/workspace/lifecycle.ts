@@ -11,8 +11,9 @@ export type ResourceTarget =
 export type NameAction =
   | { kind: 'create'; resource: 'folder' | 'note'; parentId: ParentId }
   | { kind: 'rename'; target: ResourceTarget };
-export type LifecycleAction =
-  NameAction | { kind: 'move' | 'delete'; target: ResourceTarget };
+export type MoveAction = { kind: 'move'; target: ResourceTarget };
+export type DeleteAction = { kind: 'delete'; target: ResourceTarget };
+export type LifecycleAction = NameAction | MoveAction | DeleteAction;
 
 export function subtreeFolders(tree: WorkspaceTree, id: ResourceId) {
   const found = new Set<ResourceId>();

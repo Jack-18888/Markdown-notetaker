@@ -13,7 +13,8 @@ import { useLoad } from './workspace/useLoad.js';
 import './workspace/workspace.css';
 import WorkspaceActions from './workspace/WorkspaceActions.js';
 import NameDialog from './workspace/NameDialog.js';
-import type { NameAction } from './workspace/lifecycle.js';
+import type { MoveAction, NameAction } from './workspace/lifecycle.js';
+import MoveDialog from './workspace/MoveDialog.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -24,7 +25,7 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(rootSelection);
   const [expanded, setExpanded] = useState(new Set<string>());
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [action, setAction] = useState<NameAction | null>(null);
+  const [action, setAction] = useState<NameAction | MoveAction | null>(null);
   const [noteEpoch, setNoteEpoch] = useState(0);
   const loadedNote = useRef<NoteDetail | null>(null);
   const [unsavedTitle, setUnsavedTitle] = useState(false);
@@ -126,7 +127,7 @@ export default function App() {
     [update],
   );
 
-  function openAction(next: NameAction) {
+  function openAction(next: NameAction | MoveAction) {
     if (unsavedTitle) {
       setNavigationBlocked(true);
       return;
@@ -268,14 +269,23 @@ export default function App() {
           </>
         )}
       </main>
-      {action && tree && (
-        <NameDialog
-          action={action}
-          tree={tree}
-          onCommit={commitAction}
-          onClose={closeAction}
-        />
-      )}
+      {action &&
+        tree &&
+        (action.kind === 'move' ? (
+          <MoveDialog
+            action={action}
+            tree={tree}
+            onCommit={commitAction}
+            onClose={closeAction}
+          />
+        ) : (
+          <NameDialog
+            action={action}
+            tree={tree}
+            onCommit={commitAction}
+            onClose={closeAction}
+          />
+        ))}
     </div>
   );
 }
