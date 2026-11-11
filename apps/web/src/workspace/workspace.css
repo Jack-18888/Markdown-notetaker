@@ -44,6 +44,7 @@
   background: #e7e8dc;
 }
 .workspace-sidebar {
+  scroll-margin-top: var(--workspace-header-height);
   position: sticky;
   top: var(--workspace-header-height);
   align-self: start;

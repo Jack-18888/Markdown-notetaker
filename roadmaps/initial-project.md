@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T06 are implemented. T07 workspace navigation is in progress above the existing PR stack, awaiting review. The complete editor/backend compatibility checkpoint remains pending T09.
+**Status:** T01-T07 are implemented in the PR stack, awaiting review. T08 lifecycle controls are next. The complete editor/backend compatibility checkpoint remains pending T09.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status        | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------------- | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
-| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `done`        | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `in_progress` | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `todo`        | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo`        | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `done` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -478,7 +478,7 @@ T06 compatibility is validated for the documented subset and limits. Workspace n
 
 Provide the main layout and metadata-driven navigation with usable empty and error states.
 
-**Status:** `in_progress` · **Priority:** high
+**Status:** `done` · **Priority:** high
 
 **Depends on:** T05  
 **Requirements:** R2
@@ -498,10 +498,10 @@ Provide the main layout and metadata-driven navigation with usable empty and err
 
 **Acceptance criteria**
 
-- [ ] Root content and deep hierarchies display and navigate correctly.
-- [ ] Selecting a note loads its document on demand without stale responses replacing the selected note.
-- [ ] Loading/failure/empty states remain usable and controls have accessible names.
-- [ ] The layout works at desktop and narrow browser widths without hiding the writing surface permanently.
+- [x] Root content and deep hierarchies display and navigate correctly.
+- [x] Selecting a note loads its document on demand without stale responses replacing the selected note.
+- [x] Loading/failure/empty states remain usable and controls have accessible names.
+- [x] The layout works at desktop and narrow browser widths without hiding the writing surface permanently.
 
 **Verification**
 
@@ -510,7 +510,16 @@ Provide the main layout and metadata-driven navigation with usable empty and err
 
 **Evidence**
 
-No verification evidence recorded.
+Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered in six PRs above the editor stack: client/index, navigation components, layout styles, app integration, title saves, and final browser/state verification. Awaiting review.
+
+- The [workspace client](../apps/web/src/workspace/api.ts) validates shared success/error contracts and note identity. The [hierarchy index](../apps/web/src/workspace/tree.ts) rejects duplicate IDs, missing parents, and cycles. [Navigation architecture](../docs/architecture/navigation.md) records stable ID-based selection/expansion, folder-first numeric label ordering, breadcrumbs, request lifetimes, and title-save behavior.
+- The [app shell](../apps/web/src/App.tsx) supplies root/deep-folder navigation, distinct empty states, loading/error/retry views, a collapsible sidebar, breadcrumbs, and on-demand note detail. The [reading view](../apps/web/src/workspace/NotePreview.tsx) uses T06's conversion boundary and source fallback; it does not write note bodies. [Request lifecycle tests](../apps/web/src/workspace/__test__/useLoad.test.ts) verify cancellation and ignoring late completions even when the transport ignores abort.
+- [Deep navigation checks](../tests/e2e/navigation.spec.ts) use real API/SQLite fixtures for three folder levels, note selection, breadcrumbs, exact saved source, and deleted-selection recovery. [State/browser checks](../tests/e2e/navigation-states.spec.ts) cover keyboard operation, 375px layout, empty folders/workspace, loading/failure/retry, rapid selection, and safe original-source fallback. Controlled failed/empty responses isolate UI states; persisted-note workflows use the real API. Reopening folders after scrolling a long note now brings navigation into view and focuses its first control.
+- [Title-save browser checks](../tests/e2e/title.spec.ts) verify explicit save/discard, shared name validation, revision checks, in-flight newer edits, failed-save retry, another tab's conflict, protected navigation/refresh, and the dirty-tab warning handler. Title patches omit content and preserve the original source byte-for-byte. Metadata updates do not remount the reading view or reset a newer draft. General body editing/autosave/recovery remain T09/T11.
+- `npm run typecheck`, `npm run lint`, `npm test` (321 tests, including 17 workspace client/model/component/lifecycle checks), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes all ten Chromium checks using at most four workers. The Markdown parser and lazy preview compile to separate browser chunks without the prior chunk-size warning. All local documentation link targets and three API JSON examples validate; `git diff --check` passes.
+- A compiled production server with isolated temporary SQLite data passed real Chromium navigation, lazy preview/parser loading, title saves, narrow-screen containment, and restart durability with zero browser errors. Visually inspected desktop and narrow production reading views. Smoke processes and temporary data were removed. No server, migration, dependency, or user-data changes were needed.
+
+T08 still owns create/rename/move/delete sidebar controls and confirmation dialogs. T09/T10 own the writing UI and diagram previews; T11 owns autosave and full recovery. The integrated editor/backend checkpoint remains pending those writing controls rather than being implied by the read-only navigation checks.
 
 <a id="t08"></a>
 

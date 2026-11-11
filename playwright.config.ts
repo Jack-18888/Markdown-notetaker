@@ -9,6 +9,7 @@ if (!dataDirectory)
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
+  workers: 4,
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'retain-on-failure',
