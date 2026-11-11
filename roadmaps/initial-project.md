@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T09 are implemented in the PR stack, awaiting review. The editor/backend compatibility checkpoint passes for the documented rich subset. T10's Mermaid previews are in progress; autosave/recovery and import/export remain T11-T12.
+**Status:** T01-T10 are implemented in the PR stack, awaiting review. The editor/backend compatibility checkpoint and editable Mermaid previews pass for the documented subset and limits. Autosave/recovery and import/export remain T11-T12.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status        | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------------- | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
-| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `done`        | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `done`        | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `done`        | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `done`        | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `in_progress` | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `done` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `done` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `done` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `done` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -622,7 +622,7 @@ Integrate the validated editor with a Notion-like editing workflow.
 
 Show diagrams alongside their editable source without allowing invalid or stale renders to break notes.
 
-**Status:** `in_progress` · **Priority:** high  
+**Status:** `done` · **Priority:** high
 **Depends on:** T09  
 **Requirements:** R4
 
@@ -641,10 +641,10 @@ Show diagrams alongside their editable source without allowing invalid or stale 
 
 **Acceptance criteria**
 
-- [ ] Valid flowchart and sequence diagrams render, including multiple diagrams in one note.
-- [ ] Invalid source stays editable and does not crash the editor or create global error overlays.
-- [ ] Rapid edits and note switches cannot display an outdated diagram in another block.
-- [ ] Untrusted diagrams cannot execute scripts or weaken renderer configuration.
+- [x] Valid flowchart and sequence diagrams render, including multiple diagrams in one note.
+- [x] Invalid source stays editable and does not crash the editor or create global error overlays.
+- [x] Rapid edits and note switches cannot display an outdated diagram in another block.
+- [x] Untrusted diagrams cannot execute scripts or weaken renderer configuration.
 
 **Verification**
 
@@ -652,9 +652,12 @@ Show diagrams alongside their editable source without allowing invalid or stale 
 
 **Evidence**
 
-- The [renderer boundary](../apps/web/src/editor/diagram-renderer.ts) pins Mermaid 12.3.0 and DOMPurify 3.4.17, runs with strict security, disables HTML labels/configuration overrides, bounds preview work, serializes asynchronous calls, and cleans temporary DOM. [Policy tests](../apps/web/src/editor/__test__/diagram-policy.test.ts) cover limits and configuration rejection. [Real Chromium checks](../tests/e2e/diagram-renderer.spec.ts) pass for flowcharts, sequence diagrams, invalid/blocked/canceled work, static SVG sanitization, and cleanup. Source editing, integrated previews, and remaining T10 acceptance are still pending.
+- The [renderer boundary](../apps/web/src/editor/diagram-renderer.ts) pins Mermaid 12.3.0 and DOMPurify 3.4.17, runs with strict security, disables HTML labels/configuration overrides, bounds preview work, serializes asynchronous calls, and cleans temporary DOM. [Policy tests](../apps/web/src/editor/__test__/diagram-policy.test.ts) cover limits and configuration rejection. [Real Chromium checks](../tests/e2e/diagram-renderer.spec.ts) pass for flowcharts, sequence diagrams, invalid/blocked/canceled work, static SVG sanitization, and cleanup. The renderer slice preceded the mounted integration and final verification below.
 
-- The optional [node view](../apps/web/src/editor/mermaid-node-view.tsx) now connects [source editing and debounced previews](../apps/web/src/editor/MermaidView.tsx) to the writing canvas. [Integrated editing checks](../tests/e2e/mermaid-editing.spec.ts) pass for multiple diagrams, invalid source, editing surrounding text, exact untouched diagram payloads through saves/reopen, source undo/redo, removal, and undo restoration. Stale/security coverage and the full T10 verification remain the final slice.
+- The optional [node view](../apps/web/src/editor/mermaid-node-view.tsx) connects [source editing and debounced previews](../apps/web/src/editor/MermaidView.tsx) to the writing canvas. [Integrated editing checks](../tests/e2e/mermaid-editing.spec.ts) pass for multiple diagrams, invalid source, editing surrounding text, exact untouched diagram payloads through saves/reopen, source undo/redo, removal, and undo restoration. Final stale/security verification follows.
+- Verified 2026-11-10 on Windows 11 x64 / Node 24.18.0 / npm 12.2.2, delivered as renderer, node-view, and verification PRs above T09. Awaiting review. [Safety checks](../tests/e2e/mermaid-safety.spec.ts) exercise rapid edits and note switches, a deliberately delayed real Mermaid module request, hostile HTML/links, disabled source configuration, and oversized source that remains editable and saveable. No script dialogs or external image requests occur; temporary render DOM is removed. The 375px layout stays contained, and the two-diagram writing canvas was visually inspected.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (374 tests), and `npm run build` pass. The full `npm run test:e2e` run passes 30 checks; the subsequently expanded `npm run test:e2e -- mermaid-safety.spec.ts` passes all three checks, adding the delayed-import scenario for 31 total browser checks. Documentation links/JSON examples and `git diff --check` pass. Installation reports zero vulnerabilities. No persisted format changed; migration tests remain green.
+- Preview work is bounded and debounced, but already executing synchronous main-thread layout cannot be interrupted. Production build warns about Mermaid vendor chunks exceeding 500 kB; Mermaid loads lazily from local assets and no CDN is required. General production packaging/acceptance remains T14. Autosave/navigation flushing and conflict recovery remain T11.
 
 <a id="t11"></a>
 
