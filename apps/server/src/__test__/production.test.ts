@@ -42,7 +42,7 @@ describe('production startup and static routing', () => {
   });
   it('serves navigation HTML and static assets while preserving API and missing-asset errors', async () => {
     const temporary = temporaryWorkspace();
-    const web = join(temporary.directory, 'web');
+    const web = join(temporary.directory, '.hidden', 'web');
     mkdirSync(join(web, 'assets'), { recursive: true });
     const html = '<!doctype html><title>Production test</title>';
     writeFileSync(join(web, 'index.html'), html);

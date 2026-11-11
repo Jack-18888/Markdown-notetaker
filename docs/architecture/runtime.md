@@ -8,7 +8,7 @@ API Host accepts only `127.0.0.1` or `localhost`, optionally with a valid port; 
 
 Store SQLite files in a configurable local data directory excluded from Git. Startup initializes the directory and applies migrations; shutdown closes the connection. Report inaccessible paths, locks, and migration failures without deleting existing content. Backup/restore instructions must account for SQLite sidecar files; the initial operational guidance will use a stopped server.
 
-The app targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. [T14 evidence](../../roadmaps/initial-project.md#t14) verifies production execution and restart durability; final installation/backup walkthroughs belong to T15.
+The app targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. [T14 evidence](../../roadmaps/initial-project.md#t14) verifies production execution and restart durability; [T15](../../roadmaps/initial-project.md#t15) records final installation, backup/restore, and release acceptance.
 
 ## Source imports and production builds
 
@@ -30,7 +30,14 @@ The default database is data/workspace.sqlite under the repository root. DATA_DI
 
 The HTTP/database lifecycle is managed by [startServer](../../apps/server/src/server.ts). Normal SIGINT/SIGTERM shutdown stops HTTP before closing SQLite; failed port binding closes the initialized database too. The connection factory accepts a directory/migration list for integration checks and a bounded busy-timeout override; normal startup uses 5000 ms.
 
-For a backup, stop all backend processes and copy the entire configured data directory, keeping any SQLite WAL/SHM sidecars with the main file. Restore only while the backend is stopped, preserving the previous directory separately. The full operational walkthrough remains release work; reopen/upgrade durability is already tested on isolated data.
+For a backup or restore:
+
+1. Wait for the note to show `Saved.`, then stop every backend using that data directory. A database backup contains saved notes, not pending browser edits.
+2. Copy the entire configured data directory to a new backup location, keeping any SQLite WAL/SHM sidecars with `workspace.sqlite`. Do not copy only the main file while a server is running.
+3. To restore, keep the current directory separately and copy the complete backup into a new local directory. Set `DATA_DIR` to that restored directory in `.env` or the process environment.
+4. Start the app and verify its folder tree and notes. The previous directory and backup remain available if verification fails. Do not delete/reset a database to resolve an initialization or migration error.
+
+The [production acceptance scenario](../../tests/e2e/production.spec.ts) performs this stopped-server copy/restore into separate temporary directories and verifies exact source, IDs, revisions, and hierarchy through the restarted API. This validates the documented whole-directory workflow with the current schema; it does not validate hot backups or backups from future/incompatible app versions.
 
 ## Browser-test isolation
 

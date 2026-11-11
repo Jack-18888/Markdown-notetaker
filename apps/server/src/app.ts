@@ -1,5 +1,5 @@
 import express from 'express';
-import { extname, join } from 'node:path';
+import { extname } from 'node:path';
 import {
   apiContracts,
   ApiErrorCode,
@@ -57,7 +57,7 @@ export function createApp({
     app.use(express.static(webDirectory));
     app.get('/{*path}', (request, response, next) => {
       if (extname(request.path) || !request.accepts('html')) return next();
-      response.sendFile(join(webDirectory, 'index.html'));
+      response.sendFile('index.html', { root: webDirectory });
     });
   }
 

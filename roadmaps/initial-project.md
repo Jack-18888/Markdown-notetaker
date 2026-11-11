@@ -1,11 +1,11 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T14 are implemented in the PR stack, awaiting review. Rich writing, editable diagrams, save/conflict recovery, Markdown portability, integrated keyboard/accessibility review, and built production/restart checks pass for the documented scope. Final release acceptance and documentation remain T15.
+**Status:** T01-T15 are implemented and locally verified in the PR stack, awaiting review and merge. Final acceptance passes from a clean checkout: 416 unit/integration tests, 91 Chromium development scenarios, three production checks, typecheck, lint, formatting, and build. Environment, evidence, and remaining limitations are recorded under T15.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
-This document defines the initial release's design, detailed requirements, and implementation tasks. It does not describe completed functionality. Product-level goals live in [product requirements](../docs/requirements.md); the [architecture](../docs/architecture.md) explains the proposed system in greater depth.
+This document owns the initial release's design, detailed requirements, implementation tasks, and verification evidence. Task statuses describe implementation in the PR stack; review and merge remain separate. Product-level goals live in [product requirements](../docs/requirements.md); the [architecture](../docs/architecture.md) explains the system in greater depth.
 
 ## Goal and scope
 
@@ -17,7 +17,7 @@ One person using a local workspace on their own computer.
 
 **Outside this release:** Authentication, Multiple users, Collaboration, Public hosting, Cloud sync, Search, Tags, Uploads, Trash, Note version history, Filesystem mirroring, Separate Markdown source mode.
 
-## Proposed design
+## Release design
 
 Use a React workspace for folder navigation, rich editing, Markdown conversion, and diagram previews. A local Express API owns hierarchy rules, revision checks, and SQLite persistence. Portable shared TypeScript schemas keep browser and server contracts aligned without exposing server dependencies to the browser.
 
@@ -158,7 +158,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | [T12](#t12) | Markdown import/export                   | `done` | [T10](#t10), [T11](#t11) |
 | [T13](#t13) | Accessibility and failure review         | `done` | [T12](#t12)              |
 | [T14](#t14) | Production execution                     | `done` | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
+| [T15](#t15) | Release acceptance and docs              | `done` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -843,7 +843,7 @@ Serve the built app from Express and retain notes across application restarts.
 
 Verify the agreed release end to end and replace planning-only setup information with accurate instructions.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
 **Depends on:** T13, T14  
 **Requirements:** R1, R2, R3, R4, R5, R6, R7, R8
 
@@ -863,16 +863,22 @@ Verify the agreed release end to end and replace planning-only setup information
 
 **Acceptance criteria**
 
-- [ ] A clean checkout can follow the verified setup/deployment documentation linked from README to install, develop, build, and run locally.
-- [ ] All required quality checks and release scenarios pass with recorded evidence.
-- [ ] No task is marked done with unmet acceptance criteria or unreported blockers.
-- [ ] README describes actual capabilities and tested startup instructions; architecture matches implementation, product requirements remain high-level and this roadmap retains initial-release scope, and AGENTS remains durable workflow guidance.
+- [x] A clean checkout can follow the verified setup/deployment documentation linked from README to install, develop, build, and run locally.
+- [x] All required quality checks and release scenarios pass with recorded evidence.
+- [x] No task is marked done with unmet acceptance criteria or unreported blockers.
+- [x] README describes actual capabilities and tested startup instructions; architecture matches implementation, product requirements remain high-level and this roadmap retains initial-release scope, and AGENTS remains durable workflow guidance.
 
 **Verification**
 
-- Run npm run typecheck, npm run lint, npm run format:check, npm test, npm run test:e2e, and npm run build.
+- Run npm run typecheck, npm run lint, npm run format:check, npm test, npm run test:e2e, npm run build, and npm run test:production.
 - Perform a clean-install/setup walkthrough and review tracked files for database/artifact leakage.
 
 **Evidence**
 
-No verification evidence recorded.
+- Verified 2026-11-11, Windows 11 x64 / Node 24.18.0 / npm 12.2.2 / Chromium. All initial-release tasks are implemented in the open PR stack; review/merge and any release publication remain separate from local acceptance.
+- A fresh detached checkout of the final runtime/test source installed 479 packages through `npm ci --offline` using the local npm cache. It had no existing node_modules, build output, `.env`, or note database. Native SQLite loads; `npx playwright install chromium` succeeds using the existing browser cache. The separately launched development frontend/backend, proxy, and built `npm start` workflow run through the documented commands.
+- From that checkout, `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (416 tests in 33 files), `npm run test:e2e` (91 Chromium scenarios), `npm run build`, and `npm run test:production` (three checks) all pass. These include the final Markdown contract/conversion fixtures, real HTTP/SQLite hierarchy mutations, migration upgrade/rollback/reopen, save ordering, failed requests, two-tab conflicts, source fallback, hostile content, diagrams, keyboard operation, file downloads, startup errors, and restart durability.
+- Clean-checkout production acceptance found an HTML navigation fallback failure when the project path includes a hidden directory. [The app](../apps/server/src/app.ts) now serves the fixed index from an explicit frontend root; [the regression fixture](../apps/server/src/__test__/production.test.ts) places assets in a hidden directory. The corrected code passes both the clean production run and the complete rerun above.
+- The [production suite](../tests/e2e/production.spec.ts) also stops its own server, copies the complete temporary data directory to a backup and a separate restore directory, restarts against the restore, and verifies hierarchy, IDs, revisions, BOM/Unicode/line endings, and exact Markdown/Mermaid source through the real API. Originals remain intact. Windows process-tree termination is forced; graceful HTTP/database close is checked separately by the runtime integration suite.
+- README now describes actual capabilities, prerequisites, configuration, local production commands, tests, and limitations, linking to the verified stopped-server backup/restore procedure. Architecture/API/persistence pages and the scoped decision register match the implementation. Product requirements and AGENTS remain unchanged. Local documentation links, all three API JSON examples against their runtime schemas, formatting, and `git diff --check` pass. Tracked-file review confirms no notes, databases, secrets, dependencies, screenshots, generated builds, or acceptance-checkout files are included.
+- No unresolved acceptance blocker remains within the agreed scope. Existing limits remain: permanent deletion; no crash recovery/version history for pending text; no idempotency for unacknowledged creates; bounded rich conversion and read-only unsupported source; strict diagram limits with uninterruptible synchronous main-thread layout; large lazy Mermaid vendor chunk warnings; local single-user operation without authentication; Windows/Chromium validation without other-platform or full screen-reader/WCAG certification. Dependency installation/browser setup reused local caches rather than proving a fresh network download. No new persisted format or dependency changes were needed for T12-T15.
