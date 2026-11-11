@@ -13,7 +13,9 @@ export type NameAction =
   | { kind: 'rename'; target: ResourceTarget };
 export type MoveAction = { kind: 'move'; target: ResourceTarget };
 export type DeleteAction = { kind: 'delete'; target: ResourceTarget };
-export type LifecycleAction = NameAction | MoveAction | DeleteAction;
+export type ImportAction = { kind: 'import'; parentId: ParentId };
+export type LifecycleAction =
+  NameAction | MoveAction | DeleteAction | ImportAction;
 
 export function subtreeFolders(tree: WorkspaceTree, id: ResourceId) {
   const found = new Set<ResourceId>();

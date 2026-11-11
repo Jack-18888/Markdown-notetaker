@@ -48,6 +48,14 @@ export default function WorkspaceActions({
       >
         New folder
       </button>
+      <button
+        type="button"
+        className="workspace-retry"
+        disabled={waiting}
+        onClick={() => onAction({ kind: 'import', parentId })}
+      >
+        Import Markdown
+      </button>
       {target && (
         <button
           type="button"
