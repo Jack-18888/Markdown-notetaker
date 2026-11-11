@@ -11,8 +11,15 @@ import {
 } from '@markdown-note-taker/contracts';
 import { apiErrorHandler } from './http/errors.js';
 import { protectApi } from './http/protection.js';
+import { workspaceRouter } from './http/workspace.js';
+import type { WorkspaceService } from './workspace/types.js';
 
-export function createApp({ serveWeb = false } = {}) {
+interface AppOptions {
+  workspace: WorkspaceService;
+  serveWeb?: boolean;
+}
+
+export function createApp({ workspace, serveWeb = false }: AppOptions) {
   const app = express();
   app.disable('x-powered-by');
   app.use('/api', protectApi({ serveWeb }));
@@ -26,6 +33,8 @@ export function createApp({ serveWeb = false } = {}) {
       .status(apiContracts.health.status)
       .json(healthResponseSchema.parse(health));
   });
+
+  app.use(workspaceRouter(workspace));
 
   app.use('/api', (_request, response) => {
     response.status(errorDefinitions[ApiErrorCode.NOT_FOUND].status).json(

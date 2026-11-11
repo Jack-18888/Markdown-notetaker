@@ -1,15 +1,22 @@
 import Database from 'better-sqlite3';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
-import { createApp } from '../app.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { temporaryApp } from './temporary-workspace.js';
 import {
   errorDefinitions,
   errorResponseSchema,
 } from '@markdown-note-taker/contracts';
 
+const applications: ReturnType<typeof temporaryApp>[] = [];
+afterEach(() => {
+  for (const application of applications.splice(0)) application.cleanup();
+});
+
 describe('scaffold runtime', () => {
   it('serves health and keeps unknown API routes as JSON errors', async () => {
-    const app = createApp();
+    const application = temporaryApp();
+    applications.push(application);
+    const { app } = application;
     const health = await request(app).get('/api/health').expect(200);
     expect(health.body).toEqual({
       status: 'ok',

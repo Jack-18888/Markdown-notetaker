@@ -1,7 +1,11 @@
 import { once } from 'node:events';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startServer } from '../server.js';
-import { seedWorkspace, temporaryWorkspace } from './temporary-workspace.js';
+import {
+  fixtureIds,
+  seedWorkspace,
+  temporaryWorkspace,
+} from './temporary-workspace.js';
 
 const running: ReturnType<typeof startServer>[] = [];
 const workspaces: ReturnType<typeof temporaryWorkspace>[] = [];
@@ -15,7 +19,7 @@ describe('server database lifecycle', () => {
     const temporary = temporaryWorkspace();
     workspaces.push(temporary);
     const initial = temporary.open();
-    seedWorkspace(initial);
+    const content = seedWorkspace(initial);
     initial.close();
     const runtime = startServer({
       port: 0,
@@ -30,6 +34,11 @@ describe('server database lifecycle', () => {
     expect(
       (await fetch(`http://127.0.0.1:${address.port}/api/health`)).status,
     ).toBe(200);
+    const note = await fetch(
+      `http://127.0.0.1:${address.port}/api/notes/${fixtureIds.note}`,
+    );
+    expect(note.status).toBe(200);
+    expect(await note.json()).toMatchObject({ id: fixtureIds.note, content });
     await runtime.close();
     await runtime.close();
     expect(runtime.server.listening).toBe(false);
