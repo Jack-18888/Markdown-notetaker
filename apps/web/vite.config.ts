@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
         '@tiptap/markdown',
         '@tiptap/starter-kit',
         'marked',
+        'mermaid',
+        'dompurify',
       ],
     },
     server: {
