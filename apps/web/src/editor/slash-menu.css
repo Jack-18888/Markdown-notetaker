@@ -1,11 +1,14 @@
 .slash-menu {
-  width: min(100%, 340px);
+  position: fixed;
+  z-index: 3;
+  width: min(calc(100vw - 24px), 340px);
+  max-height: calc(100svh - 24px);
+  overflow: auto;
   border: 1px solid #c5c9b6;
   border-top: 3px solid #596b42;
   background: #fcfaf5;
   padding: 12px;
   box-shadow: 0 12px 30px #292d2717;
-  margin-top: 12px;
 }
 .slash-menu .workspace-eyebrow {
   margin: 0 8px 8px;

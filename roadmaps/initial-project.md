@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T08 are implemented in the PR stack, awaiting review. T09's rich writing interface is in progress. The complete editor/backend compatibility checkpoint remains pending T09.
+**Status:** T01-T09 are implemented in the PR stack, awaiting review. The editor/backend compatibility checkpoint passes for the documented rich subset. Mermaid previews, autosave/recovery, and import/export remain T10-T12.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status        | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------------- | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
-| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `done`        | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `done`        | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `done`        | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `in_progress` | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `done` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `done` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `done` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -422,7 +422,7 @@ Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered ab
 - `npm run typecheck`, `npm run lint`, `npm test` (211 tests), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes both Chromium checks, including [browser writes through Vite](../tests/e2e/workspace-api.spec.ts). [Server lifecycle tests](../apps/server/src/__test__/server.test.ts) verify loopback binding, startup failure, occupied ports, and production-mode HTTP persistence after restart.
 - A compiled production smoke check launched the built entry with plain Node and an isolated temporary data directory. Static assets, JSON API fallback, Host/origin rejection, note writes, restart durability, stale revision conflicts, and deletion pass. Its processes and temporary data were removed. Local documentation link targets and all three API JSON examples validate; `git diff --check` passes. No database format or dependency changes were needed.
 
-The [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint) remains pending. These T05 checks validate raw Markdown transport and persistence; [T06 evidence](#t06) records frontend conversion coverage. The integrated writing UI and diagram previews remain later work. Full production backup/restore acceptance remains in T14.
+The integrated [T09 editor/backend checkpoint](#t09) now passes for the documented rich subset. These T05 checks validate raw Markdown transport and persistence; [T06 evidence](#t06) records frontend conversion coverage. Diagram previews remain T10. Full production backup/restore acceptance remains in T14.
 
 <a id="t06"></a>
 
@@ -470,7 +470,7 @@ Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered in
 - The [fallback component](../apps/web/src/editor/SourceFallback.tsx) displays read-only selectable source with an explanation. [DOM tests](../apps/web/src/editor/__test__/source-fallback.test.ts) and [Chromium checks](../tests/e2e/editor-compatibility.spec.ts) verify literal hostile HTML/URLs, keyboard focus, and narrow-screen containment. Visually inspected the 375px-wide source view. [Editor architecture](../docs/architecture/editor.md) records supported/fallback forms, limits, interfaces, and pending rendering work.
 - `npm run typecheck`, `npm run lint`, `npm test` (304 tests, including 93 frontend checks), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes all four Chromium checks. A real mounted editor edits source, saves it through the actual API/SQLite stack, and reloads it after browser navigation with exact Mermaid payloads. Vite prebundles editor dependencies to prevent first-import reloads. Root tooling typechecks include DOM APIs for browser evaluation; portable contracts keep their own DOM-free typecheck.
 
-T06 compatibility is validated for the documented subset and limits. Workspace navigation, writing controls, actual Mermaid previews, autosave/recovery, and file import/export remain later tasks. The full [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint) remains pending the integrated writing UI; [T05 API evidence](#t05) and these T06 fixtures supply its backend/conversion coverage.
+T06 compatibility is validated for the documented subset and limits. The integrated writing UI and full [T09 editor/backend checkpoint](#t09) now pass, using [T05 API evidence](#t05) and these T06 fixtures for lower-layer coverage. Actual Mermaid previews, autosave/recovery, and file import/export remain T10-T12.
 
 <a id="t07"></a>
 
@@ -513,7 +513,7 @@ Provide the main layout and metadata-driven navigation with usable empty and err
 Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered in six PRs above the editor stack: client/index, navigation components, layout styles, app integration, title saves, and final browser/state verification. Awaiting review.
 
 - The [workspace client](../apps/web/src/workspace/api.ts) validates shared success/error contracts and note identity. The [hierarchy index](../apps/web/src/workspace/tree.ts) rejects duplicate IDs, missing parents, and cycles. [Navigation architecture](../docs/architecture/navigation.md) records stable ID-based selection/expansion, folder-first numeric label ordering, breadcrumbs, request lifetimes, and title-save behavior.
-- The [app shell](../apps/web/src/App.tsx) supplies root/deep-folder navigation, distinct empty states, loading/error/retry views, a collapsible sidebar, breadcrumbs, and on-demand note detail. The [reading view](../apps/web/src/workspace/NotePreview.tsx) uses T06's conversion boundary and source fallback; it does not write note bodies. [Request lifecycle tests](../apps/web/src/workspace/__test__/useLoad.test.ts) verify cancellation and ignoring late completions even when the transport ignores abort.
+- The [app shell](../apps/web/src/App.tsx) supplies root/deep-folder navigation, distinct empty states, loading/error/retry views, a collapsible sidebar, breadcrumbs, and on-demand note detail. The [note content view](../apps/web/src/workspace/NoteContent.tsx) uses T06's conversion boundary and source fallback; opening notes does not write their bodies. T09 subsequently adds explicit body editing. [Request lifecycle tests](../apps/web/src/workspace/__test__/useLoad.test.ts) verify cancellation and ignoring late completions even when the transport ignores abort.
 - [Deep navigation checks](../tests/e2e/navigation.spec.ts) use real API/SQLite fixtures for three folder levels, note selection, breadcrumbs, exact saved source, and deleted-selection recovery. [State/browser checks](../tests/e2e/navigation-states.spec.ts) cover keyboard operation, 375px layout, empty folders/workspace, loading/failure/retry, rapid selection, and safe original-source fallback. Controlled failed/empty responses isolate UI states; persisted-note workflows use the real API. Reopening folders after scrolling a long note now brings navigation into view and focuses its first control.
 - [Title-save browser checks](../tests/e2e/title.spec.ts) verify explicit save/discard, shared name validation, revision checks, in-flight newer edits, failed-save retry, another tab's conflict, protected navigation/refresh, and the dirty-tab warning handler. Title patches omit content and preserve the original source byte-for-byte. Metadata updates do not remount the reading view or reset a newer draft. General body editing/autosave/recovery remain T09/T11.
 - `npm run typecheck`, `npm run lint`, `npm test` (321 tests, including 17 workspace client/model/component/lifecycle checks), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes all ten Chromium checks using at most four workers. The Markdown parser and lazy preview compile to separate browser chunks without the prior chunk-size warning. All local documentation link targets and three API JSON examples validate; `git diff --check` passes.
@@ -573,7 +573,7 @@ T09/T10 still own body editing and diagram previews; T11 owns general autosave a
 
 Integrate the validated editor with a Notion-like editing workflow.
 
-**Status:** `in_progress` · **Priority:** high
+**Status:** `done` · **Priority:** high
 
 **Depends on:** T06, T07  
 **Requirements:** R3, R4, R5, R6, R8
@@ -595,11 +595,11 @@ Integrate the validated editor with a Notion-like editing workflow.
 
 **Acceptance criteria**
 
-- [ ] Each agreed block/mark can be created, edited, removed, and restored with undo/redo.
-- [ ] Slash menu selection works by keyboard and mouse and dismisses correctly.
-- [ ] Switching notes does not carry text or undo history into another document.
-- [ ] Unsafe links and HTML remain inert; unsupported rich content retains its saved source and shows a usable read-only fallback.
-- [ ] The Markdown/editor compatibility checkpoint passes, with evidence linked from T05 and T06.
+- [x] Each agreed block/mark can be created, edited, removed, and restored with undo/redo.
+- [x] Slash menu selection works by keyboard and mouse and dismisses correctly.
+- [x] Switching notes does not carry text or undo history into another document.
+- [x] Unsafe links and HTML remain inert; unsupported rich content retains its saved source and shows a usable read-only fallback.
+- [x] The Markdown/editor compatibility checkpoint passes, with evidence linked from T05 and T06.
 
 **Verification**
 
@@ -610,7 +610,11 @@ Integrate the validated editor with a Notion-like editing workflow.
 
 - The [shared command layer](../apps/web/src/editor/commands.ts) supplies block insertion, formatting/history actions, search labels, and validated link changes for the toolbar/slash UI. [24 real-editor checks](../apps/web/src/editor/__test__/commands.test.ts) pass for supported blocks/marks, single-update mutations, guarded serialization, undo/redo, slash-query replacement, rejected nested diagrams/ranges, read-only protection, and safe link changes.
 - The command layer now drives the [toolbar](../apps/web/src/editor/EditorToolbar.tsx), [validated link dialog](../apps/web/src/editor/LinkDialog.tsx), [slash menu](../apps/web/src/editor/SlashMenu.tsx), and [selected-note canvas](../apps/web/src/editor/NoteEditor.tsx). Explicit body saves retain in-flight edits and coordinate revisions with title saves; dirty writing blocks navigation and lifecycle actions. [Body-save browser checks](../tests/e2e/writing-save.spec.ts) cover ordering, source retention, retry, and conflicts against real API/temporary SQLite data. T11 still owns autosave, navigation flushing, and conflict recovery.
-- Full control interaction coverage and the integrated compatibility checkpoint remain required before T09 is complete.
+- Verified 2026-11-10, Windows 11 x64 / Node 24.18.0 / npm 12.2.2. Delivered above the shared-command PR as four focused PRs: toolbar/links, slash insertion, canvas/explicit saves, and workflow/checkpoint verification. Awaiting review.
+- [Control browser checks](../tests/e2e/writing-controls.spec.ts) cover keyboard/pointer slash filtering and dismissal, formatting and typing shortcuts, link validation/removal/cancel/focus restoration, note-local history, literal hostile fallback, and 375px layout containment. The slash menu stays beside the caret within the viewport. Visually inspected the narrow writing canvas.
+- [Conversion recovery](../tests/e2e/writing-conversion.spec.ts) verifies that an unsupported nested-diagram edit sends no write, retains writing and saved source, and recovers through undo. [Frontend boundary fixtures](../apps/web/src/editor/__test__/markdown.test.ts), [command tests](../apps/web/src/editor/__test__/commands.test.ts), and the [mounted toolbar test](../apps/web/src/editor/__test__/toolbar.test.ts) cover all supported blocks/marks, reversible edits, schema/link guards, and untouched-source retention.
+- **Compatibility checkpoint:** [Raw string/UTF-8 validation](../packages/contracts/src/__test__/markdown.test.ts), [API validation/conflicts](../apps/server/src/http/__test__/notes.test.ts), and [18 shared-fixture HTTP/reopen checks](../apps/server/src/http/__test__/editor-checkpoint.test.ts) pass. The same supported editor fixtures plus empty, CRLF Mermaid, unsupported, and hostile source survive create/update/read/reopen byte-for-byte; stale writes leave the acknowledged revision unchanged. [Browser save checks](../tests/e2e/writing-save.spec.ts) and [browser conversion checks](../tests/e2e/editor-compatibility.spec.ts) prove supported edits through the actual editor/API/SQLite path with exact Mermaid payloads. No persisted format changed; existing migration upgrade/rollback/reopen tests still pass.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (373 tests), and `npm run build` pass. `npm run test:e2e` passes all 24 checks in the full run; the subsequently added `npm run test:e2e -- writing-conversion.spec.ts` passes its additional check. Local documentation links and JSON examples validate; `git diff --check` passes. Diagram source editing/previews remain T10; autosave, navigation flushing, and explicit conflict recovery remain T11. Conflict responses currently preserve writing and report the failure.
 
 <a id="t10"></a>
 
