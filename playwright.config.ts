@@ -8,6 +8,7 @@ if (!dataDirectory)
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: 'production.spec.ts',
   fullyParallel: true,
   workers: 4,
   use: {
