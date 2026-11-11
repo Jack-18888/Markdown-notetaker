@@ -1,0 +1,31 @@
+.slash-menu {
+  width: min(100%, 340px);
+  border: 1px solid #c5c9b6;
+  border-top: 3px solid #596b42;
+  background: #fcfaf5;
+  padding: 12px;
+  box-shadow: 0 12px 30px #292d2717;
+  margin-top: 12px;
+}
+.slash-menu .workspace-eyebrow {
+  margin: 0 8px 8px;
+}
+.slash-menu [role='listbox'] {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.slash-menu [role='option'] {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.slash-menu [role='option']:hover,
+.slash-menu [aria-selected='true'] {
+  background: #dce3cf;
+  color: #293b1a;
+}
+.slash-hint {
+  color: #5c6254;
+  font-size: 0.72rem;
+  margin: 12px 8px 0;
+}
