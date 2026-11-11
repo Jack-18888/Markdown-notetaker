@@ -62,8 +62,6 @@ export function assessSource(source: string): FallbackReason | null {
         // Exact original line endings can be recovered only for top-level fences.
         if (token.lang === 'mermaid' && depth > 0) return 'unsupported';
       }
-      if (token.type === 'text' && /\$\$|\$[^$\n]+\$/.test(token.text ?? ''))
-        return 'unsupported';
       if (token.type === 'list') {
         const tasks = token.items.filter(
           (item: Tokens.ListItem) => item.task,
@@ -77,6 +75,12 @@ export function assessSource(source: string): FallbackReason | null {
           : 'tokens' in token
             ? (token.tokens ?? [])
             : [];
+      if (
+        token.type === 'text' &&
+        children.length === 0 &&
+        /\$\$|\$[^$\n]+\$/.test(token.text ?? '')
+      )
+        return 'unsupported';
       for (const child of children)
         pending.push({ token: child, depth: depth + 1 });
     }

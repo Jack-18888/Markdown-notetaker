@@ -25,9 +25,18 @@ describe('source compatibility policy', () => {
     '```html\n<script>alert(1)</script>\n```',
     '```text\n![literal](image.png)\n---\ntitle: literal\n---\n```',
     '```mermaid\nflowchart LR\n A --> B\n```',
+    '- Calculate with `$x$`',
+    '- **Calculate** with `$$x$$`',
+    '> - Literal `$x$` inside a quote',
   ])('accepts supported source %# without interpreting code', (source) => {
     expect(assessSource(source)).toBeNull();
   });
+  it.each(['- Calculate with $x$', '> - Math $$x$$'])(
+    'still rejects actual math in nested text: %s',
+    (source) => {
+      expect(assessSource(source)).toBe('unsupported');
+    },
+  );
   it('bounds source bytes before tokenization', () => {
     expect(assessSource('é'.repeat(editorLimits.sourceBytes / 2))).toBeNull();
     expect(assessSource('é'.repeat(editorLimits.sourceBytes / 2) + 'a')).toBe(

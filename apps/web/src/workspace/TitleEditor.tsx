@@ -6,9 +6,11 @@ import './title-editor.css';
 export default function TitleEditor({
   session,
   state,
+  focusOnMount = false,
 }: {
   session: SaveCoordinator;
   state: SaveState;
+  focusOnMount?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -18,8 +20,8 @@ export default function TitleEditor({
     if (editing) {
       opened.current = true;
       input.current?.focus();
-    } else if (opened.current) editButton.current?.focus();
-  }, [editing]);
+    } else if (opened.current || focusOnMount) editButton.current?.focus();
+  }, [editing, focusOnMount]);
   const pending = state.status === 'saving';
   return (
     <>

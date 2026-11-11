@@ -27,6 +27,8 @@ describe('source-retaining conversion boundary', () => {
     '# Heading\r\n\r\nText.  \r\nNext\r\n',
     '- item\n\n\n- second\n',
     '~~~js\nconst example = 1;\n~~~\n',
+    '- Calculate with `$x$`',
+    '> - Literal `$x$` in a quote',
   ])('returns untouched original source %#', (source) => {
     const loaded = loadMarkdown(source);
     expect(loaded.mode).toBe('rich');
@@ -101,6 +103,42 @@ describe('source-retaining conversion boundary', () => {
     expect(
       reopened.document.content?.slice(0, 2).map((node) => node.attrs?.source),
     ).toEqual(['A["```"] --> B', 'sequenceDiagram\nA->>B: Hi']);
+  });
+
+  it.each([
+    ['# Heading', [0], 'level', 2],
+    ['- [ ] task', [0, 0], 'checked', true],
+    ['```mermaid\nA --> B\n```', [0], 'source', 'A --> C'],
+    ['```text\nLiteral code\n```', [0], 'language', 'js'],
+  ] as const)(
+    'serializes an attribute-only edit without changing its baseline: %s',
+    (source, path, attribute, value) => {
+      const loaded = loadMarkdown(source);
+      if (loaded.mode !== 'rich') throw new Error('Expected supported source.');
+      const original = structuredClone(loaded.document);
+      let node = loaded.document;
+      for (const index of path) node = node.content![index]!;
+      node.attrs![attribute] = value;
+      const saved = loaded.serialize(loaded.document);
+      expect(saved).not.toBe(source);
+      const reopened = loadMarkdown(saved);
+      if (reopened.mode !== 'rich') throw new Error('Expected supported edit.');
+      expect(reopened.document).toEqual(loaded.document);
+      expect(loaded.serialize(original)).toBe(source);
+    },
+  );
+
+  it('keeps exposed link attributes separate from the captured baseline', () => {
+    const source = '[Example](https://example.com/original)';
+    const loaded = loadMarkdown(source);
+    if (loaded.mode !== 'rich') throw new Error('Expected supported source.');
+    const original = structuredClone(loaded.document);
+    loaded.document.content![0]!.content![0]!.marks![0]!.attrs!.href =
+      'https://example.com/changed';
+    expect(loaded.serialize(loaded.document)).toContain(
+      'https://example.com/changed',
+    );
+    expect(loaded.serialize(original)).toBe(source);
   });
 
   it('refuses unsupported nodes, unsafe links, invalid attributes, and excessive nesting', () => {

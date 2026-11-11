@@ -16,7 +16,7 @@ export const blockCommands: readonly EditorCommand[] = [
     id: 'paragraph',
     label: 'Text',
     keywords: 'paragraph plain',
-    apply: (chain) => chain.setParagraph(),
+    apply: (chain) => chain.clearNodes(),
     active: (editor) => editor.isActive('paragraph'),
   },
   ...([1, 2, 3, 4, 5, 6] as const).map((level) => ({

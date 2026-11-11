@@ -88,7 +88,7 @@ export function loadMarkdown(source: string): LoadedMarkdown {
     return {
       mode: 'rich',
       source,
-      document: baseline.toJSON(),
+      document: structuredClone(baseline.toJSON()),
       serialize(document) {
         try {
           const current = checkedDocument(document);

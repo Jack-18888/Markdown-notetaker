@@ -1,5 +1,77 @@
 import { expect, test } from './note-fixtures.js';
 
+test('reselecting the active note cancels a pending destination while its edits still save', async ({
+  page,
+  notes,
+}) => {
+  const active = await notes.create('Reselect active');
+  const destination = await notes.create('Reselect destination');
+  let release = () => {};
+  let started = false;
+  let destinationReads = 0;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  page.on('request', (request) => {
+    if (
+      request.method() === 'GET' &&
+      request.url().endsWith(`/api/notes/${destination.id}`)
+    )
+      destinationReads++;
+  });
+  try {
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: 'Open note Reselect active', exact: true })
+      .click();
+    const body = page.getByRole('textbox', {
+      name: 'Note content',
+      exact: true,
+    });
+    await page.route(`**/api/notes/${active.id}`, async (route) => {
+      if (route.request().method() !== 'PATCH') return route.continue();
+      const response = await route.fetch();
+      if (!started) {
+        started = true;
+        await gate;
+      }
+      await route.fulfill({ response });
+    });
+    await body.fill('First draft');
+    const navigation = page.getByRole('navigation', {
+      name: 'Workspace folders',
+    });
+    await navigation
+      .getByRole('button', { name: 'Reselect destination', exact: true })
+      .click();
+    await expect.poll(() => started).toBe(true);
+    await body.fill('Latest draft while waiting');
+    await navigation
+      .getByRole('button', { name: 'Reselect active', exact: true })
+      .click();
+    release();
+    await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Reselect active', exact: true }),
+    ).toBeVisible();
+    await expect(body).toHaveText('Latest draft while waiting');
+    expect(destinationReads).toBe(0);
+    expect(await notes.read(active.id)).toMatchObject({
+      content: 'Latest draft while waiting',
+      revision: 3,
+    });
+    await navigation
+      .getByRole('button', { name: 'Reselect destination', exact: true })
+      .click();
+    await expect(
+      page.getByRole('heading', { name: 'Reselect destination', exact: true }),
+    ).toBeVisible();
+  } finally {
+    release();
+    await page.unrouteAll({ behavior: 'wait' });
+  }
+});
+
 test('navigation drains in-flight edits and honors the latest requested destination', async ({
   page,
   notes,

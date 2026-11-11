@@ -94,6 +94,7 @@ export default function NotePanel({
     <NoteArticle
       key={replacement?.epoch ?? 0}
       initial={replacement?.note ?? state.value}
+      focusTitle={replacement !== null}
       tree={tree}
       onNavigate={onNavigate}
       onDirtyChange={onDirtyChange}
@@ -112,6 +113,7 @@ export default function NotePanel({
 
 function NoteArticle({
   initial,
+  focusTitle,
   tree,
   onNavigate,
   onDirtyChange,
@@ -121,6 +123,7 @@ function NoteArticle({
   onRecoveryCopy,
 }: {
   initial: NoteDetail;
+  focusTitle: boolean;
   tree: WorkspaceTree;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
@@ -148,7 +151,11 @@ function NoteArticle({
       />
       <article className="note-surface">
         <p className="workspace-eyebrow">Your writing</p>
-        <TitleEditor session={session} state={state} />
+        <TitleEditor
+          session={session}
+          state={state}
+          focusOnMount={focusTitle}
+        />
         {note.folderId !== null && !tree.folders.has(note.folderId) && (
           <p role="status">
             This note's location changed. Refresh the workspace to update its
