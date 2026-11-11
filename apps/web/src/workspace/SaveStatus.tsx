@@ -11,7 +11,7 @@ export default function SaveStatus({
   const failed = state.status === 'error' || state.status === 'conflict';
   return (
     <div className="body-save-row">
-      {(state.hasBody || state.status === 'error') && (
+      {(state.hasBody || state.dirty || state.status === 'error') && (
         <button
           type="button"
           className="dialog-primary"

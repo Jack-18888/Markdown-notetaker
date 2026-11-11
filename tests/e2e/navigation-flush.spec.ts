@@ -128,9 +128,7 @@ test('lifecycle dialogs use the revision acknowledged by their prerequisite flus
   await dialog
     .getByRole('textbox', { name: 'Note title', exact: true })
     .fill('Renamed after flush');
-  await dialog
-    .getByRole('button', { name: 'Save name', exact: true })
-    .click();
+  await dialog.getByRole('button', { name: 'Save name', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Renamed after flush', exact: true }),
   ).toBeVisible();

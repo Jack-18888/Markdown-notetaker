@@ -33,6 +33,54 @@ function setup() {
   return { coordinator, write };
 }
 
+it('waits for the quiet interval after an autosave response when newer typing is still recent', async () => {
+  const { coordinator, write } = setup();
+  let finish!: (note: NoteDetail) => void;
+  write.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  coordinator.setBody(body('First'));
+  await vi.advanceTimersByTimeAsync(saveDelay);
+  coordinator.setBody(body('Latest'));
+  finish({ ...note, content: 'First', revision: 2 });
+  await vi.advanceTimersByTimeAsync(saveDelay - 1);
+  expect(write).toHaveBeenCalledOnce();
+  expect(coordinator.getSnapshot()).toMatchObject({
+    status: 'pending',
+    dirty: true,
+  });
+  await vi.advanceTimersByTimeAsync(1);
+  expect(write.mock.calls[1]?.[1]).toEqual({
+    expectedRevision: 2,
+    content: 'Latest',
+  });
+  coordinator.dispose();
+});
+
+it('keeps an ambiguous failed write dirty even after undo, until a revision-checked retry acknowledges it', async () => {
+  const { coordinator, write } = setup();
+  write.mockRejectedValueOnce(
+    new WorkspaceRequestError(
+      'NETWORK_ERROR',
+      'Could not reach the workspace.',
+    ),
+  );
+  coordinator.setBody(body('Unconfirmed'));
+  await coordinator.flush();
+  coordinator.setBody(body(note.content));
+  expect(coordinator.getSnapshot().dirty).toBe(true);
+  await coordinator.flush();
+  expect(write.mock.calls[1]?.[1]).toEqual({
+    title: note.title,
+    expectedRevision: 1,
+  });
+  expect(coordinator.getSnapshot().dirty).toBe(false);
+  coordinator.dispose();
+});
+
 it('debounces both drafts, serializes only the submitted body, and omits untouched source', async () => {
   const { coordinator, write } = setup();
   const serialize = vi.fn(() => 'Body draft');

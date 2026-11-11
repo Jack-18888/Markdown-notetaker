@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T10 are implemented in the PR stack, awaiting review. The editor/backend compatibility checkpoint and editable Mermaid previews pass for the documented subset and limits. Autosave/recovery and import/export remain T11-T12.
+**Status:** T01-T11 are implemented in the PR stack, awaiting review. The editor/backend checkpoint, editable Mermaid previews, coordinated autosave, navigation flushing, and conflict recovery pass for the documented scope. Markdown file import/export remains T12.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -154,7 +154,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | [T08](#t08) | Lifecycle controls                       | `done` | [T07](#t07)              |
 | [T09](#t09) | Rich editor and compatibility checkpoint | `done` | [T06](#t06), [T07](#t07) |
 | [T10](#t10) | Mermaid rendering                        | `done` | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T11](#t11) | Autosave and conflicts                   | `done` | [T08](#t08), [T09](#t09) |
 | [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
 | [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
 | [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
@@ -665,7 +665,7 @@ Show diagrams alongside their editable source without allowing invalid or stale 
 
 Prevent dropped or overwritten edits during ordinary navigation, failures, and competing tab writes.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
 **Depends on:** T08, T09  
 **Requirements:** R5, R8
 
@@ -685,11 +685,11 @@ Prevent dropped or overwritten edits during ordinary navigation, failures, and c
 
 **Acceptance criteria**
 
-- [ ] Typing batches into debounced writes and never produces overlapping writes for the same note.
-- [ ] Edits made during a save remain dirty until their own successful save; switching flushes the latest snapshot.
-- [ ] Network/server failures retain text and allow retry; a failed navigation flush does not switch notes.
-- [ ] Competing tabs cannot silently overwrite each other and both conflict recovery choices behave as labeled.
-- [ ] Dirty tab closure triggers a warning; clean tabs do not warn.
+- [x] Typing batches into debounced writes and never produces overlapping writes for the same note.
+- [x] Edits made during a save remain dirty until their own successful save; switching flushes the latest snapshot.
+- [x] Network/server failures retain text and allow retry; a failed navigation flush does not switch notes.
+- [x] Competing tabs cannot silently overwrite each other and both conflict recovery choices behave as labeled.
+- [x] Dirty tab closure triggers a warning; clean tabs do not warn.
 
 **Verification**
 
@@ -698,7 +698,13 @@ Prevent dropped or overwritten edits during ordinary navigation, failures, and c
 
 **Evidence**
 
-No verification evidence recorded.
+- Verified 2026-11-10, Windows 11 x64 / Node 24.18.0 / npm 12.2.2. Delivered as six focused PRs above T10: coordinator, shared autosave session, navigation flushing, conflict recovery, updated workflow tests, and recovery-edge/evidence verification. Awaiting review.
+- The [save coordinator](../apps/web/src/workspace/SaveCoordinator.ts) owns title/body drafts, immutable editor snapshots, acknowledgements, and one revision-checked request at a time. [Nine deterministic checks](../apps/web/src/workspace/__test__/SaveCoordinator.test.ts) cover the 750 ms quiet interval, merged drafts, lazy serialization, title-only source omission, shared flush/draining, failure retry, conflicts/deletion, invalid names/conversion, ambiguous writes after undo, and ignoring retired responses.
+- [Autosave browser checks](../tests/e2e/autosave.spec.ts) use a controlled browser clock with real API/SQLite writes to verify batching, edits during delayed responses, no overlapping requests, acknowledged revisions, retained editor/history, and dirty/clean warning handlers. [Navigation checks](../tests/e2e/navigation-flush.spec.ts) verify draining the latest snapshot, latest-destination intent, retained edits after failure, retry, and revision-safe lifecycle dialogs.
+- [Two-tab conflict checks](../tests/e2e/conflict-recovery.spec.ts) verify that the remote revision stays unchanged while local title/body remain available for a new copy. Failed creates retain the recovery dialog; an acknowledged copy retries opening after a failed tree refresh without another create. Reload warns before discard, cancel/failure preserves local text, and success loads the saved revision with fresh undo history. [Recovery edge checks](../tests/e2e/save-recovery-edges.spec.ts) verify source-fallback title retry, recovery after another client deletes the note, narrow layout containment, a real beforeunload dialog that retains the draft when canceled, and a clean reload without a prompt. The narrow recovered-note canvas was visually inspected.
+- [Title](../tests/e2e/title.spec.ts), [body/source](../tests/e2e/writing-save.spec.ts), and [lifecycle](../tests/e2e/lifecycle-names.spec.ts) coverage now follows autosave/flush semantics. Title-only saves retain exact source bytes; supported body edits retain exact untouched Mermaid payloads. Existing conversion, safe fallback, diagrams, API, persistence, and migration checks remain green.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (383 tests), and `npm run build` pass. The full `npm run test:e2e` run passes 40 checks; the subsequently expanded `npm run test:e2e -- save-recovery-edges.spec.ts` passes all three checks, adding the native-tab-warning scenario for 41 total browser checks. Documentation links/JSON examples and `git diff --check` pass. No database format, contract, or dependency changes were needed.
+- Ordinary tab-close protection is not crash recovery. An unacknowledged create cannot be deduplicated without API idempotency keys; only acknowledged copies support refresh-only retry. Mermaid vendor chunk-size warnings and synchronous main-thread layout limitations remain as recorded in T10. File import/export remains T12.
 
 <a id="t12"></a>
 
