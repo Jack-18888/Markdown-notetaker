@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useId, useRef, type ReactNode } from 'react';
 import './dialogs.css';
 
 export default function Modal({
@@ -14,7 +14,7 @@ export default function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = ref.current!;
     dialog.showModal();
     return () => dialog.close();
@@ -24,6 +24,7 @@ export default function Modal({
       ref={ref}
       className="workspace-dialog"
       aria-labelledby={titleId}
+      aria-busy={pending}
       onCancel={(event) => {
         event.preventDefault();
         if (!pending) onDismiss();

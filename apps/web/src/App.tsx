@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   applicationName,
   type NoteDetail,
@@ -11,6 +11,9 @@ import NotePanel from './workspace/NotePanel.js';
 import { indexTree, type Selection } from './workspace/tree.js';
 import { useLoad } from './workspace/useLoad.js';
 import './workspace/workspace.css';
+import WorkspaceActions from './workspace/WorkspaceActions.js';
+import NameDialog from './workspace/NameDialog.js';
+import type { NameAction } from './workspace/lifecycle.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -21,6 +24,9 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(rootSelection);
   const [expanded, setExpanded] = useState(new Set<string>());
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [action, setAction] = useState<NameAction | null>(null);
+  const [noteEpoch, setNoteEpoch] = useState(0);
+  const loadedNote = useRef<NoteDetail | null>(null);
   const [unsavedTitle, setUnsavedTitle] = useState(false);
   const [navigationBlocked, setNavigationBlocked] = useState(false);
   useEffect(() => {
@@ -39,7 +45,9 @@ export default function App() {
     if (sidebarOpen && focusSidebar.current && sidebar.current) {
       sidebar.current.scrollTop = 0;
       sidebar.current.scrollIntoView({ block: 'start' });
-      sidebar.current.querySelector('button')?.focus({ preventScroll: true });
+      sidebar.current
+        .querySelector<HTMLButtonElement>('.folder-tree button')
+        ?.focus({ preventScroll: true });
       focusSidebar.current = false;
     }
   }, [sidebarOpen]);
@@ -62,10 +70,16 @@ export default function App() {
     }
     setNavigationBlocked(false);
     if (!tree || !tree.has(next)) return;
+    reveal(next, tree);
+  }
+  function reveal(next: Selection, tree: ReturnType<typeof indexTree>) {
+    loadedNote.current = null;
     focusSelection.current = true;
     setSelection(next);
     const parent =
-      next.kind === 'folder' ? next.id : tree.notes.get(next.id)!.folderId;
+      next.kind === 'folder'
+        ? next.id
+        : (tree.notes.get(next.id)?.folderId ?? null);
     setExpanded(
       (current) =>
         new Set([
@@ -93,19 +107,46 @@ export default function App() {
     setNavigationBlocked(false);
     retry();
   }
-  function noteUpdated(note: NoteDetail) {
-    const { id, title, folderId, revision, createdAt, updatedAt } = note;
-    update((tree) => {
-      if (folderId !== null && !tree.folders.has(folderId)) return tree;
-      return indexTree({
-        folders: [...tree.folders.values()],
-        notes: [...tree.notes.values()].map((current) =>
-          current.id === id
-            ? { id, title, folderId, revision, createdAt, updatedAt }
-            : current,
-        ),
+  const noteUpdated = useCallback(
+    function noteUpdated(note: NoteDetail) {
+      loadedNote.current = note;
+      const { id, title, folderId, revision, createdAt, updatedAt } = note;
+      update((tree) => {
+        if (folderId !== null && !tree.folders.has(folderId)) return tree;
+        return indexTree({
+          folders: [...tree.folders.values()],
+          notes: [...tree.notes.values()].map((current) =>
+            current.id === id
+              ? { id, title, folderId, revision, createdAt, updatedAt }
+              : current,
+          ),
+        });
       });
-    });
+    },
+    [update],
+  );
+
+  function openAction(next: NameAction) {
+    if (unsavedTitle) {
+      setNavigationBlocked(true);
+      return;
+    }
+    setNavigationBlocked(false);
+    setAction(next);
+  }
+  async function commitAction(next: Selection, signal: AbortSignal) {
+    const snapshot = await loadTree(signal);
+    if (signal.aborted) return;
+    update(() => snapshot);
+    setNoteEpoch((value) => value + 1);
+    reveal(next, snapshot);
+  }
+  function closeAction(refreshSelection?: Selection) {
+    setAction(null);
+    if (refreshSelection) {
+      setSelection(refreshSelection);
+      retry();
+    }
   }
 
   return (
@@ -144,6 +185,18 @@ export default function App() {
         hidden={!sidebarOpen}
       >
         <p className="sidebar-caption">Personal workspace</p>
+        {tree && (
+          <WorkspaceActions
+            tree={tree}
+            selection={active}
+            note={
+              active.kind === 'note' && loadedNote.current?.id === active.id
+                ? loadedNote.current
+                : null
+            }
+            onAction={openAction}
+          />
+        )}
         {tree && (
           <FolderTree
             tree={tree}
@@ -204,7 +257,7 @@ export default function App() {
               </>
             ) : (
               <NotePanel
-                key={active.id}
+                key={`${active.id}:${noteEpoch}`}
                 id={active.id}
                 tree={tree}
                 onDirtyChange={setUnsavedTitle}
@@ -215,6 +268,14 @@ export default function App() {
           </>
         )}
       </main>
+      {action && tree && (
+        <NameDialog
+          action={action}
+          tree={tree}
+          onCommit={commitAction}
+          onClose={closeAction}
+        />
+      )}
     </div>
   );
 }
