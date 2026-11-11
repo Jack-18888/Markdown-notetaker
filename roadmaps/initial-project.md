@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T08 are implemented in the PR stack, awaiting review. T09's rich writing interface is next. The complete editor/backend compatibility checkpoint remains pending T09.
+**Status:** T01-T08 are implemented in the PR stack, awaiting review. T09's rich writing interface is in progress. The complete editor/backend compatibility checkpoint remains pending T09.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------ | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
-| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `done` | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `done` | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status        | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------------- | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
+| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done`        | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `done`        | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `done`        | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `in_progress` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -573,7 +573,8 @@ T09/T10 still own body editing and diagram previews; T11 owns general autosave a
 
 Integrate the validated editor with a Notion-like editing workflow.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `in_progress` · **Priority:** high
+
 **Depends on:** T06, T07  
 **Requirements:** R3, R4, R5, R6, R8
 
@@ -607,7 +608,8 @@ Integrate the validated editor with a Notion-like editing workflow.
 
 **Evidence**
 
-No verification evidence recorded.
+- The [shared command layer](../apps/web/src/editor/commands.ts) supplies block insertion, formatting/history actions, search labels, and validated link changes for the toolbar/slash UI. [24 real-editor checks](../apps/web/src/editor/__test__/commands.test.ts) pass for supported blocks/marks, single-update mutations, guarded serialization, undo/redo, slash-query replacement, rejected nested diagrams/ranges, read-only protection, and safe link changes.
+- The command layer is not yet connected to selected-note writing. The canvas, toolbar, slash menu, save integration, browser interaction checks, and integrated compatibility checkpoint remain required before T09 is complete.
 
 <a id="t10"></a>
 
