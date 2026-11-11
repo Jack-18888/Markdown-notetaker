@@ -1,18 +1,9 @@
 import { DatabaseInitializationError } from './database/errors.js';
 import { startServer } from './server.js';
-
-const portText = process.env.PORT ?? '3001';
-const port = Number(portText);
-if (
-  !/^\d+$/.test(portText) ||
-  !Number.isInteger(port) ||
-  port < 1 ||
-  port > 65535
-) {
-  throw new Error('PORT must be an integer between 1 and 65535.');
-}
+import { parsePort, RuntimeConfigurationError } from './config.js';
 
 try {
+  const port = parsePort();
   // Storage initialization and migrations finish before listening.
   const runtime = startServer({
     port,
@@ -42,7 +33,8 @@ try {
 } catch (error) {
   // Log sanitized startup errors without exposing SQL or note contents.
   console.error(
-    error instanceof DatabaseInitializationError
+    error instanceof DatabaseInitializationError ||
+      error instanceof RuntimeConfigurationError
       ? error.message
       : 'Server startup failed.',
   );

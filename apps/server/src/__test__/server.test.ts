@@ -1,4 +1,6 @@
 import { once } from 'node:events';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startServer } from '../server.js';
 import {
@@ -19,10 +21,17 @@ describe('server database lifecycle', () => {
     const temporary = temporaryWorkspace();
     workspaces.push(temporary);
     const content = '# Persisted\r\n\r\n```mermaid\nA --> B\n```\n';
+    const webDirectory = join(temporary.directory, 'web');
+    mkdirSync(join(webDirectory, 'assets'), { recursive: true });
+    writeFileSync(
+      join(webDirectory, 'index.html'),
+      '<!doctype html><title>Temporary frontend</title>',
+    );
     const launch = async () => {
       const runtime = startServer({
         port: 0,
         serveWeb: true,
+        webDirectory,
         dataDirectory: temporary.dataDirectory,
       });
       running.push(runtime);
