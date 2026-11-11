@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T13 are implemented in the PR stack, awaiting review. The editor/backend checkpoint, editable Mermaid previews, coordinated autosave, conflict recovery, Markdown file import/export, and integrated keyboard/accessibility review pass for the documented scope. Production verification and release acceptance remain T14-T15.
+**Status:** T01-T14 are implemented in the PR stack, awaiting review. Rich writing, editable diagrams, save/conflict recovery, Markdown portability, integrated keyboard/accessibility review, and built production/restart checks pass for the documented scope. Final release acceptance and documentation remain T15.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -157,7 +157,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | [T11](#t11) | Autosave and conflicts                   | `done` | [T08](#t08), [T09](#t09) |
 | [T12](#t12) | Markdown import/export                   | `done` | [T10](#t10), [T11](#t11) |
 | [T13](#t13) | Accessibility and failure review         | `done` | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T14](#t14) | Production execution                     | `done` | [T05](#t05), [T12](#t12) |
 | [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
@@ -799,7 +799,7 @@ Make the integrated workflow usable across keyboard, small screens, empty conten
 
 Serve the built app from Express and retain notes across application restarts.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
 **Depends on:** T05, T12  
 **Requirements:** R8
 
@@ -818,10 +818,10 @@ Serve the built app from Express and retain notes across application restarts.
 
 **Acceptance criteria**
 
-- [ ] npm run build followed by npm start serves the app without the development server.
-- [ ] Saved folder structure, documents, and Mermaid source survive server restart.
-- [ ] Unknown API routes return API errors instead of the frontend HTML.
-- [ ] The production service remains loopback-only and fails cleanly on invalid configuration.
+- [x] npm run build followed by npm start serves the app without the development server.
+- [x] Saved folder structure, documents, and Mermaid source survive server restart.
+- [x] Unknown API routes return API errors instead of the frontend HTML.
+- [x] The production service remains loopback-only and fails cleanly on invalid configuration.
 
 **Verification**
 
@@ -830,7 +830,12 @@ Serve the built app from Express and retain notes across application restarts.
 
 **Evidence**
 
-No verification evidence recorded.
+- Verified 2026-11-11, Windows 11 x64 / Node 24.18.0 / npm 12.2.2. Delivered as [production runtime fixes](https://github.com/Jack-18888/Markdown-notetaker/pull/46) plus built browser/restart acceptance above T13. Awaiting review.
+- [Startup configuration](../apps/server/src/config.ts) validates ports and checks the built frontend index/assets before opening SQLite. Missing builds report an actionable build instruction; configuration/database failures use fixed messages without sensitive paths, SQL, note text, or stack traces. Express serves HTML navigation fallbacks while keeping missing assets as 404 and unknown API routes as JSON errors.
+- All 17 selected [production configuration/routing](../apps/server/src/__test__/production.test.ts) and [server lifecycle](../apps/server/src/__test__/server.test.ts) tests pass. They cover invalid/valid port boundaries, incomplete frontend output before database creation, real static responses, API errors, loopback binding, production origin restrictions, graceful close/reopen, restart persistence, and occupied ports. Test-owned frontend fixtures keep these checks independent of generated artifacts.
+- After `npm run build`, `npm run test:production` passes both [built Chromium/CLI checks](../tests/e2e/production.spec.ts). The exact `npm start` command runs without Vite on an available loopback port and an isolated temporary database. Three nested folders, imported source, supported body edits, flowchart/sequence previews, exact-source export, protected writes, navigation fallback, and JSON API errors work using local assets only. Restart preserves tree metadata, revisions, content, and exact Mermaid payloads. Invalid port/empty/inaccessible data paths fail with clean CLI errors.
+- The shared [browser launcher](../tests/e2e/run.mjs) owns temporary data and the separate [production configuration](../playwright.production.config.ts). Windows restart checks force-stop only their spawned npm process tree; graceful HTTP/SQLite shutdown is verified separately through the runtime lifecycle API. No normal user database is opened by these checks.
+- Typecheck, lint, formatting, documentation links/JSON examples, and `git diff --check` pass. Build succeeds; large lazy Mermaid vendor chunk warnings remain documented. No persisted format or dependency changes. Final full-suite and clean-install/backup acceptance remain T15.
 
 <a id="t15"></a>
 

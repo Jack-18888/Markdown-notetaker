@@ -21,14 +21,14 @@ function cleanup() {
 }
 try {
   const cli = fileURLToPath(import.meta.resolve('@playwright/test/cli'));
-  const result = spawnSync(
-    process.execPath,
-    [cli, 'test', ...process.argv.slice(2)],
-    {
-      stdio: 'inherit',
-      env: { ...process.env, NOTE_TAKER_E2E_DATA_DIR: directory },
-    },
-  );
+  const args = process.argv.slice(2);
+  if (args[0] === '--production') {
+    args.splice(0, 1, '--config=playwright.production.config.ts');
+  }
+  const result = spawnSync(process.execPath, [cli, 'test', ...args], {
+    stdio: 'inherit',
+    env: { ...process.env, NOTE_TAKER_E2E_DATA_DIR: directory },
+  });
   if (result.error) console.error('Could not launch browser checks.');
   process.exitCode = result.status ?? 1;
 } finally {

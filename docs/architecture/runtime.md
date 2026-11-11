@@ -1,6 +1,6 @@
 # Local runtime and operations
 
-In development, Vite serves the frontend and proxies API requests. In production, Express serves the built frontend and API from loopback. Unknown API paths must remain API errors rather than returning the frontend fallback page. The editor, Markdown conversion, and diagrams must not require runtime CDN or cloud access.
+In development, Vite serves the frontend and proxies API requests. In production, Express serves the built frontend and API from loopback. Extensionless HTML navigation requests fall back to the built index; missing assets remain 404 responses and unknown API paths remain JSON API errors. The editor, Markdown conversion, and diagrams use local built assets with no runtime CDN or cloud dependency.
 
 Because the app has no authentication, it binds to loopback, validates API Host headers and browser origins for writes, and supplies no permissive CORS headers. Public exposure would require a different security design.
 
@@ -8,13 +8,15 @@ API Host accepts only `127.0.0.1` or `localhost`, optionally with a valid port; 
 
 Store SQLite files in a configurable local data directory excluded from Git. Startup initializes the directory and applies migrations; shutdown closes the connection. Report inaccessible paths, locks, and migration failures without deleting existing content. Backup/restore instructions must account for SQLite sidecar files; the initial operational guidance will use a stopped server.
 
-The scaffold targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. All resource handlers are implemented; full production execution and backup/restore acceptance remain in the runtime tasks.
+The app targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. [T14 evidence](../../roadmaps/initial-project.md#t14) verifies production execution and restart durability; final installation/backup walkthroughs belong to T15.
 
 ## Source imports and production builds
 
 The private [contracts package](../../packages/contracts/package.json) exports TypeScript source directly. TypeScript/LSP, Vite, Vitest, and the backend's tsx loader all resolve the same source entry. Development and tests require no package compilation or extra watcher; normal app watchers observe imported contract source changes. See [the package decision](../decisions/0001-source-contracts.md).
 
 TypeScript checks all workspaces with noEmit. Production frontend JavaScript comes from Vite. The backend uses esbuild to bundle its own source and the contracts source into apps/server/dist/index.js, with source maps. Other packages, including Express, Zod, and native SQLite, remain external dependencies. The explicit workspace alias makes contracts the exception to packages=external; npm start runs the built JavaScript without a TypeScript loader or a contracts/dist directory.
+
+Production startup validates `PORT` and the built frontend index/assets directory before opening SQLite. Missing or unreadable frontend output reports `Run npm run build before npm start`; invalid port/data paths use fixed actionable messages without stack traces, underlying SQL, or note contents. [Production configuration/routing checks](../../apps/server/src/__test__/production.test.ts) use test-owned frontend fixtures and temporary storage, so unit tests do not require an existing build.
 
 ## Tooling choices
 
@@ -33,3 +35,5 @@ For a backup, stop all backend processes and copy the entire configured data dir
 ## Browser-test isolation
 
 The root test:e2e script runs [a launcher](../../tests/e2e/run.mjs) that creates an OS temporary directory, passes it to the backend through Playwright configuration, and removes it after Playwright stops its servers. Direct playwright test calls are rejected without this harness directory, so browser checks cannot silently open the normal workspace. The native persistence tests similarly own their temporary directories and close all connections before cleanup.
+
+After a build, `npm run test:production` uses the same launcher with a [separate production configuration](../../playwright.production.config.ts). [Production browser checks](../../tests/e2e/production.spec.ts) launch the exact `npm start` command on an available loopback port with temporary data, import/edit/export Markdown, render both diagram types using local chunks, verify API/navigation behavior, stop only their own process tree, and restart against the same database. Windows process-tree termination is forced; [server lifecycle tests](../../apps/server/src/__test__/server.test.ts) separately exercise graceful HTTP/database close and reopen. Invalid built-CLI configuration is checked in isolated subprocesses.
