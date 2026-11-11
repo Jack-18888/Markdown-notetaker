@@ -9,10 +9,13 @@ import {
   healthResponseSchema,
   type HealthResponse,
 } from '@markdown-note-taker/contracts';
+import { apiErrorHandler } from './http/errors.js';
+import { protectApi } from './http/protection.js';
 
 export function createApp({ serveWeb = false } = {}) {
   const app = express();
   app.disable('x-powered-by');
+  app.use('/api', protectApi({ serveWeb }));
 
   app.get(apiContracts.health.path, (_request, response) => {
     const health: HealthResponse = {
@@ -42,5 +45,6 @@ export function createApp({ serveWeb = false } = {}) {
     app.use(express.static(webDirectory));
   }
 
+  app.use(apiErrorHandler);
   return app;
 }

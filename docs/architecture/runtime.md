@@ -2,11 +2,13 @@
 
 In development, Vite serves the frontend and proxies API requests. In production, Express serves the built frontend and API from loopback. Unknown API paths must remain API errors rather than returning the frontend fallback page. The editor, Markdown conversion, and diagrams must not require runtime CDN or cloud access.
 
-Because the app has no authentication, keep it bound to loopback, validate browser origins for writes, and avoid permissive CORS. Public exposure would require a different security design.
+Because the app has no authentication, it binds to loopback, validates API Host headers and browser origins for writes, and supplies no permissive CORS headers. Public exposure would require a different security design.
+
+API Host accepts only `127.0.0.1` or `localhost`, optionally with a valid port; forwarded headers do not grant access. Writes accept the exact HTTP origin matching Host. Development additionally permits `http://127.0.0.1:5173` and `http://localhost:5173`; production disables these additional origins. An absent Origin supports non-browser clients, while `Sec-Fetch-Site: cross-site` always rejects writes. API responses disable caching. Body-bearing routes use bounded JSON parsing; compressed bodies and other media types are rejected. Parser and unexpected failures use fixed public errors without request contents or internal diagnostics. See [transport middleware](../../apps/server/src/http/protection.ts) and [error handling](../../apps/server/src/http/errors.ts).
 
 Store SQLite files in a configurable local data directory excluded from Git. Startup initializes the directory and applies migrations; shutdown closes the connection. Report inaccessible paths, locks, and migration failures without deleting existing content. Backup/restore instructions must account for SQLite sidecar files; the initial operational guidance will use a stopped server.
 
-The scaffold targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations now run before listening. Browser write protections and production hardening remain in the API/runtime tasks.
+The scaffold targets Node.js 24 LTS and ESM throughout. Development runs separately with `npm run dev:backend` and `npm run dev:frontend`, or together with `npm run dev`. Vite serves 127.0.0.1:5173 and proxies /api to Express on 127.0.0.1:3001 by default. The root .env can override PORT for Express and its development proxy. See [README](../../README.md) for setup. Data initialization/migrations run before listening. Resource handlers and full production verification remain in the API/runtime tasks.
 
 ## Source imports and production builds
 
