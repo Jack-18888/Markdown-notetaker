@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T07 are implemented in the PR stack, awaiting review. T08 lifecycle controls are in progress. The complete editor/backend compatibility checkpoint remains pending T09.
+**Status:** T01-T08 are implemented in the PR stack, awaiting review. T09's rich writing interface is next. The complete editor/backend compatibility checkpoint remains pending T09.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status        | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------------- | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
-| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `done`        | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `done`        | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `in_progress` | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo`        | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `done` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `done` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -527,7 +527,7 @@ T08 still owns create/rename/move/delete sidebar controls and confirmation dialo
 
 Make all organization actions available through accessible sidebar controls.
 
-**Status:** `in_progress` · **Priority:** high
+**Status:** `done` · **Priority:** high
 
 **Depends on:** T07  
 **Requirements:** R1, R2, R7
@@ -547,10 +547,10 @@ Make all organization actions available through accessible sidebar controls.
 
 **Acceptance criteria**
 
-- [ ] Users can create, rename, move, and delete root/nested items with mouse and keyboard.
-- [ ] Canceling deletion changes no data; confirmed folder deletion removes exactly its subtree.
-- [ ] Failed operations show retryable errors and preserve existing tree/selection state.
-- [ ] Moves update breadcrumbs and tree membership without duplicating items.
+- [x] Users can create, rename, move, and delete root/nested items with mouse and keyboard.
+- [x] Canceling deletion changes no data; confirmed folder deletion removes exactly its subtree.
+- [x] Failed operations show retryable errors and preserve existing tree/selection state.
+- [x] Moves update breadcrumbs and tree membership without duplicating items.
 
 **Verification**
 
@@ -558,7 +558,14 @@ Make all organization actions available through accessible sidebar controls.
 
 **Evidence**
 
-No verification evidence recorded.
+- [Lifecycle clients/helpers](../apps/web/src/workspace/lifecycle.ts) and [navigation architecture](../docs/architecture/navigation.md) document validated mutations, subtree counts, destination exclusions, loaded note revisions, and metadata-only writes. Client/model/operation tests cover success/error contracts, duplicate destination labels, concurrent submission, and refresh-only retry after a known commit.
+- [Create/rename browser checks](../tests/e2e/lifecycle-names.spec.ts) cover root/nested creation, contextual parents, validation, keyboard traversal/cancellation, title-draft protection, and exactly one create when a committed write's metadata refresh fails. [Recovery checks](../tests/e2e/lifecycle-recovery.spec.ts) verify retained input after failure, revision-conflicting rename without overwrite, and keyboard move/delete dialogs at 375px.
+- [Move checks](../tests/e2e/lifecycle-moves.spec.ts) preserve note identity and exact CRLF/Mermaid source through nested and root moves. Folder moves exclude their subtree, retain selection, and reveal new breadcrumbs. A real second-client hierarchy change causes server rejection without changing the source parent or selected destination.
+- [Deletion checks](../tests/e2e/lifecycle-delete.spec.ts) verify Cancel receives initial focus, keyboard cancellation performs no write, counts and permanent wording are visible, confirmed removal deletes only the subtree, and sibling source remains intact. Note deletion rejects a newer revision until reopened. Failed deletion leaves data intact; pending confirmation blocks Escape/double submission and sends one DELETE. Committed deletion selects the parent/root.
+- `npm run typecheck`, `npm run lint`, `npm test` (329 tests), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes all 19 Chromium checks against isolated temporary SQLite data with at most four workers. Local documentation link targets and API JSON examples validate; `git diff --check` passes.
+- The compiled production server passed real Chromium nested create, rename, root/nested move, note/folder deletion, and restart durability. Retained source, revision, selection, and subtree removal matched the API after restart, with zero browser errors. Desktop controls and the narrow permanent-deletion dialog were visually inspected. Smoke processes and temporary data were removed. No server, migration, dependency, or user-data changes were needed.
+
+T09/T10 still own body editing and diagram previews; T11 owns general autosave and conflict recovery. Lifecycle dialogs protect current title drafts and loaded revisions. A failed network response can leave an unknown server outcome because the API has no idempotency keys; only acknowledged commits use refresh-only retry.
 
 <a id="t09"></a>
 
