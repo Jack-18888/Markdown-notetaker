@@ -107,6 +107,8 @@ test('source fallback is literal, keyboard reachable, and contained on narrow sc
   await expect(
     region.locator('img, script, iframe, a, textarea, [contenteditable]'),
   ).toHaveCount(0);
+  await view.focus();
+  await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
   await expect(view).toBeFocused();
   expect(
