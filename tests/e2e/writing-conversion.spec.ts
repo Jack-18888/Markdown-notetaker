@@ -39,9 +39,9 @@ test('an unrepresentable edit retains writing and source until undo restores a s
     await page
       .getByRole('combobox', { name: 'Block type' })
       .selectOption('blockquote');
-    await expect(body.locator('blockquote [data-mermaid]')).toContainText(
-      'flowchart LR',
-    );
+    await expect(
+      body.locator('blockquote [data-mermaid-editor]'),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText(
       'This edit cannot be saved safely',

@@ -38,7 +38,7 @@ export default function NoteEditor({
   useEffect(() => {
     const instance = new Editor({
       element: host.current!,
-      extensions: editorExtensions(),
+      extensions: editorExtensions({ diagramViews: true }),
       content: baseline.current.document,
       editorProps: {
         attributes: {

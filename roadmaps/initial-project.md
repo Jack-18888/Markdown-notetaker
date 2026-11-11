@@ -654,6 +654,8 @@ Show diagrams alongside their editable source without allowing invalid or stale 
 
 - The [renderer boundary](../apps/web/src/editor/diagram-renderer.ts) pins Mermaid 12.3.0 and DOMPurify 3.4.17, runs with strict security, disables HTML labels/configuration overrides, bounds preview work, serializes asynchronous calls, and cleans temporary DOM. [Policy tests](../apps/web/src/editor/__test__/diagram-policy.test.ts) cover limits and configuration rejection. [Real Chromium checks](../tests/e2e/diagram-renderer.spec.ts) pass for flowcharts, sequence diagrams, invalid/blocked/canceled work, static SVG sanitization, and cleanup. Source editing, integrated previews, and remaining T10 acceptance are still pending.
 
+- The optional [node view](../apps/web/src/editor/mermaid-node-view.tsx) now connects [source editing and debounced previews](../apps/web/src/editor/MermaidView.tsx) to the writing canvas. [Integrated editing checks](../tests/e2e/mermaid-editing.spec.ts) pass for multiple diagrams, invalid source, editing surrounding text, exact untouched diagram payloads through saves/reopen, source undo/redo, removal, and undo restoration. Stale/security coverage and the full T10 verification remain the final slice.
+
 <a id="t11"></a>
 
 ### T11 — Implement autosave, navigation guards, and conflict recovery

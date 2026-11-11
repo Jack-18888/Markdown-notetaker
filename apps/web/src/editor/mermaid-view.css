@@ -1,0 +1,73 @@
+.mermaid-block {
+  margin-block: 28px;
+  border: 1px solid #c5c9b6;
+  background: #fcfaf5;
+  font-family: 'Trebuchet MS', sans-serif;
+}
+.mermaid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #d8d8ca;
+}
+.mermaid-actions .workspace-eyebrow {
+  margin-right: auto;
+}
+.mermaid-actions button {
+  border: 0;
+  background: transparent;
+  color: #40532e;
+  padding: 7px;
+  font-size: 0.75rem;
+}
+.mermaid-actions button:hover {
+  background: #dce3cf;
+}
+.mermaid-source {
+  padding: 16px;
+  border-bottom: 1px solid #d8d8ca;
+}
+.mermaid-source label {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+.mermaid-source textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #a8ad98;
+  background: #f6f3ec;
+  color: #292d27;
+  font:
+    0.85rem / 1.6 Consolas,
+    monospace;
+}
+.mermaid-source textarea:focus-visible {
+  outline: 3px solid #8b4c1e;
+  outline-offset: 3px;
+}
+.mermaid-preview {
+  overflow: auto;
+  padding: 24px 16px;
+}
+.mermaid-preview:focus-visible {
+  outline: 3px solid #8b4c1e;
+  outline-offset: -3px;
+}
+.mermaid-preview svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: auto;
+}
+.mermaid-message {
+  font:
+    0.82rem / 1.6 'Trebuchet MS',
+    sans-serif;
+  padding: 16px;
+  color: #5c6254;
+}

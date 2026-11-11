@@ -63,7 +63,9 @@ test('opens deep notes on demand, shows breadcrumbs, and handles deleted selecti
       exact: true,
     });
     await expect(body).toContainText('Read safely');
-    await expect(body.locator('[data-mermaid]')).toHaveText('A --> B');
+    await expect(
+      body.getByRole('region', { name: 'Mermaid diagram', exact: true }),
+    ).toBeVisible();
     expect(noteReads.length).toBeGreaterThan(0);
     expect(
       noteReads.every((url) => url.endsWith(`/api/notes/${note.id}`)),
