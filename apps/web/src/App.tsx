@@ -16,6 +16,7 @@ import NameDialog from './workspace/NameDialog.js';
 import type { LifecycleAction } from './workspace/lifecycle.js';
 import MoveDialog from './workspace/MoveDialog.js';
 import DeleteDialog from './workspace/DeleteDialog.js';
+import { useNoteTransition } from './workspace/useNoteTransition.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -30,7 +31,7 @@ export default function App() {
   const [noteEpoch, setNoteEpoch] = useState(0);
   const loadedNote = useRef<NoteDetail | null>(null);
   const [unsavedNote, setUnsavedNote] = useState(false);
-  const [navigationBlocked, setNavigationBlocked] = useState(false);
+  const transition = useNoteTransition();
   useEffect(() => {
     if (!unsavedNote) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -66,13 +67,8 @@ export default function App() {
 
   function select(next: Selection) {
     if (next.kind === selection.kind && next.id === selection.id) return;
-    if (unsavedNote) {
-      setNavigationBlocked(true);
-      return;
-    }
-    setNavigationBlocked(false);
     if (!tree || !tree.has(next)) return;
-    reveal(next, tree);
+    void transition.run(() => reveal(next, tree));
   }
   function reveal(next: Selection, tree: ReturnType<typeof indexTree>) {
     loadedNote.current = null;
@@ -102,12 +98,7 @@ export default function App() {
   }
 
   function refresh() {
-    if (unsavedNote) {
-      setNavigationBlocked(true);
-      return;
-    }
-    setNavigationBlocked(false);
-    retry();
+    void transition.run(() => retry());
   }
   const noteUpdated = useCallback(
     function noteUpdated(note: NoteDetail) {
@@ -129,12 +120,16 @@ export default function App() {
   );
 
   function openAction(next: LifecycleAction) {
-    if (unsavedNote) {
-      setNavigationBlocked(true);
-      return;
-    }
-    setNavigationBlocked(false);
-    setAction(next);
+    void transition.run((saved) => {
+      const current =
+        saved &&
+        'target' in next &&
+        next.target.kind === 'note' &&
+        next.target.value.id === saved.id
+          ? { ...next, target: { kind: 'note' as const, value: saved } }
+          : next;
+      setAction(current);
+    });
   }
   async function commitAction(next: Selection, signal: AbortSignal) {
     const snapshot = await loadTree(signal);
@@ -222,9 +217,15 @@ export default function App() {
         tabIndex={-1}
         ref={main}
       >
-        {navigationBlocked && unsavedNote && (
+        {transition.state === 'saving' && (
+          <p role="status" className="workspace-message">
+            Saving changes before continuing…
+          </p>
+        )}
+        {transition.state === 'error' && (
           <p role="alert" className="workspace-message">
-            Save your writing and finish title changes before leaving this note.
+            Could not continue. Your changes are still here. Retry saving or
+            resolve the conflict, then try again.
           </p>
         )}
         {state.status === 'loading' && (
@@ -264,6 +265,7 @@ export default function App() {
                 tree={tree}
                 onDirtyChange={setUnsavedNote}
                 onNoteUpdated={noteUpdated}
+                onSession={transition.register}
                 onNavigate={(id) => select({ kind: 'folder', id })}
               />
             )}
