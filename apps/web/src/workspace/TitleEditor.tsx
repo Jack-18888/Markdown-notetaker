@@ -1,118 +1,35 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { nameSchema, type NoteDetail } from '@markdown-note-taker/contracts';
-import { updateNote, WorkspaceRequestError } from './api.js';
+import { useEffect, useRef, useState } from 'react';
+import type { SaveCoordinator, SaveState } from './SaveCoordinator.js';
 import './title-editor.css';
 
 export default function TitleEditor({
-  note,
-  onSaved,
-  onDirtyChange,
-  saveDisabled,
-  onSavingChange,
+  session,
+  state,
 }: {
-  note: NoteDetail;
-  onSaved(note: NoteDetail): void;
-  onDirtyChange(dirty: boolean): void;
-  saveDisabled: boolean;
-  onSavingChange(saving: boolean): void;
+  session: SaveCoordinator;
+  state: SaveState;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(note.title);
-  const latest = useRef(draft);
-  const controller = useRef<AbortController | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const opened = useRef(false);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  useEffect(
-    () => () => {
-      controller.current?.abort();
-      onDirtyChange(false);
-      onSavingChange(false);
-    },
-    [onDirtyChange, onSavingChange],
-  );
   useEffect(() => {
     if (editing) {
       opened.current = true;
       input.current?.focus();
     } else if (opened.current) editButton.current?.focus();
   }, [editing]);
-
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    if (controller.current || saveDisabled || draft === note.title) return;
-    if (!nameSchema.safeParse(draft).success) {
-      setError(
-        'Use 1–200 characters without surrounding spaces or control characters.',
-      );
-      return;
-    }
-    const request = new AbortController();
-    controller.current = request;
-    const snapshot = draft;
-    setPending(true);
-    onSavingChange(true);
-    setError('');
-    setMessage('');
-    onDirtyChange(true);
-    try {
-      const saved = await updateNote(
-        note.id,
-        { title: snapshot, expectedRevision: note.revision },
-        request.signal,
-      );
-      if (request.signal.aborted) return;
-      onSaved(saved);
-      const stillDirty = latest.current !== saved.title;
-      onDirtyChange(stillDirty);
-      setMessage(
-        stillDirty
-          ? 'Title saved. Newer changes are still pending.'
-          : 'Title saved.',
-      );
-      if (!stillDirty) setEditing(false);
-    } catch (error) {
-      if (!request.signal.aborted)
-        setError(
-          error instanceof WorkspaceRequestError
-            ? error.message
-            : 'The title could not be saved. Your changes are still here.',
-        );
-    } finally {
-      if (!request.signal.aborted) {
-        setPending(false);
-        onSavingChange(false);
-        if (controller.current === request) controller.current = null;
-      }
-    }
-  }
-  function discard() {
-    if (controller.current) return;
-    latest.current = note.title;
-    setDraft(note.title);
-    setEditing(false);
-    setError('');
-    setMessage('');
-    onDirtyChange(false);
-  }
+  const pending = state.status === 'saving';
   return (
     <>
       <div className="note-title-row">
-        <h1>{note.title}</h1>
+        <h1>{state.note.title}</h1>
         {!editing && (
           <button
             ref={editButton}
             type="button"
             className="workspace-retry"
-            onClick={() => {
-              latest.current = note.title;
-              setDraft(note.title);
-              setMessage('');
-              setEditing(true);
-            }}
+            onClick={() => setEditing(true)}
           >
             Edit title
           </button>
@@ -122,63 +39,52 @@ export default function TitleEditor({
         <form
           className="title-editor"
           onSubmit={(event) => {
-            void save(event);
+            event.preventDefault();
+            void session.flush().then((saved) => {
+              if (saved && session.getSnapshot().title === saved.title)
+                setEditing(false);
+            });
           }}
         >
-          <label htmlFor={`title-${note.id}`}>Note title</label>
+          <label htmlFor={`title-${state.note.id}`}>Note title</label>
           <input
             ref={input}
-            id={`title-${note.id}`}
-            value={draft}
+            id={`title-${state.note.id}`}
+            value={state.title}
             required
             maxLength={400}
-            aria-invalid={!!error}
-            aria-describedby={`title-status-${note.id}`}
-            onChange={(event) => {
-              const value = event.target.value;
-              latest.current = value;
-              setDraft(value);
-              setError('');
-              setMessage('');
-              onDirtyChange(value !== note.title || pending);
-            }}
+            aria-describedby={`title-status-${state.note.id}`}
+            onChange={(event) => session.setTitle(event.target.value)}
           />
           <div className="title-actions">
             <button
               type="submit"
               className="workspace-retry title-save"
-              disabled={pending || saveDisabled || draft === note.title}
+              disabled={
+                pending ||
+                state.title === state.note.title ||
+                state.status === 'conflict'
+              }
             >
               {pending ? 'Saving title…' : 'Save title'}
             </button>
             <button
               type="button"
               className="workspace-retry"
-              onClick={discard}
               disabled={pending}
+              onClick={() => {
+                session.setTitle(state.note.title);
+                setEditing(false);
+              }}
             >
               Discard title changes
             </button>
           </div>
-          <p
-            id={`title-status-${note.id}`}
-            role={error ? 'alert' : 'status'}
-            className="title-status"
-          >
-            {error ||
-              message ||
-              (pending
-                ? 'Saving title…'
-                : draft !== note.title
-                  ? 'Unsaved title'
-                  : 'Edit the title, then save your changes.')}
+          <p id={`title-status-${state.note.id}`} className="title-status">
+            Title changes save automatically. Save title saves all pending note
+            changes now.
           </p>
         </form>
-      )}
-      {!editing && message && (
-        <p role="status" className="title-status">
-          {message}
-        </p>
       )}
     </>
   );
