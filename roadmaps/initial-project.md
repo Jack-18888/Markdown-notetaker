@@ -712,7 +712,7 @@ Prevent dropped or overwritten edits during ordinary navigation, failures, and c
 
 Make supported note content portable through individual .md files.
 
-**Status:** `done` · **Priority:** high  
+**Status:** `done` · **Priority:** high
 **Depends on:** T10, T11  
 **Requirements:** R6
 
