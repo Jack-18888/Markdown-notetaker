@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T07 are implemented in the PR stack, awaiting review. T08 lifecycle controls are next. The complete editor/backend compatibility checkpoint remains pending T09.
+**Status:** T01-T07 are implemented in the PR stack, awaiting review. T08 lifecycle controls are in progress. The complete editor/backend compatibility checkpoint remains pending T09.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------ | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
-| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `done` | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status        | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------------- | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
+| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done`        | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `done`        | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `in_progress` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `todo`        | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -527,7 +527,8 @@ T08 still owns create/rename/move/delete sidebar controls and confirmation dialo
 
 Make all organization actions available through accessible sidebar controls.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `in_progress` · **Priority:** high
+
 **Depends on:** T07  
 **Requirements:** R1, R2, R7
 

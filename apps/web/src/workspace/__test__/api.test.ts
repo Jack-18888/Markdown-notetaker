@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiErrorCode, errorDefinitions } from '@markdown-note-taker/contracts';
-import { getNote, getTree, updateNoteTitle } from '../api.js';
+import { getNote, getTree, updateNote } from '../api.js';
 import { ids, note } from './fixtures.js';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -10,10 +10,9 @@ describe('typed workspace client', () => {
     const fetcher = vi.fn().mockResolvedValue(Response.json(saved));
     vi.stubGlobal('fetch', fetcher);
     expect(
-      await updateNoteTitle(
+      await updateNote(
         note.id,
-        'Renamed',
-        1,
+        { title: 'Renamed', expectedRevision: 1 },
         new AbortController().signal,
       ),
     ).toEqual(saved);
@@ -28,7 +27,11 @@ describe('typed workspace client', () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);
     await expect(
-      updateNoteTitle(note.id, ' padded ', 1, new AbortController().signal),
+      updateNote(
+        note.id,
+        { title: ' padded ', expectedRevision: 1 },
+        new AbortController().signal,
+      ),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
     expect(fetcher).not.toHaveBeenCalled();
   });

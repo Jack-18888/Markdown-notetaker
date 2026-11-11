@@ -6,6 +6,13 @@ import {
   resourceIdSchema,
   ApiErrorCode,
   updateNoteRequestSchema,
+  createFolderRequestSchema,
+  createNoteRequestSchema,
+  updateFolderRequestSchema,
+  deleteNoteRequestSchema,
+  type ParentId,
+  type UpdateFolderRequest,
+  type UpdateNoteRequest,
   type ResourceId,
   type Revision,
 } from '@markdown-note-taker/contracts';
@@ -30,6 +37,7 @@ async function requestJson(
   path: string,
   signal: AbortSignal,
   options: RequestInit = {},
+  status = 200,
 ): Promise<unknown> {
   let response: Response;
   try {
@@ -42,6 +50,10 @@ async function requestJson(
     );
   }
   let body: unknown;
+  if (response.status === status && status === 204) {
+    if (await response.text()) return invalidResponse();
+    return undefined;
+  }
   try {
     body = await response.json();
   } catch {
@@ -59,7 +71,7 @@ async function requestJson(
       result.data.error.message,
     );
   }
-  if (response.status !== 200) return invalidResponse();
+  if (response.status !== status) return invalidResponse();
   return body;
 }
 
@@ -83,24 +95,20 @@ export async function getNote(id: ResourceId, signal: AbortSignal) {
   return note;
 }
 
-export async function updateNoteTitle(
+function invalidInput(): never {
+  throw new WorkspaceRequestError(
+    ApiErrorCode.INVALID_INPUT,
+    errorDefinitions.INVALID_INPUT.message,
+  );
+}
+
+export async function updateNote(
   id: ResourceId,
-  title: string,
-  expectedRevision: Revision,
+  input: UpdateNoteRequest,
   signal: AbortSignal,
 ) {
-  const invalidInput = (): never => {
-    throw new WorkspaceRequestError(
-      ApiErrorCode.INVALID_INPUT,
-      errorDefinitions.INVALID_INPUT.message,
-    );
-  };
   parseContract(resourceIdSchema, id, invalidInput);
-  const body = parseContract(
-    updateNoteRequestSchema,
-    { title, expectedRevision },
-    invalidInput,
-  );
+  const body = parseContract(updateNoteRequestSchema, input, invalidInput);
   const path = apiContracts.updateNote.path.replace(
     ':id',
     encodeURIComponent(id),
@@ -116,4 +124,116 @@ export async function updateNoteTitle(
   );
   if (note.id !== id) return invalidResponse();
   return note;
+}
+
+export async function createFolder(
+  name: string,
+  parentId: ParentId,
+  signal: AbortSignal,
+) {
+  const body = parseContract(
+    createFolderRequestSchema,
+    { name, parentId },
+    invalidInput,
+  );
+  return parseContract(
+    apiContracts.createFolder.response,
+    await requestJson(
+      apiContracts.createFolder.path,
+      signal,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      apiContracts.createFolder.status,
+    ),
+    invalidResponse,
+  );
+}
+
+export async function createNote(
+  title: string,
+  folderId: ParentId,
+  signal: AbortSignal,
+) {
+  const body = parseContract(
+    createNoteRequestSchema,
+    { title, folderId },
+    invalidInput,
+  );
+  return parseContract(
+    apiContracts.createNote.response,
+    await requestJson(
+      apiContracts.createNote.path,
+      signal,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      apiContracts.createNote.status,
+    ),
+    invalidResponse,
+  );
+}
+
+export async function updateFolder(
+  id: ResourceId,
+  input: UpdateFolderRequest,
+  signal: AbortSignal,
+) {
+  parseContract(resourceIdSchema, id, invalidInput);
+  const body = parseContract(updateFolderRequestSchema, input, invalidInput);
+  const folder = parseContract(
+    apiContracts.updateFolder.response,
+    await requestJson(
+      apiContracts.updateFolder.path.replace(':id', encodeURIComponent(id)),
+      signal,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    ),
+    invalidResponse,
+  );
+  if (folder.id !== id) return invalidResponse();
+  return folder;
+}
+
+export async function deleteFolder(
+  id: ResourceId,
+  signal: AbortSignal,
+): Promise<void> {
+  parseContract(resourceIdSchema, id, invalidInput);
+  await requestJson(
+    apiContracts.deleteFolder.path.replace(':id', encodeURIComponent(id)),
+    signal,
+    { method: 'DELETE' },
+    apiContracts.deleteFolder.status,
+  );
+}
+
+export async function deleteNote(
+  id: ResourceId,
+  expectedRevision: Revision,
+  signal: AbortSignal,
+): Promise<void> {
+  parseContract(resourceIdSchema, id, invalidInput);
+  const body = parseContract(
+    deleteNoteRequestSchema,
+    { expectedRevision },
+    invalidInput,
+  );
+  await requestJson(
+    apiContracts.deleteNote.path.replace(':id', encodeURIComponent(id)),
+    signal,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    apiContracts.deleteNote.status,
+  );
 }
