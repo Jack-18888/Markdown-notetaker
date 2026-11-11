@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T05 are implemented. T06 editor compatibility is in progress. The PR stack awaits review; the editor/backend compatibility checkpoint remains pending.
+**Status:** T01-T06 are implemented. The PR stack awaits review; T07 workspace navigation is next. The complete editor/backend compatibility checkpoint remains pending T09.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -142,23 +142,23 @@ Implementation steps are guidance within the product requirements and proposed d
 
 Task sections are authoritative for status and dependencies. Update this navigation table whenever those fields change; acceptance criteria and evidence stay in the sections.
 
-| ID          | Task                                     | Status        | Direct dependencies      |
-| ----------- | ---------------------------------------- | ------------- | ------------------------ |
-| [T01](#t01) | Workspaces and tooling                   | `done`        | None                     |
-| [T02](#t02) | Shared contracts                         | `done`        | [T01](#t01)              |
-| [T03](#t03) | SQLite and migrations                    | `done`        | [T02](#t02)              |
-| [T04](#t04) | Persistence services                     | `done`        | [T03](#t03)              |
-| [T05](#t05) | Local REST API                           | `done`        | [T04](#t04)              |
-| [T06](#t06) | Editor compatibility                     | `in_progress` | [T02](#t02)              |
-| [T07](#t07) | Workspace navigation                     | `todo`        | [T05](#t05)              |
-| [T08](#t08) | Lifecycle controls                       | `todo`        | [T07](#t07)              |
-| [T09](#t09) | Rich editor and compatibility checkpoint | `todo`        | [T06](#t06), [T07](#t07) |
-| [T10](#t10) | Mermaid rendering                        | `todo`        | [T09](#t09)              |
-| [T11](#t11) | Autosave and conflicts                   | `todo`        | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo`        | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo`        | [T12](#t12)              |
-| [T14](#t14) | Production execution                     | `todo`        | [T05](#t05), [T12](#t12) |
-| [T15](#t15) | Release acceptance and docs              | `todo`        | [T13](#t13), [T14](#t14) |
+| ID          | Task                                     | Status | Direct dependencies      |
+| ----------- | ---------------------------------------- | ------ | ------------------------ |
+| [T01](#t01) | Workspaces and tooling                   | `done` | None                     |
+| [T02](#t02) | Shared contracts                         | `done` | [T01](#t01)              |
+| [T03](#t03) | SQLite and migrations                    | `done` | [T02](#t02)              |
+| [T04](#t04) | Persistence services                     | `done` | [T03](#t03)              |
+| [T05](#t05) | Local REST API                           | `done` | [T04](#t04)              |
+| [T06](#t06) | Editor compatibility                     | `done` | [T02](#t02)              |
+| [T07](#t07) | Workspace navigation                     | `todo` | [T05](#t05)              |
+| [T08](#t08) | Lifecycle controls                       | `todo` | [T07](#t07)              |
+| [T09](#t09) | Rich editor and compatibility checkpoint | `todo` | [T06](#t06), [T07](#t07) |
+| [T10](#t10) | Mermaid rendering                        | `todo` | [T09](#t09)              |
+| [T11](#t11) | Autosave and conflicts                   | `todo` | [T08](#t08), [T09](#t09) |
+| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
+| [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
 ### Editor and backend compatibility checkpoint
 
@@ -422,7 +422,7 @@ Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered ab
 - `npm run typecheck`, `npm run lint`, `npm test` (211 tests), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes both Chromium checks, including [browser writes through Vite](../tests/e2e/workspace-api.spec.ts). [Server lifecycle tests](../apps/server/src/__test__/server.test.ts) verify loopback binding, startup failure, occupied ports, and production-mode HTTP persistence after restart.
 - A compiled production smoke check launched the built entry with plain Node and an isolated temporary data directory. Static assets, JSON API fallback, Host/origin rejection, note writes, restart durability, stale revision conflicts, and deletion pass. Its processes and temporary data were removed. Local documentation link targets and all three API JSON examples validate; `git diff --check` passes. No database format or dependency changes were needed.
 
-The [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint) remains pending. These checks validate raw Markdown transport and persistence; rich editor conversion and rendering are later work. Full production backup/restore acceptance remains in T14.
+The [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint) remains pending. These T05 checks validate raw Markdown transport and persistence; [T06 evidence](#t06) records frontend conversion coverage. The integrated writing UI and diagram previews remain later work. Full production backup/restore acceptance remains in T14.
 
 <a id="t06"></a>
 
@@ -430,7 +430,7 @@ The [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint
 
 Validate the riskiest editor integration before building the full writing interface.
 
-**Status:** `in_progress` · **Priority:** high
+**Status:** `done` · **Priority:** high
 
 **Depends on:** T02  
 **Requirements:** R3, R4, R6
@@ -451,10 +451,10 @@ Validate the riskiest editor integration before building the full writing interf
 
 **Acceptance criteria**
 
-- [ ] All supported content round-trips semantically using only open-source packages and no service credentials.
-- [ ] Mermaid source survives frontend editor conversion and raw Markdown persistence; T09 verifies the integrated checkpoint.
-- [ ] Unsupported rich constructs retain their raw Markdown and use the safe fallback from R6; code examples remain literal and unsafe links cannot execute.
-- [ ] Frontend conversion constraints, source retention, fallback behavior, and rendering limits are documented before editor UI implementation.
+- [x] All supported content round-trips semantically using only open-source packages and no service credentials.
+- [x] Mermaid source survives frontend editor conversion and raw Markdown persistence; T09 verifies the integrated checkpoint.
+- [x] Unsupported rich constructs retain their raw Markdown and use the safe fallback from R6; code examples remain literal and unsafe links cannot execute.
+- [x] Frontend conversion constraints, source retention, fallback behavior, and rendering limits are documented before editor UI implementation.
 
 **Verification**
 
@@ -462,7 +462,15 @@ Validate the riskiest editor integration before building the full writing interf
 
 **Evidence**
 
-No verification evidence recorded.
+Verified 2026-11-09 on Windows 11 x64, Node.js 24.18.0, npm 12.2.2. Delivered in five PRs above the API stack: extensions/dependencies, source policy, source retention, fallback view, and browser/compatibility verification. Awaiting review.
+
+- Pinned matching open-source Tiptap 3.33.0 packages, Marked 18.2.0, and Happy DOM 21.0.4 for tests. No service credentials, database format, backend, or shared contract changes. Installation reports zero vulnerabilities.
+- [Supported fixtures](../apps/web/src/editor/__test__/fixtures.ts) cover paragraphs, all six heading levels, marks, links, nested ordered/unordered lists, nested checklists, blockquotes, literal code, horizontal rules, hard breaks, multiple Mermaid blocks, and invalid diagram syntax. Every fixture passes both [schema conversion](../apps/web/src/editor/__test__/extensions.test.ts) and the [guarded public boundary](../apps/web/src/editor/__test__/markdown.test.ts), including another body edit and reload.
+- [Source policy fixtures](../apps/web/src/editor/__test__/source-policy.test.ts) verify unsupported/hostile content and bounded conversion. Unsupported source never enters an editable document. Untouched supported notes retain their original bytes. Other body edits preserve exact Mermaid source, including CRLF/CR, whitespace, trailing blank lines, and embedded backticks. Edited documents must pass schema/link validation and structural round-trip checks; failed conversion retains the current document and source.
+- The [fallback component](../apps/web/src/editor/SourceFallback.tsx) displays read-only selectable source with an explanation. [DOM tests](../apps/web/src/editor/__test__/source-fallback.test.ts) and [Chromium checks](../tests/e2e/editor-compatibility.spec.ts) verify literal hostile HTML/URLs, keyboard focus, and narrow-screen containment. Visually inspected the 375px-wide source view. [Editor architecture](../docs/architecture/editor.md) records supported/fallback forms, limits, interfaces, and pending rendering work.
+- `npm run typecheck`, `npm run lint`, `npm test` (304 tests, including 93 frontend checks), `npm run format:check`, and `npm run build` pass. `npm run test:e2e` passes all four Chromium checks. A real mounted editor edits source, saves it through the actual API/SQLite stack, and reloads it after browser navigation with exact Mermaid payloads. Vite prebundles editor dependencies to prevent first-import reloads. Root tooling typechecks include DOM APIs for browser evaluation; portable contracts keep their own DOM-free typecheck.
+
+T06 compatibility is validated for the documented subset and limits. Workspace navigation, writing controls, actual Mermaid previews, autosave/recovery, and file import/export remain later tasks. The full [T09 editor/backend checkpoint](#editor-and-backend-compatibility-checkpoint) remains pending the integrated writing UI; [T05 API evidence](#t05) and these T06 fixtures supply its backend/conversion coverage.
 
 <a id="t07"></a>
 

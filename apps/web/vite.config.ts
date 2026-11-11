@@ -12,6 +12,17 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // Keep the first lazy editor import from triggering a development-page reload.
+    optimizeDeps: {
+      include: [
+        '@tiptap/core',
+        '@tiptap/extension-code-block',
+        '@tiptap/extension-list',
+        '@tiptap/markdown',
+        '@tiptap/starter-kit',
+        'marked',
+      ],
+    },
     server: {
       host: '127.0.0.1',
       port: 5173,
