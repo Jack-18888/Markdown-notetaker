@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { DatabaseErrorCode } from './errors.js';
-import { workspaceMigrations, type Migration } from './migrations.js';
+import { DatabaseErrorCode } from '../errors.js';
+import { workspaceMigrations, type Migration } from '../migrations.js';
 import {
   seedWorkspace,
   temporaryWorkspace,
-} from '../../test/temporary-workspace.js';
+} from '../../__test__/temporary-workspace.js';
 
 const workspaces: ReturnType<typeof temporaryWorkspace>[] = [];
 function workspace() {
@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 const secondMigration: Migration = {
-  version: 2,
+  version: 3,
   name: 'fixture_upgrade',
   sql: 'CREATE TABLE migration_probe (id INTEGER PRIMARY KEY) STRICT; INSERT INTO migration_probe VALUES (1);',
 };
@@ -47,7 +47,7 @@ describe('workspace migrations through the connection factory', () => {
     const migrations = [...workspaceMigrations, secondMigration];
     const upgraded = temporary.open({ migrations });
     expect(upgraded.prepare('SELECT * FROM notes').all()).toEqual(before);
-    expect(upgraded.pragma('user_version', { simple: true })).toBe(2);
+    expect(upgraded.pragma('user_version', { simple: true })).toBe(3);
     upgraded.close();
     const reopened = temporary.open({ migrations });
     expect(reopened.prepare('SELECT * FROM migration_probe').all()).toEqual([
@@ -58,7 +58,7 @@ describe('workspace migrations through the connection factory', () => {
       reopened
         .prepare('SELECT version FROM schema_migrations ORDER BY version')
         .all(),
-    ).toEqual([{ version: 1 }, { version: 2 }]);
+    ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
   });
 
   it('rolls back the entire pending batch and saved data on migration failure', () => {
@@ -75,7 +75,7 @@ describe('workspace migrations through the connection factory', () => {
         sql: secondMigration.sql + ' UPDATE notes SET revision = revision + 1;',
       },
       {
-        version: 3,
+        version: 4,
         name: 'fixture_failure',
         sql: 'CREATE TABLE failed_probe (id INTEGER); INSERT INTO missing_fixture_table VALUES (1);',
       },
@@ -83,7 +83,7 @@ describe('workspace migrations through the connection factory', () => {
     expect(() => temporary.open({ migrations })).toThrow(
       expect.objectContaining({
         code: DatabaseErrorCode.MIGRATION_FAILED,
-        migrationVersion: 3,
+        migrationVersion: 4,
       }),
     );
     const reopened = temporary.open();
@@ -91,7 +91,7 @@ describe('workspace migrations through the connection factory', () => {
     expect(reopened.prepare('SELECT * FROM schema_migrations').all()).toEqual(
       history,
     );
-    expect(reopened.pragma('user_version', { simple: true })).toBe(1);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(2);
     expect(
       reopened
         .prepare(
@@ -122,7 +122,7 @@ describe('workspace migrations through the connection factory', () => {
       raw.prepare("SELECT name FROM sqlite_schema WHERE type = 'table'").all(),
     ).toEqual([]);
     raw.close();
-    expect(temporary.open().pragma('user_version', { simple: true })).toBe(1);
+    expect(temporary.open().pragma('user_version', { simple: true })).toBe(2);
   });
 
   it.each(['sql', 'name'] as const)(
@@ -135,7 +135,11 @@ describe('workspace migrations through the connection factory', () => {
       initial.close();
       const first = workspaceMigrations[0]!;
       const changed = { ...first, [field]: first[field] + ' changed' };
-      expect(() => temporary.open({ migrations: [changed] })).toThrow(
+      expect(() =>
+        temporary.open({
+          migrations: [changed, ...workspaceMigrations.slice(1)],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
         }),
@@ -156,7 +160,7 @@ describe('workspace migrations through the connection factory', () => {
         code: DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
       }),
     );
-    expect(temporary.raw().pragma('user_version', { simple: true })).toBe(2);
+    expect(temporary.raw().pragma('user_version', { simple: true })).toBe(3);
   });
 
   it('reports an incompatible migration journal without changing saved notes', () => {
@@ -177,7 +181,7 @@ describe('workspace migrations through the connection factory', () => {
   it('rejects inconsistent journal/version metadata without repairing it silently', () => {
     const temporary = workspace();
     const initial = temporary.open();
-    initial.pragma('user_version = 2');
+    initial.pragma('user_version = 3');
     initial.close();
     expect(() => temporary.open()).toThrow(
       expect.objectContaining({
@@ -185,9 +189,10 @@ describe('workspace migrations through the connection factory', () => {
       }),
     );
     const raw = temporary.raw();
-    expect(raw.pragma('user_version', { simple: true })).toBe(2);
+    expect(raw.pragma('user_version', { simple: true })).toBe(3);
     expect(raw.prepare('SELECT version FROM schema_migrations').all()).toEqual([
       { version: 1 },
+      { version: 2 },
     ]);
   });
 

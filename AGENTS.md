@@ -21,6 +21,7 @@
 
 ## Verify and hand off
 
+- Keep unit and integration tests in an `__test__` folder inside the owning source directory. Put version-specific migration tests in `database/migrations/__test__/` and shared server test fixtures in `apps/server/src/__test__/`. Browser suites stay in `tests/e2e/`. Update imports, documentation links, and TypeScript test paths when moving tests.
 - Test observable behavior at the layer affected by the change. Run relevant type, lint, test, or build scripts that exist; report unavailable checks rather than inventing a substitute result.
 - Use isolated temporary SQLite databases for persistence tests. Verify migrations against existing data and reopen the database when testing durability; never test destructive operations on the user's notes.
 - Use real API/database or browser integration checks where mocks would hide persistence, save-ordering, or editor-conversion failures.

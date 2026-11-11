@@ -2,9 +2,8 @@ import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve, sep } from 'node:path';
 import Database from 'better-sqlite3';
-import { createEmptyDocument } from '@markdown-note-taker/contracts';
-import { databaseFileName } from '../src/config.js';
-import { openDatabase, type DatabaseOptions } from '../src/database/open.js';
+import { databaseFileName } from '../config.js';
+import { openDatabase, type DatabaseOptions } from '../database/open.js';
 
 /** Own every connection and file created by a persistence test. */
 export function temporaryWorkspace() {
@@ -78,23 +77,20 @@ export function seedWorkspace(database: Database.Database) {
     fixtureTimestamp,
     fixtureTimestamp,
   );
-  const document = createEmptyDocument();
-  document.content.content[0]!.content = [
-    { type: 'text', text: 'Fixture text \u{1f4dd}\n<script>literal</script>' },
-  ];
+  const content =
+    '# Fixture \u{1f4dd}\r\n\r\n**Markdown**\n<script>literal</script>\n';
   database
     .prepare(
-      'INSERT INTO notes (id, title, folder_id, document_json, document_schema_version, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO notes (id, title, folder_id, content, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
     .run(
       fixtureIds.note,
       'Example',
       fixtureIds.child,
-      JSON.stringify(document.content),
-      document.schemaVersion,
+      content,
       1,
       fixtureTimestamp,
       fixtureTimestamp,
     );
-  return document;
+  return content;
 }

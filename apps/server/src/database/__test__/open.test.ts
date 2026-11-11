@@ -2,15 +2,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { documentEnvelopeSchema } from '@markdown-note-taker/contracts';
-import { resolveDataDirectory } from '../config.js';
-import { DatabaseErrorCode, DatabaseInitializationError } from './errors.js';
+import { resolveDataDirectory } from '../../config.js';
+import { DatabaseErrorCode, DatabaseInitializationError } from '../errors.js';
 import {
   fixtureIds,
   fixtureTimestamp,
   seedWorkspace,
   temporaryWorkspace,
-} from '../../test/temporary-workspace.js';
+} from '../../__test__/temporary-workspace.js';
 
 const workspaces: ReturnType<typeof temporaryWorkspace>[] = [];
 function workspace() {
@@ -33,24 +32,26 @@ describe('workspace database initialization', () => {
     expect(database.pragma('journal_mode', { simple: true })).toBe('wal');
     expect(database.pragma('busy_timeout', { simple: true })).toBe(5000);
     expect(database.pragma('synchronous', { simple: true })).toBe(2);
-    expect(database.pragma('user_version', { simple: true })).toBe(1);
+    expect(database.pragma('user_version', { simple: true })).toBe(2);
     expect(
       database.prepare('SELECT version, name FROM schema_migrations').all(),
-    ).toEqual([{ version: 1, name: 'initial_workspace' }]);
+    ).toEqual([
+      { version: 1, name: 'initial_workspace' },
+      { version: 2, name: 'raw_markdown_content' },
+    ]);
   });
 
-  it('preserves hierarchy, document format, revisions, and timestamps after reopening', () => {
+  it('preserves hierarchy, Markdown source, revisions, and timestamps after reopening', () => {
     const temporary = workspace();
     const database = temporary.open();
-    const document = seedWorkspace(database);
+    const content = seedWorkspace(database);
     database.close();
     const reopened = temporary.open();
     const row = reopened
       .prepare<
         [],
         {
-          document_json: string;
-          document_schema_version: number;
+          content: string;
           title: string;
           revision: number;
           folder_id: string;
@@ -59,12 +60,7 @@ describe('workspace database initialization', () => {
         }
       >('SELECT * FROM notes')
       .get()!;
-    expect(
-      documentEnvelopeSchema.parse({
-        schemaVersion: row.document_schema_version,
-        content: JSON.parse(row.document_json),
-      }),
-    ).toEqual(document);
+    expect(row.content).toBe(content);
     expect(row).toMatchObject({
       title: 'Example',
       folder_id: fixtureIds.child,
@@ -147,13 +143,12 @@ describe('workspace database initialization', () => {
   });
 
   it.each([
-    ['UPDATE notes SET document_json = ? WHERE id = ?', 'not json'],
-    ['UPDATE notes SET document_json = ? WHERE id = ?', '[]'],
-    ['UPDATE notes SET document_schema_version = ? WHERE id = ?', 0],
+    ['UPDATE notes SET content = ? WHERE id = ?', null],
+    ['UPDATE notes SET content = ? WHERE id = ?', Buffer.from('blob')],
     ['UPDATE notes SET revision = ? WHERE id = ?', 0],
     ['UPDATE notes SET revision = ? WHERE id = ?', Number.MAX_SAFE_INTEGER + 1],
   ] as const)(
-    'rejects invalid stored document/revision values (%#)',
+    'rejects invalid stored content/revision values (%#)',
     (sql, value) => {
       const database = workspace().open();
       seedWorkspace(database);
@@ -257,7 +252,7 @@ describe('workspace database initialization', () => {
     vi.stubEnv('DATA_DIR', undefined);
     const standard = resolveDataDirectory();
     expect(standard).toBe(
-      fileURLToPath(new URL('../../../../data', import.meta.url)),
+      fileURLToPath(new URL('../../../../../data', import.meta.url)),
     );
     expect(standard).toBe(resolveDataDirectory('data'));
     expect(resolveDataDirectory('./data')).toBe(standard);
