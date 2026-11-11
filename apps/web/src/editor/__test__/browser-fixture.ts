@@ -6,3 +6,5 @@ export { createRoot } from 'react-dom/client';
 export { editorExtensions } from '../extensions.js';
 export { loadMarkdown } from '../markdown.js';
 export { default as SourceFallback } from '../SourceFallback.js';
+export { renderDiagram } from '../diagram-renderer.js';
+export { sanitizeDiagram } from '../diagram-policy.js';
