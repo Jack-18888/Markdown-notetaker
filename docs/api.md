@@ -74,7 +74,7 @@ The exported [limits](../packages/contracts/src/limits.ts) are authoritative:
 | Name/title             | 200             | Unicode code points; contract schema                                        |
 | Markdown content       | 1,048,576 bytes | UTF-8 bytes of the raw string, excluding JSON escaping and request wrappers |
 | HTTP request body      | 2,097,152 bytes | Incoming JSON body bytes before parsing; enforced by HTTP middleware        |
-| Markdown import source | 262,144 bytes   | Raw file bytes; T12 must apply it before creating a note                    |
+| Markdown import source | 262,144 bytes   | Raw file bytes; checked by the browser before reading/creating a note       |
 
 Content must be a well-formed Unicode string. Markdown grammar, node structure, and rendering complexity are frontend concerns. The backend does not trim, sanitize, reformat, or parse the content. A custom Zod issue carries params.markdownReason = MarkdownValidationReason.BYTE_LIMIT for the byte cap. The API maps it to PAYLOAD_TOO_LARGE; non-string or malformed Unicode content maps to INVALID_INPUT. Request-body escaping and whitespace count against the separate HTTP limit.
 

@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T11 are implemented in the PR stack, awaiting review. The editor/backend checkpoint, editable Mermaid previews, coordinated autosave, navigation flushing, and conflict recovery pass for the documented scope. Markdown file import/export remains T12.
+**Status:** T01-T12 are implemented in the PR stack, awaiting review. The editor/backend checkpoint, editable Mermaid previews, coordinated autosave, navigation flushing, conflict recovery, and exact Markdown file import/export pass for the documented scope. Accessibility review is next in T13; production verification and release acceptance remain T14-T15.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -155,7 +155,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | [T09](#t09) | Rich editor and compatibility checkpoint | `done` | [T06](#t06), [T07](#t07) |
 | [T10](#t10) | Mermaid rendering                        | `done` | [T09](#t09)              |
 | [T11](#t11) | Autosave and conflicts                   | `done` | [T08](#t08), [T09](#t09) |
-| [T12](#t12) | Markdown import/export                   | `todo` | [T10](#t10), [T11](#t11) |
+| [T12](#t12) | Markdown import/export                   | `done` | [T10](#t10), [T11](#t11) |
 | [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
 | [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
 | [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
@@ -712,7 +712,7 @@ Prevent dropped or overwritten edits during ordinary navigation, failures, and c
 
 Make supported note content portable through individual .md files.
 
-**Status:** `todo` · **Priority:** high  
+**Status:** `done` · **Priority:** high
 **Depends on:** T10, T11  
 **Requirements:** R6
 
@@ -731,11 +731,11 @@ Make supported note content portable through individual .md files.
 
 **Acceptance criteria**
 
-- [ ] Import creates one correctly titled note in the chosen destination and opens it after successful save.
-- [ ] Untouched Markdown exports byte-for-byte; supported rich edits reimport with equivalent structure and exact Mermaid source.
-- [ ] Canceled, oversized, invalid, or failed imports leave existing notes unchanged and show a useful message.
-- [ ] Export contains the latest edits and fails visibly if its prerequisite save fails.
-- [ ] Every R6 unsupported-content fixture imports and exports without source loss, with a useful rich-editor fallback; hostile source cannot execute.
+- [x] Import creates one correctly titled note in the chosen destination and opens it after successful save.
+- [x] Untouched Markdown exports byte-for-byte; supported rich edits reimport with equivalent structure and exact Mermaid source.
+- [x] Canceled, oversized, invalid, or failed imports leave existing notes unchanged and show a useful message.
+- [x] Export contains the latest edits and fails visibly if its prerequisite save fails.
+- [x] Every R6 unsupported-content fixture imports and exports without source loss, with a useful rich-editor fallback; hostile source cannot execute.
 
 **Verification**
 
@@ -743,7 +743,13 @@ Make supported note content portable through individual .md files.
 
 **Evidence**
 
-No verification evidence recorded.
+- Verified 2026-11-11, Windows 11 x64 / Node 24.18.0 / npm 12.2.2. Delivered as three focused PRs above T11: [import](https://github.com/Jack-18888/Markdown-notetaker/pull/42), [export](https://github.com/Jack-18888/Markdown-notetaker/pull/43), and fixture/recovery/evidence verification. Awaiting review.
+- The [import dialog](../apps/web/src/workspace/ImportDialog.tsx) flushes pending edits before opening, derives an editable title from the filename, and creates the entire source in the selected folder/root through the existing API. [File boundary tests](../apps/web/src/workspace/__test__/markdown-files.test.ts) cover strict UTF-8 decoding, BOM/mixed-line-ending preservation, inclusive 256 KiB import limits, unreadable/invalid files, shared title rules, and portable bounded download names.
+- [Import browser checks](../tests/e2e/markdown-import.spec.ts) verify selected-folder placement, exact stored source, fallback, cancellation, invalid/oversized input, failed requests, and retry. [Recovery checks](../tests/e2e/markdown-import-recovery.spec.ts) verify real API rejection after the destination disappears with no partial note, failed prerequisite flush retention, correctable long filenames, and refresh-only retry after a confirmed creation. The 375px import dialog was visually inspected.
+- [Export checks](../tests/e2e/markdown-export.spec.ts) read real downloaded files to verify exact UTF-8 bytes, BOM/mixed line endings, safe Windows filenames, delayed-save draining with newer title/body edits, no download after a failed save, retained writing, and retry.
+- [Forty file round-trip checks](../tests/e2e/markdown-roundtrip.spec.ts) share the [conversion policy fixtures](../apps/web/src/editor/__test__/fixtures.ts). All supported blocks, every unsupported construct, unsafe links, empty source, BOM/Unicode/mixed endings, and the inclusive import limit export unchanged. Fallback has no editable body; hostile source causes no dialogs, external requests, or injected active elements. Supported rich edits reimport with equivalent headings, marks, code, tasks, paragraph text, and exact Mermaid payloads.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (403 tests), `npm run build`, and the full `npm run test:e2e` (88 Chromium scenarios) pass. Local documentation links, three JSON examples, and `git diff --check` pass. Existing API/reopen and migration rollback/durability checks remain green; no persisted format, API, or dependency changes were needed.
+- Unacknowledged creates still lack API idempotency; only acknowledged imports can retry refresh/open without another create. Existing Mermaid vendor chunk-size warnings and synchronous main-thread layout limits remain. T13 owns the integrated accessibility review; production/release acceptance remains T14-T15.
 
 <a id="t13"></a>
 
