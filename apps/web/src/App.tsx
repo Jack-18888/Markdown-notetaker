@@ -17,6 +17,7 @@ import type { LifecycleAction } from './workspace/lifecycle.js';
 import MoveDialog from './workspace/MoveDialog.js';
 import DeleteDialog from './workspace/DeleteDialog.js';
 import { useNoteTransition } from './workspace/useNoteTransition.js';
+import ImportDialog from './workspace/ImportDialog.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -287,6 +288,13 @@ export default function App() {
         ) : action.kind === 'move' ? (
           <MoveDialog
             action={action}
+            tree={tree}
+            onCommit={commitAction}
+            onClose={closeAction}
+          />
+        ) : action.kind === 'import' ? (
+          <ImportDialog
+            parentId={action.parentId}
             tree={tree}
             onCommit={commitAction}
             onClose={closeAction}
