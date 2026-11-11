@@ -7,7 +7,9 @@ export function fencedSource(source: string, language = ''): string {
   for (const [run] of source.matchAll(/`+/g))
     longest = Math.max(longest, run.length);
   const fence = '`'.repeat(longest + 1);
-  return `${fence}${language}\n${source}\n${fence}`;
+  // A final CR must not merge with the separator into a CRLF and disappear.
+  const separator = source.endsWith('\r') ? '\r' : '\n';
+  return `${fence}${language}\n${source}${separator}${fence}`;
 }
 
 /** Plain source only. Diagram rendering and source editing belong to later UI work. */
