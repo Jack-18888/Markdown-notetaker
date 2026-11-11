@@ -1,4 +1,11 @@
-import { Component, lazy, Suspense, useCallback, type ReactNode } from 'react';
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from 'react';
 import type {
   NoteDetail,
   ParentId,
@@ -12,6 +19,7 @@ import { useLoad } from './useLoad.js';
 import TitleEditor from './TitleEditor.js';
 import SaveStatus from './SaveStatus.js';
 import { useNoteSession } from './useNoteSession.js';
+import type { SaveCoordinator } from './SaveCoordinator.js';
 
 const NoteContent = lazy(() => import('./NoteContent.js'));
 
@@ -44,12 +52,14 @@ export default function NotePanel({
   onNavigate,
   onDirtyChange,
   onNoteUpdated,
+  onSession,
 }: {
   id: ResourceId;
   tree: WorkspaceTree;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
+  onSession(session: SaveCoordinator | null): void;
 }) {
   const load = useCallback((signal: AbortSignal) => getNote(id, signal), [id]);
   const { state, retry } = useLoad(load);
@@ -78,6 +88,7 @@ export default function NotePanel({
       onNavigate={onNavigate}
       onDirtyChange={onDirtyChange}
       onNoteUpdated={onNoteUpdated}
+      onSession={onSession}
     />
   );
 }
@@ -88,18 +99,24 @@ function NoteArticle({
   onNavigate,
   onDirtyChange,
   onNoteUpdated,
+  onSession,
 }: {
   initial: NoteDetail;
   tree: WorkspaceTree;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
+  onSession(session: SaveCoordinator | null): void;
 }) {
   const { session, state } = useNoteSession(
     initial,
     onNoteUpdated,
     onDirtyChange,
   );
+  useEffect(() => {
+    onSession(session);
+    return () => onSession(null);
+  }, [session, onSession]);
   const note = state.note;
   return (
     <>
