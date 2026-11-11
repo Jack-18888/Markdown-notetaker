@@ -1,13 +1,4 @@
-import {
-  Component,
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { Component, lazy, Suspense, useCallback, type ReactNode } from 'react';
 import type {
   NoteDetail,
   ParentId,
@@ -19,6 +10,8 @@ import Breadcrumbs from './Breadcrumbs.js';
 import type { WorkspaceTree } from './tree.js';
 import { useLoad } from './useLoad.js';
 import TitleEditor from './TitleEditor.js';
+import SaveStatus from './SaveStatus.js';
+import { useNoteSession } from './useNoteSession.js';
 
 const NoteContent = lazy(() => import('./NoteContent.js'));
 
@@ -102,31 +95,12 @@ function NoteArticle({
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
 }) {
-  const [note, setNote] = useState(initial);
-  const dirty = useRef({ title: false, body: false });
-  const [titleSaving, setTitleSaving] = useState(false);
-  const [bodySaving, setBodySaving] = useState(false);
-  const titleDirty = useCallback(
-    (value: boolean) => {
-      dirty.current.title = value;
-      onDirtyChange(value || dirty.current.body);
-    },
-    [onDirtyChange],
+  const { session, state } = useNoteSession(
+    initial,
+    onNoteUpdated,
+    onDirtyChange,
   );
-  const bodyDirty = useCallback(
-    (value: boolean) => {
-      dirty.current.body = value;
-      onDirtyChange(value || dirty.current.title);
-    },
-    [onDirtyChange],
-  );
-  function saved(next: NoteDetail) {
-    setNote(next);
-    onNoteUpdated(next);
-  }
-  useEffect(() => {
-    onNoteUpdated(initial);
-  }, [initial, onNoteUpdated]);
+  const note = state.note;
   return (
     <>
       <Breadcrumbs
@@ -136,13 +110,7 @@ function NoteArticle({
       />
       <article className="note-surface">
         <p className="workspace-eyebrow">Your writing</p>
-        <TitleEditor
-          note={note}
-          onDirtyChange={titleDirty}
-          saveDisabled={bodySaving}
-          onSavingChange={setTitleSaving}
-          onSaved={saved}
-        />
+        <TitleEditor session={session} state={state} />
         {note.folderId !== null && !tree.folders.has(note.folderId) && (
           <p role="status">
             This note's location changed. Refresh the workspace to update its
@@ -157,15 +125,10 @@ function NoteArticle({
               </p>
             }
           >
-            <NoteContent
-              note={note}
-              saveDisabled={titleSaving}
-              onSaved={saved}
-              onDirtyChange={bodyDirty}
-              onSavingChange={setBodySaving}
-            />
+            <NoteContent source={initial.content} session={session} />
           </Suspense>
         </PreviewBoundary>
+        <SaveStatus session={session} state={state} />
       </article>
     </>
   );

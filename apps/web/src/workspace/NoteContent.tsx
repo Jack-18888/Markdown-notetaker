@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import type { NoteDetail } from '@markdown-note-taker/contracts';
 import { loadMarkdown } from '../editor/markdown.js';
 import SourceFallback from '../editor/SourceFallback.js';
 import NoteEditor from '../editor/NoteEditor.js';
+import type { SaveCoordinator } from './SaveCoordinator.js';
 
-export default function NoteContent(props: {
-  note: NoteDetail;
-  saveDisabled: boolean;
-  onSaved(note: NoteDetail): void;
-  onDirtyChange(dirty: boolean): void;
-  onSavingChange(saving: boolean): void;
+export default function NoteContent({
+  source,
+  session,
+}: {
+  source: string;
+  session: SaveCoordinator;
 }) {
-  const [document] = useState(() => loadMarkdown(props.note.content));
+  const [document] = useState(() => loadMarkdown(source));
   return document.mode === 'source' ? (
     <SourceFallback document={document} />
   ) : (
-    <NoteEditor {...props} document={document} />
+    <NoteEditor document={document} session={session} />
   );
 }
