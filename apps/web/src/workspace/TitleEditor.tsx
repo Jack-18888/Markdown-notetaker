@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { nameSchema } from '@markdown-note-taker/contracts';
 import type { SaveCoordinator, SaveState } from './SaveCoordinator.js';
 import './title-editor.css';
 
@@ -53,6 +54,7 @@ export default function TitleEditor({
             value={state.title}
             required
             maxLength={400}
+            aria-invalid={!nameSchema.safeParse(state.title).success}
             aria-describedby={`title-status-${state.note.id}`}
             onChange={(event) => session.setTitle(event.target.value)}
           />

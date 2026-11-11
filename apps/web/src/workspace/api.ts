@@ -156,10 +156,11 @@ export async function createNote(
   title: string,
   folderId: ParentId,
   signal: AbortSignal,
+  content?: string,
 ) {
   const body = parseContract(
     createNoteRequestSchema,
-    { title, folderId },
+    { title, folderId, ...(content === undefined ? {} : { content }) },
     invalidInput,
   );
   return parseContract(

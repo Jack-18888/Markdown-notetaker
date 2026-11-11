@@ -1,4 +1,5 @@
 import type { SaveCoordinator, SaveState } from './SaveCoordinator.js';
+import './save-status.css';
 
 export default function SaveStatus({
   session,
@@ -10,7 +11,7 @@ export default function SaveStatus({
   const failed = state.status === 'error' || state.status === 'conflict';
   return (
     <div className="body-save-row">
-      {state.hasBody && (
+      {(state.hasBody || state.status === 'error') && (
         <button
           type="button"
           className="dialog-primary"

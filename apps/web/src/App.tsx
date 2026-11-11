@@ -266,6 +266,9 @@ export default function App() {
                 onDirtyChange={setUnsavedNote}
                 onNoteUpdated={noteUpdated}
                 onSession={transition.register}
+                onRecoveryCopy={(note, signal) =>
+                  commitAction({ kind: 'note', id: note.id }, signal)
+                }
                 onNavigate={(id) => select({ kind: 'folder', id })}
               />
             )}

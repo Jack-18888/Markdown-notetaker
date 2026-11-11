@@ -22,25 +22,3 @@
   color: #5c6254;
   line-height: 1.6;
 }
-.body-save-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 28px;
-  border-top: 1px solid #d8d8ca;
-  padding-top: 20px;
-}
-.body-save-row p {
-  flex: 1 1 200px;
-  font-size: 0.8rem;
-  color: #5c6254;
-  line-height: 1.6;
-}
-.body-save-row [role='alert'] {
-  color: #8a3e1b;
-}
-.body-save-row button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
