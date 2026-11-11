@@ -1,6 +1,6 @@
 # Initial API contracts
 
-**Implementation status:** Contract schemas, SQLite persistence, folder/note services, transport protections, and the health/tree/note-detail GET routes are implemented. Mutation handlers remain in T05. Raw Markdown is canonical; frontend rich editing and rendering remain in T06/T09.
+**Implementation status:** Contract schemas, SQLite persistence, folder/note services, transport protections, health/tree/note-detail GET routes, and folder mutation routes are implemented. Note mutation handlers remain in T05. Raw Markdown is canonical; frontend rich editing and rendering remain in T06/T09.
 
 The source of truth is [the contracts package](../packages/contracts/src/index.ts). The private package exports TypeScript source directly; editor navigation, development, and tests need no package build. Both apps import it as `@markdown-note-taker/contracts`. Zod supplies runtime validation and inferred TypeScript types without Node, SQLite, React, or DOM dependencies. The [route registry](../packages/contracts/src/api.ts) pairs each method/path with parameter, request, successful response, and status contracts. A `null` body/response schema means no HTTP body, not JSON `null`.
 
@@ -63,7 +63,7 @@ For example, rename a note and move it to the root with `PATCH /api/notes/:id`:
 
 It succeeds only against revision 3 and returns revision 4. A competing update using revision 3 returns `REVISION_CONFLICT` and makes no changes. The client retains local edits and later offers the R5 recovery choices; a conflict response never includes another tab's note body. Deletion also checks the note revision so a stale confirmation cannot delete a subsequently edited note. Folder metadata has no revision in this release.
 
-Folder deletion removes its current subtree, including descendant notes, in one transaction. Confirmation belongs to the UI and can use tree metadata to describe descendants. A folder move must target an existing folder outside its own subtree. `null` moves a resource to the root. Invalid destinations or cycles leave the workspace unchanged. Persistence services implement these semantics; HTTP handlers remain pending.
+Folder deletion removes its current subtree, including descendant notes, in one transaction. Confirmation belongs to the UI and can use tree metadata to describe descendants. A folder move must target an existing folder outside its own subtree. `null` moves a resource to the root. Invalid destinations or cycles leave the workspace unchanged. [Folder API tests](../apps/server/src/http/__test__/folders.test.ts) verify these semantics over HTTP, including rollback and reopen durability.
 
 ## Limits
 

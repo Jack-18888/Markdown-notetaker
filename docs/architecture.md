@@ -1,6 +1,6 @@
 # Architecture
 
-**Implementation state:** The TypeScript workspace supplies a React connection page, portable API contracts, and raw Markdown validation. SQLite initialization, versioned migrations, database shutdown, folder/note services, HTTP transport protections, and health/tree/note-detail GET routes are implemented. HTTP mutations and the rich editor UI remain pending. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
+**Implementation state:** The TypeScript workspace supplies a React connection page, portable API contracts, and raw Markdown validation. SQLite initialization, versioned migrations, database shutdown, folder/note services, HTTP transport protections, health/tree/note-detail GET routes, and folder mutations are implemented. HTTP note mutations and the rich editor UI remain pending. Consequential choices have individual statuses in the [decision register](decisions/README.md); validation applies only to the scope recorded for each choice.
 
 The system supports the [product requirements](requirements.md): one person writes rich notes in a browser, organizes them in folders, and keeps saved content on their own computer. Individual documents in [roadmaps](../roadmaps/) define feature or release designs, detailed requirements, acceptance criteria, tasks, and verification evidence. The user specifies which roadmap governs the work.
 
@@ -32,7 +32,7 @@ The repository uses npm workspaces with three packages:
 
 Keep HTTP handlers focused on transport and validation. The [workspace README](../apps/server/src/workspace/README.md) explains the persistence service and its boundaries. The browser loads tree metadata separately from full note bodies so navigation does not fetch every document.
 
-The API covers tree metadata, note detail, and note/folder creation, updates, moves, and deletion. The [shared schemas](../packages/contracts/src/index.ts) define routes, payloads, limits, and errors, described in [API contracts](api.md). Health, tree metadata, note detail, and JSON API 404 handling run over HTTP; T05 still owns mutation handlers. The app factory requires an injected workspace service and never opens SQLite itself. Errors distinguish invalid input, missing resources, invalid hierarchy changes, and revision conflicts without exposing database details or note content.
+The API covers tree metadata, note detail, and note/folder creation, updates, moves, and deletion. The [shared schemas](../packages/contracts/src/index.ts) define routes, payloads, limits, and errors, described in [API contracts](api.md). Health, tree metadata, note detail, folder mutations, and JSON API 404 handling run over HTTP; T05 still owns note mutation handlers. The app factory requires an injected workspace service and never opens SQLite itself. Errors distinguish invalid input, missing resources, invalid hierarchy changes, and revision conflicts without exposing database details or note content.
 
 ## Architecture topics
 
