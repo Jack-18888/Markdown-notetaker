@@ -29,8 +29,8 @@ export default function FolderContents({
           </h2>
           <p>
             {id === null
-              ? 'Your saved notes and folders will appear here.'
-              : 'Choose another folder or return to the workspace.'}
+              ? 'Create a note or import Markdown to start your workspace.'
+              : 'Create a note or import Markdown to start writing here.'}
           </p>
         </div>
       ) : (

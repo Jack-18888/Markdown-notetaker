@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ParentId } from '@markdown-note-taker/contracts';
 import { createNote } from './api.js';
 import {
@@ -22,6 +22,8 @@ export default function ImportDialog({
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [validation, setValidation] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
   const operation = useOperation(async (signal) => {
     let content: string;
     try {
@@ -62,6 +64,7 @@ export default function ImportDialog({
                 ? 'Choose a Markdown file first.'
                 : 'Use 1–200 characters without surrounding spaces or control characters.',
             );
+            (!file ? fileInput : titleInput).current?.focus();
             return;
           }
           setValidation('');
@@ -70,6 +73,7 @@ export default function ImportDialog({
       >
         <label htmlFor={`${id}-file`}>Markdown file</label>
         <input
+          ref={fileInput}
           id={`${id}-file`}
           type="file"
           accept=".md,text/markdown"
@@ -84,9 +88,11 @@ export default function ImportDialog({
         />
         <label htmlFor={`${id}-title`}>Note title</label>
         <input
+          ref={titleInput}
           id={`${id}-title`}
           value={title}
           maxLength={400}
+          aria-invalid={file !== null && !validImportTitle(title)}
           disabled={operation.pending || operation.saved}
           aria-describedby={`${id}-error`}
           onChange={(event) => {
