@@ -38,5 +38,22 @@ export function workspaceRouter(workspace: WorkspaceService) {
     response.status(apiContracts.deleteFolder.status).end();
   });
 
+  router.post(apiContracts.createNote.path, jsonBody, (request, response) => {
+    const note = workspace.createNote(request.body);
+    response.status(apiContracts.createNote.status).json(note);
+  });
+
+  router.patch(apiContracts.updateNote.path, jsonBody, (request, response) => {
+    const { id } = validate(apiContracts.updateNote.params, request.params);
+    const note = workspace.updateNote(id, request.body);
+    response.status(apiContracts.updateNote.status).json(note);
+  });
+
+  router.delete(apiContracts.deleteNote.path, jsonBody, (request, response) => {
+    const { id } = validate(apiContracts.deleteNote.params, request.params);
+    workspace.deleteNote(id, request.body);
+    response.status(apiContracts.deleteNote.status).end();
+  });
+
   return router;
 }
