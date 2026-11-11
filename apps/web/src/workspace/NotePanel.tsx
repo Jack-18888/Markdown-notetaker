@@ -22,6 +22,7 @@ import SaveStatus from './SaveStatus.js';
 import { useNoteSession } from './useNoteSession.js';
 import type { SaveCoordinator } from './SaveCoordinator.js';
 import ConflictRecovery from './ConflictRecovery.js';
+import ExportMarkdown from './ExportMarkdown.js';
 
 const NoteContent = lazy(() => import('./NoteContent.js'));
 
@@ -166,6 +167,7 @@ function NoteArticle({
           </Suspense>
         </PreviewBoundary>
         <SaveStatus session={session} state={state} />
+        <ExportMarkdown session={session} />
         {state.status === 'conflict' && (
           <ConflictRecovery
             session={session}
