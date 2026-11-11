@@ -1,7 +1,7 @@
 # Initial project: design and implementation plan
 
 **Release:** v1  
-**Status:** T01-T12 are implemented in the PR stack, awaiting review. The editor/backend checkpoint, editable Mermaid previews, coordinated autosave, navigation flushing, conflict recovery, and exact Markdown file import/export pass for the documented scope. Accessibility review is next in T13; production verification and release acceptance remain T14-T15.
+**Status:** T01-T13 are implemented in the PR stack, awaiting review. The editor/backend checkpoint, editable Mermaid previews, coordinated autosave, conflict recovery, Markdown file import/export, and integrated keyboard/accessibility review pass for the documented scope. Production verification and release acceptance remain T14-T15.
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
@@ -156,7 +156,7 @@ Task sections are authoritative for status and dependencies. Update this navigat
 | [T10](#t10) | Mermaid rendering                        | `done` | [T09](#t09)              |
 | [T11](#t11) | Autosave and conflicts                   | `done` | [T08](#t08), [T09](#t09) |
 | [T12](#t12) | Markdown import/export                   | `done` | [T10](#t10), [T11](#t11) |
-| [T13](#t13) | Accessibility and failure review         | `todo` | [T12](#t12)              |
+| [T13](#t13) | Accessibility and failure review         | `done` | [T12](#t12)              |
 | [T14](#t14) | Production execution                     | `todo` | [T05](#t05), [T12](#t12) |
 | [T15](#t15) | Release acceptance and docs              | `todo` | [T13](#t13), [T14](#t14) |
 
@@ -757,7 +757,7 @@ Make supported note content portable through individual .md files.
 
 Make the integrated workflow usable across keyboard, small screens, empty content, and recoverable errors.
 
-**Status:** `todo` · **Priority:** medium  
+**Status:** `done` · **Priority:** medium
 **Depends on:** T12  
 **Requirements:** R2, R3, R4, R5
 
@@ -776,10 +776,10 @@ Make the integrated workflow usable across keyboard, small screens, empty conten
 
 **Acceptance criteria**
 
-- [ ] Core create/edit/move/delete/import/export flows are keyboard-operable with visible focus.
-- [ ] Dialogs restore focus and save/error changes are available to assistive technology.
-- [ ] Long content and diagrams do not break the page layout; narrow-screen navigation remains reachable.
-- [ ] Failures and empty states offer an appropriate next action without discarding local content.
+- [x] Core create/edit/move/delete/import/export flows are keyboard-operable with visible focus.
+- [x] Dialogs restore focus and save/error changes are available to assistive technology.
+- [x] Long content and diagrams do not break the page layout; narrow-screen navigation remains reachable.
+- [x] Failures and empty states offer an appropriate next action without discarding local content.
 
 **Verification**
 
@@ -787,7 +787,11 @@ Make the integrated workflow usable across keyboard, small screens, empty conten
 
 **Evidence**
 
-No verification evidence recorded.
+- Verified 2026-11-11, Windows 11 x64 / Node 24.18.0 / npm 12.2.2. The [integrated accessibility walkthrough](../tests/e2e/accessibility-review.spec.ts) exercises the real browser/API/SQLite app at 1280px and 320px: skip-link focus, keyboard note selection and task editing, announced save state, keyboard file export, modal initial focus/cycling, correctable invalid import titles, Escape/focus return, keyboard import, and selection focus after success.
+- Chromium's actual accessibility tree contains named active buttons, links, textboxes, comboboxes, and checkboxes in the reviewed editor/dialog states. Existing native dialogs keep underlying page content inert; Chromium may visit browser chrome during Tab cycling. Import validation now marks invalid titles and focuses the field needing correction. Global select/textarea focus styling matches other controls. Empty workspace/folder messages point to creation/import.
+- The long-content check covers eight folder levels, long names/titles, unchanged literal code, a wide diagram, contained 320px layout, and reachable sidebar navigation. Desktop, narrow writing, and long-content screenshots were visually inspected. [Lifecycle keyboard checks](../tests/e2e/lifecycle-recovery.spec.ts) cover create/move/delete dialogs; [navigation failure checks](../tests/e2e/navigation-states.spec.ts) and [import recovery](../tests/e2e/markdown-import-recovery.spec.ts) cover empty/loading/missing/offline outcomes and retained drafts.
+- `npm run typecheck`, `npm run lint`, and `npm run format:check` pass. The selected `npm run test:e2e -- accessibility-review.spec.ts lifecycle-recovery.spec.ts navigation-states.spec.ts markdown-import-recovery.spec.ts` run passes all 10 checks. Documentation links/JSON examples and `git diff --check` pass. The preceding T12 full run passes 88 scenarios; the three new walkthrough scenarios are included in final release regression work in T15.
+- This verifies the recorded keyboard, native dialog, accessible-name/status, and layout scope in Chromium. It is not a screen-reader certification or a complete WCAG audit. No new product features, dependencies, API, or database changes were introduced.
 
 <a id="t14"></a>
 
