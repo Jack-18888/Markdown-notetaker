@@ -1,8 +1,10 @@
 # Workspace navigation
 
-T08's [lifecycle client and helpers](../../apps/web/src/workspace/lifecycle.ts) provide validated create/update/delete requests, descendant counts, and destination choices excluding moved subtrees. Note mutations use loaded revisions; metadata-only changes omit content. Duplicate destination paths receive stable numbered labels while resource IDs remain their values. Sidebar create/rename and move controls are implemented; delete controls follow separately.
+T08's [lifecycle client and helpers](../../apps/web/src/workspace/lifecycle.ts) provide validated create/update/delete requests, descendant counts, and destination choices excluding moved subtrees. Note mutations use loaded revisions; metadata-only changes omit content. Duplicate destination paths receive stable numbered labels while resource IDs remain their values. Sidebar controls create, rename, move, and delete notes/folders.
 
 The [move dialog](../../apps/web/src/workspace/MoveDialog.tsx) uses full-path destination labels and offers the workspace root. It excludes the moved folder and its descendants, disables unchanged destinations, and leaves the picker and selection intact after server rejection. Successful moves preserve resource identity, reveal the new breadcrumb path, and omit note content from writes.
+
+The [deletion dialog](../../apps/web/src/workspace/DeleteDialog.tsx) names the target, explains permanent deletion, and counts subfolders and notes from the current tree. The server deletes a folder's current subtree transactionally; counts are a preview, not a version lock. Cancel receives initial focus. Note deletion uses the opened revision and rejects a newer saved version until it is reviewed. Failed deletes preserve the dialog and selection; committed deletes reveal the parent folder or workspace root. There is no trash or undo.
 
 [Name dialogs](../../apps/web/src/workspace/NameDialog.tsx) create notes/folders in the selected folder (or the selected note's folder) and rename the selected resource. [Native modal dialogs](../../apps/web/src/workspace/Modal.tsx) make the background inert, label their headings, preserve keyboard traversal, and restore focus on cancellation. Pending title drafts block lifecycle actions. Note actions wait for loaded note metadata so revision checks correspond to what was opened.
 
