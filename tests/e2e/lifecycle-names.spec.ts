@@ -105,14 +105,17 @@ test('creates nested items and renames by keyboard without dropping pending titl
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Protected draft');
     await page.getByRole('button', { name: 'New folder', exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(
-      page.getByText(
-        'Save your writing and finish title changes before leaving this note.',
-      ),
+      page.getByRole('dialog', { name: 'New folder', exact: true }),
     ).toBeVisible();
+    expect(
+      noteDetailSchema.parse(
+        await (await request.get(`/api/notes/${metadata.id}`)).json(),
+      ).title,
+    ).toBe('Protected draft');
     await page
-      .getByRole('button', { name: 'Discard title changes', exact: true })
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Cancel', exact: true })
       .click();
     await page
       .getByRole('navigation', { name: 'Breadcrumb' })
