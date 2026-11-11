@@ -7,6 +7,9 @@
     );
   min-height: 100svh;
 }
+.note-export {
+  margin-top: 20px;
+}
 .workspace-header {
   min-height: var(--workspace-header-height);
   grid-area: header;

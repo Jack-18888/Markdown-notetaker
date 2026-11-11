@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { limits } from '@markdown-note-taker/contracts';
 import {
   importTitle,
+  markdownFilename,
   readMarkdownFile,
   validImportTitle,
 } from '../markdown-files.js';
@@ -58,5 +59,24 @@ describe('Markdown file input', () => {
     expect(validImportTitle(importTitle('😀'.repeat(200) + '.md'))).toBe(true);
     expect(validImportTitle(importTitle('😀'.repeat(201) + '.md'))).toBe(false);
     expect(validImportTitle(importTitle('bad\u0001.md'))).toBe(false);
+  });
+});
+
+describe('Markdown download filenames', () => {
+  it.each([
+    ['../path\\name:*?"<>|', '_path_name_______.md'],
+    ['CON', '_CON.md'],
+    ['nul.txt', '_nul.txt.md'],
+    ['LPT²', '_LPT².md'],
+    [' . ', 'Untitled.md'],
+    ['a\u0000b\u202ec', 'a_b_c.md'],
+    ['雪 😀', '雪 😀.md'],
+  ])('makes %j portable', (title, filename) => {
+    expect(markdownFilename(title)).toBe(filename);
+  });
+  it('bounds UTF-8 bytes without splitting Unicode characters', () => {
+    const filename = markdownFilename('😀'.repeat(200));
+    expect(new TextEncoder().encode(filename).length).toBeLessThan(256);
+    expect(filename).toBe('😀'.repeat(60) + '.md');
   });
 });
