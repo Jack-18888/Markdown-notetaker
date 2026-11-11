@@ -1,4 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { Editor } from '@tiptap/core';
 import { canRunCommand, matchingBlocks, runCommand } from './commands.js';
 import { slashQuery } from './slash.js';
@@ -30,6 +37,26 @@ export default function SlashMenu({ editor }: { editor: Editor }) {
     choice.key === key
       ? Math.min(choice.index, Math.max(0, commands.length - 1))
       : 0;
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const element = menu.current;
+      if (!element) return;
+      const caret = editor.view.coordsAtPos(editor.state.selection.from);
+      const height = element.offsetHeight;
+      const below = caret.bottom + 8;
+      element.style.left = `${Math.max(12, Math.min(caret.left, window.innerWidth - element.offsetWidth - 12))}px`;
+      element.style.top = `${Math.max(12, Math.min(below + height <= window.innerHeight - 12 ? below : caret.top - height - 8, window.innerHeight - height - 12))}px`;
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [editor, open, key]);
 
   useEffect(() => {
     const focus = () => {

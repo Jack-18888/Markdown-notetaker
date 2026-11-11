@@ -108,7 +108,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(
       page.getByText(
-        'Save or discard the title changes before leaving this note.',
+        'Save your writing and finish title changes before leaving this note.',
       ),
     ).toBeVisible();
     await page
