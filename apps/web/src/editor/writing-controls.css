@@ -1,0 +1,40 @@
+.writing-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0;
+  border-block: 1px solid #d8d8ca;
+  margin-block: 20px;
+}
+.writing-controls button,
+.writing-controls select {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #40532e;
+  font: inherit;
+  font-size: 0.8rem;
+}
+.writing-controls button:hover,
+.writing-controls button[aria-pressed='true'] {
+  background: #dce3cf;
+  border-color: #c5c9b6;
+}
+.writing-controls button:disabled {
+  opacity: 0.45;
+}
+.block-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  border-right: 1px solid #d8d8ca;
+  color: #5c6254;
+  font-size: 0.72rem;
+}
+.writing-controls select:focus-visible {
+  outline: 3px solid #8b4c1e;
+  outline-offset: 2px;
+}
