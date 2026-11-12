@@ -4,17 +4,17 @@
   flex-wrap: wrap;
   gap: 16px;
   margin-top: 28px;
-  border-top: 1px solid #d8d8ca;
+  border-top: 1px solid var(--border);
   padding-top: 20px;
 }
 .body-save-row p {
   flex: 1 1 200px;
   font-size: 0.8rem;
-  color: #5c6254;
+  color: var(--muted);
   line-height: 1.6;
 }
 .body-save-row [role='alert'] {
-  color: #8a3e1b;
+  color: var(--danger);
 }
 .body-save-row button:disabled {
   opacity: 0.5;
@@ -22,10 +22,10 @@
 }
 .conflict-recovery {
   max-width: 72ch;
-  border-left: 3px solid #8b4c1e;
+  border-left: 3px solid var(--accent);
   padding: 4px 16px 16px;
   margin-top: 20px;
-  background: #eeebe3;
+  background: var(--explorer);
 }
 .conflict-recovery p {
   font-size: 0.85rem;
