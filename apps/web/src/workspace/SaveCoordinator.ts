@@ -78,7 +78,11 @@ export class SaveCoordinator {
   }
   attachBody(body: BodySnapshot) {
     if (this.disposed) return;
-    if (!this.body || !this.state.dirty) this.savedBody = body;
+    // Editor reattachment can create a new schema. A pending title/request must
+    // not keep the old schema's baseline when the body itself is unchanged.
+    const unchanged =
+      this.body && this.savedBody && this.body.node.eq(this.savedBody.node);
+    if (!this.body || !this.state.dirty || unchanged) this.savedBody = body;
     this.body = body;
     this.publish();
   }

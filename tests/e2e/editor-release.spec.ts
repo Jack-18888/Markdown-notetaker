@@ -1,6 +1,81 @@
 import { expect, test } from './note-fixtures.js';
 import { openActionMenu } from './workspace-controls.js';
 
+test('loading the editor during a title save sends no unchanged body write', async ({
+  page,
+  notes,
+}) => {
+  const note = await notes.create(
+    'Delayed editor title',
+    'Original writing\r\n',
+  );
+  await page.clock.install();
+  let releaseEditor = () => {};
+  const editorGate = new Promise<void>((resolve) => {
+    releaseEditor = resolve;
+  });
+  let editorRequested = () => {};
+  const editorStarted = new Promise<void>((resolve) => {
+    editorRequested = resolve;
+  });
+  let releaseSave = () => {};
+  const saveGate = new Promise<void>((resolve) => {
+    releaseSave = resolve;
+  });
+  let saveRequested = () => {};
+  const saveStarted = new Promise<void>((resolve) => {
+    saveRequested = resolve;
+  });
+  const writes: unknown[] = [];
+  await page.route('**/src/workspace/NoteContent.tsx*', async (route) => {
+    editorRequested();
+    await editorGate;
+    await route.continue();
+  });
+  await page.route(`**/api/notes/${note.id}`, async (route) => {
+    if (route.request().method() !== 'PATCH') return route.continue();
+    writes.push(route.request().postDataJSON());
+    const response = await route.fetch();
+    saveRequested();
+    await saveGate;
+    await route.fulfill({ response });
+  });
+  try {
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: `Open note ${note.title}`, exact: true })
+      .click();
+    await editorStarted;
+    await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+    await page.clock.pauseAt(new Date(Date.now() + 1000));
+    await page
+      .getByRole('textbox', { name: 'Note title', exact: true })
+      .fill('Title saved while loading');
+    await page.getByRole('button', { name: 'Save title', exact: true }).click();
+    await saveStarted;
+    releaseEditor();
+    await expect(
+      page.getByRole('textbox', { name: 'Note content', exact: true }),
+    ).toHaveText('Original writing');
+    releaseSave();
+    await expect(page.getByRole('banner').getByRole('status')).toHaveText(
+      'Saved.',
+    );
+    expect(writes).toEqual([
+      { expectedRevision: 1, title: 'Title saved while loading' },
+    ]);
+    expect(await notes.read(note.id)).toMatchObject({
+      revision: 2,
+      title: 'Title saved while loading',
+      content: note.content,
+    });
+  } finally {
+    releaseEditor();
+    releaseSave();
+    await page.unrouteAll({ behavior: 'wait' });
+  }
+});
+
 test('sticky save status reaches retained drafts, retry, and conflict recovery at 320px', async ({
   page,
   notes,

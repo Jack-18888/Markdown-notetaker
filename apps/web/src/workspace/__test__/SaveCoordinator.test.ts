@@ -33,6 +33,38 @@ function setup() {
   return { coordinator, write };
 }
 
+it('reattaches an unchanged editor body during a title save without sending a body write', async () => {
+  const { coordinator, write } = setup();
+  let finish!: (note: NoteDetail) => void;
+  write.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  coordinator.setTitle('Retained title');
+  const flushing = coordinator.flush();
+  await vi.advanceTimersByTimeAsync(0);
+  const remountedSchema = new Schema({
+    nodes: { doc: { content: 'text*' }, text: {} },
+  });
+  const serialize = vi.fn(() => note.content);
+  coordinator.attachBody({
+    node: remountedSchema.node('doc', null, remountedSchema.text(note.content)),
+    serialize,
+  });
+  finish({ ...note, title: 'Retained title', revision: 2 });
+  await flushing;
+  expect(write).toHaveBeenCalledOnce();
+  expect(write.mock.calls[0]?.[1]).toEqual({
+    expectedRevision: 1,
+    title: 'Retained title',
+  });
+  expect(serialize).not.toHaveBeenCalled();
+  expect(coordinator.getSnapshot().dirty).toBe(false);
+  coordinator.dispose();
+});
+
 it('waits for the quiet interval after an autosave response when newer typing is still recent', async () => {
   const { coordinator, write } = setup();
   let finish!: (note: NoteDetail) => void;

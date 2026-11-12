@@ -58,6 +58,8 @@ test('failed and competing title saves retain the draft until retry or confirmed
     .click();
   await page.getByRole('button', { name: 'Edit title', exact: true }).click();
   const input = page.getByRole('textbox', { name: 'Note title', exact: true });
+  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  await expect(body).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   await page.route(`**/api/notes/${note.id}`, (route) =>
     route.request().method() === 'PATCH'
@@ -83,14 +85,15 @@ test('failed and competing title saves retain the draft until retry or confirmed
   await expect(
     page.getByRole('heading', { name: 'Retained local title', exact: true }),
   ).toBeVisible();
+  const acknowledged = await notes.read(note.id);
+  const competing = await request.patch(`/api/notes/${note.id}`, {
+    data: { expectedRevision: acknowledged.revision, title: 'Other tab title' },
+  });
+  expect(competing.ok()).toBe(true);
   await page.getByRole('button', { name: 'Edit title', exact: true }).click();
   await input.fill('Competing title');
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
   await body.fill('Local body survives discarding the title');
-  await request.patch(`/api/notes/${note.id}`, {
-    data: { expectedRevision: 2, title: 'Other tab title' },
-  });
-  await page.getByRole('button', { name: 'Save title', exact: true }).click();
+  await page.clock.runFor(750);
   await expect(page.getByRole('alert')).toHaveText(
     errorDefinitions.REVISION_CONFLICT.message,
   );
