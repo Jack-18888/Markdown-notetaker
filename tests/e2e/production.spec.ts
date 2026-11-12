@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { spawn, spawnSync } from 'node:child_process';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
@@ -131,6 +132,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
     await page.goto(runtime.origin + '/workspace/production');
     expect(await page.content()).not.toContain('/@vite/client');
     await openFolder();
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Import Markdown', exact: true })
       .click();
@@ -174,6 +176,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
     await page.keyboard.press('End');
     await page.keyboard.type(' Saved from production.');
     const downloaded = page.waitForEvent('download');
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .click();

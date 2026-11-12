@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { readFile } from 'node:fs/promises';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 import {
@@ -45,6 +46,7 @@ for (const { label, source, fallback } of fixtures) {
         externalRequests++;
     });
     await page.goto('/');
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Import Markdown', exact: true })
       .click();
@@ -83,6 +85,7 @@ for (const { label, source, fallback } of fixtures) {
       ).toBeVisible();
     }
     const downloaded = page.waitForEvent('download');
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .click();
@@ -122,6 +125,7 @@ test('supported rich edits reimport with equivalent blocks and exact Mermaid pay
   await page.keyboard.press('End');
   await page.keyboard.type(' Edited before export.');
   const downloaded = page.waitForEvent('download');
+  await openActionMenu(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();
@@ -130,6 +134,7 @@ test('supported rich edits reimport with equivalent blocks and exact Mermaid pay
   expect(bytes.toString('utf8')).toContain(
     'Last paragraph. Edited before export.',
   );
+  await openActionMenu(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Import Markdown', exact: true })
     .click();

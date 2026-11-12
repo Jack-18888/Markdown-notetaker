@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -23,6 +24,7 @@ test('a real dirty-tab navigation prompts before leaving and a clean tab does no
   await dialog.dismiss();
   await attempted;
   await expect(body).toHaveText('Unsaved tab content');
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   await page.clock.resume();
@@ -64,6 +66,7 @@ test('a failed title request on source fallback can be retried after discarding 
     .getByRole('button', { name: 'Discard title changes', exact: true })
     .click();
   await page.unrouteAll({ behavior: 'wait' });
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   expect(await notes.read(note.id)).toMatchObject({
@@ -95,6 +98,7 @@ test('a note deleted by another client retains local writing for recovery as a n
     data: { expectedRevision: 1 },
   });
   await body.fill('Local writing survives remote deletion');
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await page
     .getByRole('button', { name: 'Save as new note', exact: true })

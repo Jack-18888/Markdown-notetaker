@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import {
   ApiErrorCode,
@@ -57,6 +58,7 @@ test('cancels deletion by default and permanently removes only the confirmed sub
     await page
       .getByRole('button', { name: 'Open folder Delete subtree', exact: true })
       .click();
+    await openActionMenu(page, 'Folder actions');
     await page
       .getByRole('button', { name: 'Delete folder', exact: true })
       .click();
@@ -136,6 +138,7 @@ test('refuses to delete a newer note revision until it is reopened', async ({
         exact: true,
       })
       .click();
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Delete note', exact: true })
       .click();
@@ -169,12 +172,14 @@ test('refuses to delete a newer note revision until it is reopened', async ({
         exact: true,
       }),
     ).toBeVisible();
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Refresh workspace', exact: true })
       .click();
     await expect(
       page.getByRole('textbox', { name: 'Note content', exact: true }),
     ).toContainText('Newer saved source.');
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Delete note', exact: true })
       .click();
@@ -213,6 +218,7 @@ test('failed deletion retains the subtree and pending deletion blocks dismissal 
         exact: true,
       })
       .click();
+    await openActionMenu(page, 'Folder actions');
     await page
       .getByRole('button', { name: 'Delete folder', exact: true })
       .click();

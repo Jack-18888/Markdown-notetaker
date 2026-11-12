@@ -1,3 +1,4 @@
+import { openActionMenu, openExplorer } from './workspace-controls.js';
 import type { Page } from '@playwright/test';
 import { folderSchema, noteDetailSchema } from '@markdown-note-taker/contracts';
 import { expect, test } from './note-fixtures.js';
@@ -67,6 +68,7 @@ for (const width of [1280, 320]) {
     ).toBeVisible();
     await checkControlNames(page);
     const exported = page.waitForEvent('download');
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .focus();
@@ -85,6 +87,7 @@ for (const width of [1280, 320]) {
       name: 'Import Markdown',
       exact: true,
     });
+    await openActionMenu(page, 'Workspace actions');
     await importButton.focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', {
@@ -196,6 +199,7 @@ test('long titles, deep breadcrumbs, literal code, and wide diagrams stay contai
     });
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
+    await openExplorer(page);
     const navigation = page.getByRole('navigation', {
       name: 'Workspace folders',
       exact: true,

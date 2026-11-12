@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openExplorer } from './workspace-controls.js';
 import {
   ApiErrorCode,
   errorDefinitions,
@@ -32,6 +33,7 @@ test('narrow navigation works by keyboard and keeps the reading surface reachabl
     });
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/');
+    await openExplorer(page);
     const sidebar = page.getByRole('navigation', { name: 'Workspace folders' });
     await sidebar
       .getByRole('button', { name: 'Mobile collection', exact: true })

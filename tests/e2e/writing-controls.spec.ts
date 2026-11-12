@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -130,6 +131,7 @@ test('slash insertion supports keyboard, pointer, dismissal, and fresh note hist
     await page.keyboard.type('/literal');
     await expect(menu).toHaveCount(0);
     await expect(body.locator('pre code')).toHaveText('/literal');
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     await page
@@ -230,6 +232,7 @@ test('formatting and link controls preserve selection, reject unsafe links, and 
     await body.press('Control+a');
     await body.press('Control+b');
     await expect(body.locator('strong')).toHaveText('Selected words');
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     expect(

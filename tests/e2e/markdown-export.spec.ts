@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './note-fixtures.js';
 
@@ -13,6 +14,7 @@ test('exports untouched source bytes with a safe filename, including BOM and mix
     .getByRole('button', { name: 'Open note CON', exact: true })
     .click();
   const downloaded = page.waitForEvent('download');
+  await openActionMenu(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();
@@ -53,6 +55,7 @@ test('export drains delayed saves and newer title/body edits before downloading'
   try {
     await body.fill('First pending version');
     const downloaded = page.waitForEvent('download');
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .click();
@@ -100,6 +103,7 @@ test('a failed prerequisite save prevents download, retains writing, and can be 
   await page.route(`**/api/notes/${note.id}`, (route) =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
+  await openActionMenu(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();
@@ -111,6 +115,7 @@ test('a failed prerequisite save prevents download, retains writing, and can be 
   await expect(body).toHaveText('Retain this draft');
   await page.unrouteAll({ behavior: 'wait' });
   const downloaded = page.waitForEvent('download');
+  await openActionMenu(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();

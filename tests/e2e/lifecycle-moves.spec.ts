@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import {
   errorDefinitions,
@@ -46,6 +47,7 @@ test('moves notes between folders and root and preserves folder selection after 
     await page
       .getByRole('button', { name: 'Open note Moving note', exact: true })
       .click();
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Move note', exact: true }).click();
     let dialog = page.getByRole('dialog', { name: 'Move note', exact: true });
     await dialog
@@ -68,6 +70,7 @@ test('moves notes between folders and root and preserves folder selection after 
         await (await request.get(`/api/notes/${note.id}`)).json(),
       ),
     ).toMatchObject({ folderId: child.id, revision: 2, content });
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Move note', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Move note', exact: true });
     await dialog
@@ -93,6 +96,7 @@ test('moves notes between folders and root and preserves folder selection after 
     await page
       .getByRole('button', { name: 'Open folder Move source', exact: true })
       .click();
+    await openActionMenu(page, 'Folder actions');
     await page
       .getByRole('button', { name: 'Move folder', exact: true })
       .click();
@@ -153,6 +157,7 @@ test('server rejects a destination that became a descendant while the picker was
         exact: true,
       })
       .click();
+    await openActionMenu(page, 'Folder actions');
     await page
       .getByRole('button', { name: 'Move folder', exact: true })
       .click();

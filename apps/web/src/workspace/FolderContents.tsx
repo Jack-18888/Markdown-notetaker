@@ -5,10 +5,12 @@ export default function FolderContents({
   tree,
   id,
   onSelect,
+  onCreate,
 }: {
   tree: WorkspaceTree;
   id: ParentId;
   onSelect(selection: Selection): void;
+  onCreate(): void;
 }) {
   const contents = tree.contents.get(id)!;
   const empty = !contents.folders.length && !contents.notes.length;
@@ -32,6 +34,14 @@ export default function FolderContents({
               ? 'Create a note or import Markdown to start your workspace.'
               : 'Create a note or import Markdown to start writing here.'}
           </p>
+          <button
+            type="button"
+            className="dialog-primary"
+            aria-label={`New note in ${title}`}
+            onClick={onCreate}
+          >
+            New note
+          </button>
         </div>
       ) : (
         <>

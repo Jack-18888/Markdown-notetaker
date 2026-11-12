@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import { folderSchema, noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -93,6 +94,7 @@ test('opens deep notes on demand, shows breadcrumbs, and handles deleted selecti
     await request.delete(`/api/notes/${note.id}`, {
       data: { expectedRevision: 1 },
     });
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Refresh workspace', exact: true })
       .click();

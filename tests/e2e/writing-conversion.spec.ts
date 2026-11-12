@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -42,6 +43,7 @@ test('an unrepresentable edit retains writing and source until undo restores a s
     await expect(
       body.locator('blockquote [data-mermaid-editor]'),
     ).toBeVisible();
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText(
       'This edit cannot be saved safely',

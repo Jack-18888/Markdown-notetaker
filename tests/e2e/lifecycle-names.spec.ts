@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import {
   ApiErrorCode,
@@ -74,6 +75,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
         exact: true,
       }),
     ).toBeVisible();
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Rename note', exact: true })
       .click();
@@ -121,6 +123,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
       .getByRole('navigation', { name: 'Breadcrumb' })
       .getByRole('button', { name: 'Lifecycle child', exact: true })
       .click();
+    await openActionMenu(page, 'Folder actions');
     await page
       .getByRole('button', { name: 'Rename folder', exact: true })
       .click();

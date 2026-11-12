@@ -66,15 +66,3 @@
   color: var(--danger);
   font-size: 0.85rem;
 }
-.lifecycle-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 8px 20px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-.lifecycle-tools button {
-  font-size: 0.75rem;
-  padding: 7px 9px;
-}

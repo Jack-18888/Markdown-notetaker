@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { folderSchema, noteDetailSchema } from '@markdown-note-taker/contracts';
 import { expect, test } from './note-fixtures.js';
 
@@ -21,6 +22,7 @@ test('imports exact UTF-8 source into the selected folder and opens only after c
         exact: true,
       })
       .click();
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Import Markdown', exact: true })
       .click();
@@ -75,6 +77,7 @@ test('invalid files, cancellation, and a rejected create leave the workspace int
       creates++;
   });
   await page.goto('/');
+  await openActionMenu(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Import Markdown', exact: true })
     .click();
@@ -84,6 +87,7 @@ test('invalid files, cancellation, and a rejected create leave the workspace int
   });
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(dialog).not.toBeVisible();
+  await openActionMenu(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Import Markdown', exact: true })
     .click();

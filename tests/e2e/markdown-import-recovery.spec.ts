@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import {
   folderSchema,
   noteDetailSchema,
@@ -26,6 +27,7 @@ test('a deleted import destination is rejected by the real API without a partial
         exact: true,
       })
       .click();
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Import Markdown', exact: true })
       .click();
@@ -79,6 +81,7 @@ test('import flush failures retain writing and confirmed imports retry opening w
   await page.route(`**/api/notes/${original.id}`, (route) =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
+  await openActionMenu(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Import Markdown', exact: true })
     .click();
@@ -88,6 +91,7 @@ test('import flush failures retain writing and confirmed imports retry opening w
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(body).toHaveText('Writing before import');
   await page.unrouteAll({ behavior: 'wait' });
+  await openActionMenu(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Import Markdown', exact: true })
     .click();
