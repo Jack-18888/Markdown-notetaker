@@ -5,7 +5,7 @@
   border-radius: 2px;
 }
 .note-editor .tiptap:focus-visible {
-  outline: 2px solid #788465;
+  outline: 2px solid var(--muted);
   outline-offset: 3px;
 }
 .note-editor
@@ -15,10 +15,10 @@
   float: left;
   height: 0;
   pointer-events: none;
-  color: #737b69;
+  color: var(--muted);
 }
 .writing-help {
   font-size: 0.78rem;
-  color: #5c6254;
+  color: var(--muted);
   line-height: 1.6;
 }

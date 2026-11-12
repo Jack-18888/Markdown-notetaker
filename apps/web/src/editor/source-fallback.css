@@ -7,7 +7,7 @@
 
 .source-fallback-label {
   margin: 0 0 12px;
-  color: #40532e;
+  color: var(--accent);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -15,18 +15,14 @@
 
 .source-fallback h2 {
   margin: 0 0 12px;
-  font:
-    normal clamp(1.7rem, 4vw, 2.2rem) / 1.2 'Palatino Linotype',
-    'Book Antiqua',
-    Palatino,
-    serif;
+  font: normal clamp(1.7rem, 4vw, 2.2rem) / 1.2 var(--font-ui);
   letter-spacing: -0.025em;
 }
 
 .source-fallback-description {
   max-width: 52ch;
   margin: 0 0 24px;
-  color: #5c6254;
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -34,21 +30,18 @@
   max-height: 65vh;
   overflow: auto;
   margin: 0;
-  border: 1px solid #d8d8ca;
-  border-left: 3px solid #596b42;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   padding: 20px;
-  background: #eeebe3;
-  color: #292d27;
-  font:
-    0.875rem / 1.7 Consolas,
-    'Liberation Mono',
-    monospace;
+  background: var(--explorer);
+  color: var(--text);
+  font: 0.875rem / 1.7 var(--font-code);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   tab-size: 2;
 }
 
 .source-fallback pre:focus-visible {
-  outline: 3px solid #8b4c1e;
+  outline: 3px solid var(--accent);
   outline-offset: 4px;
 }

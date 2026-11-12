@@ -9,6 +9,9 @@
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {
+    "@fontsource-variable/instrument-sans": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/spectral": "^5.3.0",
     "@markdown-note-taker/contracts": "1.0.0",
     "@tiptap/core": "3.33.0",
     "@tiptap/extension-code-block": "3.33.0",

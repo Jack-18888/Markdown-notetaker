@@ -20,14 +20,14 @@
   display: block;
   margin-bottom: 8px;
   font-size: 0.85rem;
-  color: #5c6254;
+  color: var(--muted);
 }
 .title-editor input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #a8ad98;
-  background: #fcfaf5;
-  color: #292d27;
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--text);
 }
 .title-actions {
   display: flex;
@@ -36,21 +36,21 @@
   margin-top: 12px;
 }
 .title-actions .title-save {
-  background: #40532e;
-  color: #fff;
-  border-color: #40532e;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 .title-actions .title-save:hover {
-  background: #293b1a;
+  background: var(--accent);
 }
 .title-actions button:disabled {
   opacity: 0.6;
 }
 .title-status {
-  color: #5c6254;
+  color: var(--muted);
   font-size: 0.85rem;
   line-height: 1.6;
 }
 .title-status[role='alert'] {
-  color: #8a3e1b;
+  color: var(--danger);
 }

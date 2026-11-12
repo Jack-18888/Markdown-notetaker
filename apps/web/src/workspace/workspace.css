@@ -21,14 +21,11 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 24px;
-  border-bottom: 1px solid #d8d8ca;
-  background: #f6f3ec;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 .workspace-brand {
-  font:
-    normal 1.2rem 'Palatino Linotype',
-    Palatino,
-    serif;
+  font: normal 1.2rem var(--font-prose);
 }
 .workspace-actions {
   display: flex;
@@ -37,14 +34,14 @@
 }
 .workspace-actions button,
 .workspace-retry {
-  border: 1px solid #cccdbf;
+  border: 1px solid var(--control-border);
   padding: 8px 12px;
   background: transparent;
-  color: #40532e;
+  color: var(--accent);
 }
 .workspace-actions button:hover,
 .workspace-retry:hover {
-  background: #e7e8dc;
+  background: var(--selected);
 }
 .workspace-sidebar {
   scroll-margin-top: var(--workspace-header-height);
@@ -55,8 +52,8 @@
   max-height: calc(100svh - var(--workspace-header-height));
   overflow-y: auto;
   grid-area: sidebar;
-  background: #eeeee5;
-  border-right: 1px solid #d8d8ca;
+  background: var(--explorer);
+  border-right: 1px solid var(--border);
   padding: 28px 16px;
   min-width: 0;
 }
@@ -71,7 +68,7 @@
   text-transform: uppercase;
   letter-spacing: 0.09em;
   font-size: 0.72rem;
-  color: #5c6254;
+  color: var(--muted);
 }
 .sidebar-caption {
   margin: 0 12px 20px;
@@ -79,7 +76,7 @@
 .workspace-status {
   margin: 28px 12px 0;
   font-size: 0.75rem;
-  color: #5c6254;
+  color: var(--muted);
 }
 .folder-tree ul {
   list-style: none;
@@ -89,7 +86,7 @@
 .folder-tree ul ul {
   padding-left: 18px;
   margin-left: 12px;
-  border-left: 1px solid #d1d4c4;
+  border-left: 1px solid var(--border);
 }
 .folder-row {
   display: flex;
@@ -98,16 +95,16 @@
 .folder-tree button {
   border: 0;
   background: transparent;
-  color: #464c3e;
+  color: var(--text);
   text-align: left;
   border-radius: 3px;
 }
 .folder-tree button:hover {
-  background: #e0e4d5;
+  background: var(--selected);
 }
 .folder-tree button[aria-current='page'] {
-  background: #dce3cf;
-  color: #293b1a;
+  background: var(--selected);
+  color: var(--accent);
   font-weight: bold;
 }
 .workspace-root {
@@ -141,12 +138,12 @@
   padding-left: 34px;
 }
 .item-symbol {
-  color: #788465;
+  color: var(--muted);
   flex: 0 0 15px;
   font-size: 1rem;
 }
 .tree-empty {
-  color: #626957;
+  color: var(--muted);
   font-size: 0.8rem;
   padding: 10px;
 }
@@ -157,7 +154,7 @@
 }
 .breadcrumbs {
   min-width: 0;
-  color: #626957;
+  color: var(--muted);
   font-size: 0.8rem;
 }
 .breadcrumbs ol {
@@ -182,7 +179,7 @@
   text-align: left;
 }
 .breadcrumbs button:hover {
-  color: #293b1a;
+  color: var(--accent);
   text-decoration: underline;
 }
 .folder-contents,
@@ -192,39 +189,32 @@
 }
 .folder-contents h1,
 .note-surface h1 {
-  font:
-    normal clamp(2.4rem, 4.5vw, 4.5rem) / 1.08 'Palatino Linotype',
-    'Book Antiqua',
-    Palatino,
-    serif;
+  font: normal clamp(2.4rem, 4.5vw, 4.5rem) / 1.08 var(--font-ui);
   letter-spacing: -0.04em;
   margin: 16px 0 24px;
   overflow-wrap: anywhere;
 }
 .workspace-summary {
   font-size: 0.8rem;
-  color: #626957;
+  color: var(--muted);
   margin-bottom: 32px;
 }
 .workspace-empty {
   margin: 44px 0;
-  border-top: 1px solid #d8d8ca;
+  border-top: 1px solid var(--border);
   padding-top: 32px;
   max-width: 520px;
 }
 .empty-symbol {
   font-size: 2rem;
-  color: #788465;
+  color: var(--muted);
 }
 .workspace-empty h2 {
-  font:
-    normal 1.6rem 'Palatino Linotype',
-    Palatino,
-    serif;
+  font: normal 1.6rem var(--font-prose);
 }
 .workspace-empty p,
 .workspace-message {
-  color: #626957;
+  color: var(--muted);
   line-height: 1.7;
 }
 .contents-list {
@@ -232,10 +222,10 @@
   padding: 0;
 }
 .contents-list li {
-  border-top: 1px solid #deded2;
+  border-top: 1px solid var(--border);
 }
 .contents-list li:last-child {
-  border-bottom: 1px solid #deded2;
+  border-bottom: 1px solid var(--border);
 }
 .contents-list button {
   display: flex;
@@ -246,10 +236,10 @@
   border: 0;
   background: transparent;
   text-align: left;
-  color: #292d27;
+  color: var(--text);
 }
 .contents-list button:hover {
-  background: #eeeee5;
+  background: var(--explorer);
 }
 .contents-list button > span:nth-child(2) {
   flex: 1;
@@ -257,11 +247,11 @@
   overflow-wrap: anywhere;
 }
 .contents-symbol {
-  color: #788465;
+  color: var(--muted);
   font-size: 1.3rem;
 }
 .contents-kind {
-  color: #626957;
+  color: var(--muted);
   font-size: 0.75rem;
 }
 .skip-link {
@@ -270,8 +260,8 @@
   top: -80px;
   z-index: 3;
   padding: 12px;
-  background: #40532e;
-  color: white;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .skip-link:focus {
   top: 8px;
@@ -294,7 +284,7 @@
     max-height: 40svh;
     overflow: auto;
     border-right: 0;
-    border-bottom: 1px solid #d8d8ca;
+    border-bottom: 1px solid var(--border);
     padding: 20px 16px;
   }
   .workspace-main {

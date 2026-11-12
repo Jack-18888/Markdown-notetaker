@@ -4,11 +4,11 @@
   width: min(calc(100vw - 24px), 340px);
   max-height: calc(100svh - 24px);
   overflow: auto;
-  border: 1px solid #c5c9b6;
-  border-top: 3px solid #596b42;
-  background: #fcfaf5;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  background: var(--surface);
   padding: 12px;
-  box-shadow: 0 12px 30px #292d2717;
+  box-shadow: 0 12px 30px var(--shadow);
 }
 .slash-menu .workspace-eyebrow {
   margin: 0 8px 8px;
@@ -24,11 +24,11 @@
 }
 .slash-menu [role='option']:hover,
 .slash-menu [aria-selected='true'] {
-  background: #dce3cf;
-  color: #293b1a;
+  background: var(--selected);
+  color: var(--accent);
 }
 .slash-hint {
-  color: #5c6254;
+  color: var(--muted);
   font-size: 0.72rem;
   margin: 12px 8px 0;
 }

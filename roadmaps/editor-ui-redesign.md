@@ -41,3 +41,11 @@ Give the note a centered writing column, make folders easy to scan, and keep sav
 | **T04 · Release checks** | `todo` | • Compare screenshots in both themes<br>• Test slow and failed saves, retries, and conflicts with isolated SQLite<br>• Test navigation and export with unsaved edits in that workspace<br>• Check that untouched Markdown exports byte-for-byte<br>• Check that layout changes send no note writes |
 
 Run the repository’s formatting, type, lint, unit, browser, build, and production checks. Record results and any remaining limits here. [Repository checks](../README.md#checks)
+
+## Verification
+
+### T01 · Visual system
+
+Captured four baseline screenshots using synthetic checklist/code/Mermaid notes in isolated SQLite at 1280 px and 320 px in both system themes (`.cache/ui-baseline/`, ignored). `editor-appearance.spec.ts` regenerates the corresponding current screenshots in `test-results/`; generated images are not committed. Fonts are installed packages bundled by Vite, with no runtime font CDN.
+
+Shared tokens cover surfaces, text, focus, controls, dialogs, recovery, and editor blocks. WCAG relative-luminance calculations across writing, explorer, and selected-row backgrounds give minimum text/muted/accent contrast of 12.46/5.12/6.18 in light and 9.03/5.10/6.47 in dark. Essential control borders use a separate darker token; focus uses the accent. Type checking passes. Remaining repository and interaction checks are recorded with T04.

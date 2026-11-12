@@ -3,10 +3,7 @@
   padding-top: 12px;
 }
 .note-body .tiptap {
-  font:
-    1.1rem / 1.8 'Palatino Linotype',
-    Palatino,
-    serif;
+  font: 1.1rem / 1.8 var(--font-prose);
   outline: none;
   overflow-wrap: anywhere;
 }
@@ -32,29 +29,29 @@
   letter-spacing: -0.02em;
 }
 .note-body code {
-  font-family: Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-code);
   font-size: 0.85em;
 }
 .note-body pre {
-  background: #eeebe3;
-  border: 1px solid #d8d8ca;
+  background: var(--explorer);
+  border: 1px solid var(--border);
   padding: 20px;
   overflow: auto;
   line-height: 1.6;
 }
 .note-body blockquote {
   margin-left: 0;
-  border-left: 3px solid #788465;
+  border-left: 3px solid var(--muted);
   padding-left: 20px;
-  color: #5c6254;
+  color: var(--muted);
 }
 .note-body a {
-  color: #40532e;
+  color: var(--accent);
   text-underline-offset: 3px;
 }
 .note-body hr {
   border: 0;
-  border-top: 1px solid #d8d8ca;
+  border-top: 1px solid var(--border);
   margin: 32px 0;
 }
 .note-body ul[data-type='taskList'] {
