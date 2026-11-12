@@ -13,7 +13,7 @@
   top: 0;
   z-index: 5;
   display: flex;
-  min-height: var(--workspace-header-height);
+  min-height: 56px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
@@ -49,8 +49,12 @@
 }
 .workspace-context > .breadcrumbs {
   flex: 1;
+  max-height: 5rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .workspace-sidebar {
+  scroll-margin-top: var(--workspace-header-height);
   position: sticky;
   top: var(--workspace-header-height);
   align-self: start;

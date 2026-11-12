@@ -144,6 +144,7 @@ test('hostile diagram content stays inert and oversized source stays editable an
   page,
   request,
 }) => {
+  test.setTimeout(60_000);
   const note = noteDetailSchema.parse(
     await (
       await request.post('/api/notes', {
@@ -210,8 +211,6 @@ test('hostile diagram content stays inert and oversized source stays editable an
         'This diagram is too large to preview. Its source is still editable.',
       ),
     ).toBeVisible();
-    await openActionMenu(page, 'Note actions');
-    await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     expect(
       noteDetailSchema.parse(

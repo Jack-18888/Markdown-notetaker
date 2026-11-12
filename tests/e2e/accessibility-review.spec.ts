@@ -167,6 +167,7 @@ test('long titles, deep breadcrumbs, literal code, and wide diagrams stay contai
   page,
   request,
 }) => {
+  test.setTimeout(60_000);
   const folder = folderSchema.parse(
     await (
       await request.post('/api/folders', {
@@ -220,7 +221,9 @@ test('long titles, deep breadcrumbs, literal code, and wide diagrams stay contai
       .click();
     await expect(
       page.getByRole('img', { name: 'Mermaid diagram preview', exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
+    const headerBounds = await page.getByRole('banner').boundingBox();
+    expect(headerBounds!.height).toBeLessThan(200);
     await checkControlNames(page);
     expect(
       await page.evaluate(

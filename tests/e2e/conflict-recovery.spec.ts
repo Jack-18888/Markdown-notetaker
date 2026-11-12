@@ -182,6 +182,7 @@ test('confirmed reload restores focus for a note with read-only source', async (
 }) => {
   const content = '<script>Retained literal source</script>';
   const note = await notes.create('Fallback reload focus', content);
+  await page.clock.install();
   await page.goto('/');
   await page
     .getByRole('button', {
@@ -190,6 +191,7 @@ test('confirmed reload restores focus for a note with read-only source', async (
     })
     .click();
   await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
   await request.patch(`/api/notes/${note.id}`, {
     data: { expectedRevision: 1, title: 'Remote fallback title' },
   });
