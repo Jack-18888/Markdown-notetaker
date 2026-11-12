@@ -20,6 +20,8 @@ The explorer is 256 px wide with independent scrolling on desktop. At 760 px and
 
 Action menus use native disclosures and ordinary buttons: Enter/Space opens the disclosure, Tab visits actions, and Escape closes it and returns focus to the trigger. Leaving the disclosure or clicking outside closes it; opening a modal keeps its initiating action available for focus return on cancellation. Header controls render through a portal from the existing note session, so changing explorer visibility does not recreate the editor or save coordinator.
 
+Long breadcrumb paths scroll within a bounded area so the sticky header stays shorter than a narrow viewport. The shell measures the header height for explorer positioning and scroll offsets as paths and viewport widths change.
+
 The [request lifecycle](../../apps/web/src/workspace/useLoad.ts) aborts superseded/unmounted loads and ignores their completions even if a transport does not honor cancellation. Each selected note mounts a separate keyed [note panel](../../apps/web/src/workspace/NotePanel.tsx). Loading, errors, and retry remain scoped to that panel; selecting another note never reuses the old note's loaded state. Metadata refresh and note-body requests are separate.
 
 The lazy [note content view](../../apps/web/src/workspace/NoteContent.tsx) uses T06's conversion boundary and mounts a separate rich editor for each selected note. Unsupported source or a failed module uses the safe source fallback. Opening or navigating an untouched note sends no body writes. Mermaid blocks expose editable source and bounded previews. Markdown conversion and the writing UI load on demand. See [editor architecture](editor.md) for coordinated autosave and recovery.
