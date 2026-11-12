@@ -1,3 +1,4 @@
+import { openActionMenu, openExplorer } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import {
   ApiErrorCode,
@@ -72,6 +73,7 @@ test('failed create and conflicting rename retain names and selection for recove
       .parse(await (await request.get('/api/tree')).json())
       .notes.filter((note) => note.folderId === parent.id);
     expect(created).toHaveLength(1);
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Rename note', exact: true })
       .click();
@@ -107,6 +109,7 @@ test('failed create and conflicting rename retain names and selection for recove
         exact: true,
       }),
     ).toBeVisible();
+    await openActionMenu(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Refresh workspace', exact: true })
       .click();
@@ -143,6 +146,7 @@ test('lifecycle dialogs remain keyboard-operable and contained on a narrow scree
   try {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/');
+    await openExplorer(page);
     await page.getByRole('button', { name: 'New note', exact: true }).click();
     let dialog = page.getByRole('dialog', { name: 'New note', exact: true });
     await dialog
@@ -162,6 +166,7 @@ test('lifecycle dialogs remain keyboard-operable and contained on a narrow scree
     await page
       .getByRole('button', { name: 'Show folders', exact: true })
       .click();
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Move note', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Move note', exact: true });
     const picker = dialog.getByLabel('Destination folder', { exact: true });
@@ -185,6 +190,7 @@ test('lifecycle dialogs remain keyboard-operable and contained on a narrow scree
     await page
       .getByRole('button', { name: 'Show folders', exact: true })
       .click();
+    await openActionMenu(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Delete note', exact: true })
       .click();

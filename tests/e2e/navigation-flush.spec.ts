@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 
 test('reselecting the active note cancels a pending destination while its edits still save', async ({
@@ -172,6 +173,7 @@ test('a failed flush keeps the note and supports retry before leaving', async ({
   await expect(body).toHaveText('Retained after failed navigation');
   expect((await notes.read(note.id)).content).toBe('Original');
   await page.unrouteAll({ behavior: 'wait' });
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   await destination.click();
@@ -195,6 +197,7 @@ test('lifecycle dialogs use the revision acknowledged by their prerequisite flus
   await page
     .getByRole('textbox', { name: 'Note content', exact: true })
     .fill('Saved before renaming');
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Rename note', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Rename note' });
   await dialog

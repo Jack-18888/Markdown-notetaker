@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 import { expect, test } from './note-fixtures.js';
 
@@ -27,6 +28,7 @@ test('two tabs preserve competing edits and retry opening a committed copy witho
     await page
       .getByRole('textbox', { name: 'Note content', exact: true })
       .fill('Other tab saved writing');
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     await localBody.fill('Local writing to recover');
@@ -36,6 +38,7 @@ test('two tabs preserve competing edits and retry opening a committed copy witho
     await local
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Local recovery title');
+    await openActionMenu(local, 'Note actions');
     await local.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(
       local.getByRole('button', { name: 'Save as new note', exact: true }),
@@ -132,6 +135,7 @@ test('reload requires confirmation, retains local edits on failure, and resets h
     },
   });
   await body.fill('Pending local writing');
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   const reload = page.getByRole('button', {
     name: 'Reload saved note',
@@ -211,6 +215,7 @@ test('confirmed reload restores focus for a note with read-only source', async (
     page.getByRole('button', { name: 'Edit title', exact: true }),
   ).toBeFocused();
   expect((await notes.read(note.id)).content).toBe(content);
+  await openActionMenu(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Refresh workspace', exact: true })
     .click();

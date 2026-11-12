@@ -12,6 +12,10 @@ import type {
   ParentId,
   ResourceId,
 } from '@markdown-note-taker/contracts';
+import { createPortal } from 'react-dom';
+import type { LifecycleAction } from './lifecycle.js';
+import ActionMenu from './ActionMenu.js';
+import ResourceActions from './ResourceActions.js';
 import SourceFallback from '../editor/SourceFallback.js';
 import { getNote } from './api.js';
 import Breadcrumbs from './Breadcrumbs.js';
@@ -57,6 +61,9 @@ export default function NotePanel({
   onNoteUpdated,
   onSession,
   onRecoveryCopy,
+  header,
+  onReady,
+  onAction,
 }: {
   id: ResourceId;
   tree: WorkspaceTree;
@@ -65,6 +72,9 @@ export default function NotePanel({
   onNoteUpdated(note: NoteDetail): void;
   onSession(session: SaveCoordinator | null): void;
   onRecoveryCopy(note: NoteDetail, signal: AbortSignal): Promise<void>;
+  header: HTMLElement | null;
+  onReady(): void;
+  onAction(action: LifecycleAction): void;
 }) {
   const load = useCallback((signal: AbortSignal) => getNote(id, signal), [id]);
   const { state, retry } = useLoad(load);
@@ -107,6 +117,9 @@ export default function NotePanel({
         }))
       }
       onRecoveryCopy={onRecoveryCopy}
+      header={header}
+      onReady={onReady}
+      onAction={onAction}
     />
   );
 }
@@ -121,6 +134,9 @@ function NoteArticle({
   onSession,
   onReload,
   onRecoveryCopy,
+  header,
+  onReady,
+  onAction,
 }: {
   initial: NoteDetail;
   focusTitle: boolean;
@@ -131,6 +147,9 @@ function NoteArticle({
   onSession(session: SaveCoordinator | null): void;
   onReload(note: NoteDetail): void;
   onRecoveryCopy(note: NoteDetail, signal: AbortSignal): Promise<void>;
+  header: HTMLElement | null;
+  onReady(): void;
+  onAction(action: LifecycleAction): void;
 }) {
   const { session, state } = useNoteSession(
     initial,
@@ -142,15 +161,30 @@ function NoteArticle({
     return () => onSession(null);
   }, [session, onSession]);
   const note = state.note;
+  useEffect(onReady, [onReady]);
   return (
     <>
-      <Breadcrumbs
-        path={tree.breadcrumbs(note.folderId)}
-        noteTitle={note.title}
-        onNavigate={onNavigate}
-      />
+      {header &&
+        createPortal(
+          <>
+            <Breadcrumbs
+              path={tree.breadcrumbs(note.folderId)}
+              noteTitle={note.title}
+              onNavigate={onNavigate}
+            />
+            <SaveStatus session={session} state={state} compact />
+            <ActionMenu label="Note actions">
+              <SaveStatus session={session} state={state} actionsOnly />
+              <ResourceActions
+                target={{ kind: 'note', value: note }}
+                onAction={onAction}
+              />
+              <ExportMarkdown session={session} />
+            </ActionMenu>
+          </>,
+          header,
+        )}
       <article className="note-surface">
-        <p className="workspace-eyebrow">Your writing</p>
         <TitleEditor
           session={session}
           state={state}
@@ -173,8 +207,11 @@ function NoteArticle({
             <NoteContent source={initial.content} session={session} />
           </Suspense>
         </PreviewBoundary>
-        <SaveStatus session={session} state={state} />
-        <ExportMarkdown session={session} />
+        {(state.status === 'error' || state.status === 'conflict') && (
+          <div id="save-recovery" tabIndex={-1}>
+            <SaveStatus session={session} state={state} />
+          </div>
+        )}
         {state.status === 'conflict' && (
           <ConflictRecovery
             session={session}

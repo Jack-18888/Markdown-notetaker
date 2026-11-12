@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -115,6 +116,7 @@ test('rapid source edits and switching notes cannot publish an outdated diagram'
     await expect(preview).toContainText('LatestActor');
     await expect(preview).not.toContainText('Obsolete');
     await source.fill('flowchart LR\n Switching --> Away');
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     await page
@@ -208,6 +210,7 @@ test('hostile diagram content stays inert and oversized source stays editable an
         'This diagram is too large to preview. Its source is still editable.',
       ),
     ).toBeVisible();
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     expect(

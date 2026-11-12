@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  applicationName,
-  type NoteDetail,
-} from '@markdown-note-taker/contracts';
+import { type NoteDetail } from '@markdown-note-taker/contracts';
+import { createPortal } from 'react-dom';
 import { getTree } from './workspace/api.js';
 import Breadcrumbs from './workspace/Breadcrumbs.js';
 import FolderContents from './workspace/FolderContents.js';
@@ -18,6 +16,8 @@ import MoveDialog from './workspace/MoveDialog.js';
 import DeleteDialog from './workspace/DeleteDialog.js';
 import { useNoteTransition } from './workspace/useNoteTransition.js';
 import ImportDialog from './workspace/ImportDialog.js';
+import ActionMenu from './workspace/ActionMenu.js';
+import ResourceActions from './workspace/ResourceActions.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -27,10 +27,12 @@ export default function App() {
   const { state, retry, update } = useLoad(loadTree);
   const [selection, setSelection] = useState<Selection>(rootSelection);
   const [expanded, setExpanded] = useState(new Set<string>());
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => !window.matchMedia('(max-width: 760px)').matches,
+  );
+  const [header, setHeader] = useState<HTMLDivElement | null>(null);
   const [action, setAction] = useState<LifecycleAction | null>(null);
   const [noteEpoch, setNoteEpoch] = useState(0);
-  const loadedNote = useRef<NoteDetail | null>(null);
   const [unsavedNote, setUnsavedNote] = useState(false);
   const transition = useNoteTransition();
   useEffect(() => {
@@ -44,24 +46,35 @@ export default function App() {
   }, [unsavedNote]);
   const main = useRef<HTMLElement>(null);
   const sidebar = useRef<HTMLElement>(null);
+  const sidebarToggle = useRef<HTMLButtonElement>(null);
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+    sidebarToggle.current?.focus();
+  };
   const focusSidebar = useRef(false);
   useEffect(() => {
     if (sidebarOpen && focusSidebar.current && sidebar.current) {
       sidebar.current.scrollTop = 0;
       sidebar.current.scrollIntoView({ block: 'start' });
       sidebar.current
-        .querySelector<HTMLButtonElement>('.folder-tree button')
+        .querySelector<HTMLButtonElement>('button')
         ?.focus({ preventScroll: true });
       focusSidebar.current = false;
     }
   }, [sidebarOpen]);
   const focusSelection = useRef(false);
   useEffect(() => {
-    if (focusSelection.current) {
+    if (focusSelection.current && selection.kind === 'folder') {
       main.current?.focus();
       focusSelection.current = false;
     }
   }, [selection]);
+  const noteReady = useCallback(() => {
+    if (!focusSelection.current) return;
+    focusSelection.current = false;
+    if (window.matchMedia('(max-width: 760px)').matches) setSidebarOpen(false);
+    main.current?.focus();
+  }, []);
   const tree = state.status === 'ready' ? state.value : null;
   const missing = tree !== null && !tree.has(selection);
   const active = missing ? rootSelection : selection;
@@ -75,7 +88,6 @@ export default function App() {
     void transition.run(() => reveal(next, tree));
   }
   function reveal(next: Selection, tree: ReturnType<typeof indexTree>) {
-    loadedNote.current = null;
     focusSelection.current = true;
     setSelection(next);
     const parent =
@@ -89,8 +101,6 @@ export default function App() {
           ...tree.breadcrumbs(parent).map((folder) => folder.id),
         ]),
     );
-    if (next.kind === 'note' && window.matchMedia('(max-width: 760px)').matches)
-      setSidebarOpen(false);
   }
   function toggle(id: string) {
     setExpanded((current) => {
@@ -106,7 +116,6 @@ export default function App() {
   }
   const noteUpdated = useCallback(
     function noteUpdated(note: NoteDetail) {
-      loadedNote.current = note;
       const { id, title, folderId, revision, createdAt, updatedAt } = note;
       update((tree) => {
         if (folderId !== null && !tree.folders.has(folderId)) return tree;
@@ -156,9 +165,10 @@ export default function App() {
         Skip to notes
       </a>
       <header className="workspace-header">
-        <span className="workspace-brand">{applicationName}</span>
-        <div className="workspace-actions">
+        <div className="workspace-identity">
+          <span className="workspace-brand">Workspace</span>
           <button
+            ref={sidebarToggle}
             type="button"
             aria-label={sidebarOpen ? 'Hide folders' : 'Show folders'}
             aria-expanded={sidebarOpen}
@@ -170,31 +180,38 @@ export default function App() {
           >
             Folders
           </button>
-          <button
-            type="button"
-            aria-label="Refresh workspace"
-            onClick={refresh}
-          >
-            Refresh
-          </button>
         </div>
+        <div className="workspace-context" ref={setHeader} />
       </header>
       <aside
         id="workspace-sidebar"
         className="workspace-sidebar"
         ref={sidebar}
         hidden={!sidebarOpen}
+        aria-label="Explorer"
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeSidebar();
+          }
+        }}
       >
-        <p className="sidebar-caption">Personal workspace</p>
+        <div className="sidebar-heading">
+          <p className="sidebar-caption">Personal workspace</p>
+          <button
+            type="button"
+            className="sidebar-close"
+            aria-label="Close folders"
+            onClick={closeSidebar}
+          >
+            ×
+          </button>
+        </div>
         {tree && (
           <WorkspaceActions
             tree={tree}
             selection={active}
-            note={
-              active.kind === 'note' && loadedNote.current?.id === active.id
-                ? loadedNote.current
-                : null
-            }
+            onRefresh={refresh}
             onAction={openAction}
           />
         )}
@@ -256,17 +273,48 @@ export default function App() {
             )}
             {active.kind === 'folder' ? (
               <>
-                <Breadcrumbs
-                  path={tree.breadcrumbs(active.id)}
-                  onNavigate={(id) => select({ kind: 'folder', id })}
+                {header &&
+                  createPortal(
+                    <>
+                      <Breadcrumbs
+                        path={tree.breadcrumbs(active.id)}
+                        onNavigate={(id) => select({ kind: 'folder', id })}
+                      />
+                      {active.id !== null && (
+                        <ActionMenu key={active.id} label="Folder actions">
+                          <ResourceActions
+                            target={{
+                              kind: 'folder',
+                              value: tree.folders.get(active.id)!,
+                            }}
+                            onAction={openAction}
+                          />
+                        </ActionMenu>
+                      )}
+                    </>,
+                    header,
+                  )}
+                <FolderContents
+                  tree={tree}
+                  id={active.id}
+                  onSelect={select}
+                  onCreate={() =>
+                    openAction({
+                      kind: 'create',
+                      resource: 'note',
+                      parentId: active.id,
+                    })
+                  }
                 />
-                <FolderContents tree={tree} id={active.id} onSelect={select} />
               </>
             ) : (
               <NotePanel
                 key={`${active.id}:${noteEpoch}`}
                 id={active.id}
                 tree={tree}
+                header={header}
+                onReady={noteReady}
+                onAction={openAction}
                 onDirtyChange={setUnsavedNote}
                 onNoteUpdated={noteUpdated}
                 onSession={transition.register}

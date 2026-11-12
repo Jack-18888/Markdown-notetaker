@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -51,6 +52,7 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
     await body.locator(':scope > p').last().click();
     await page.keyboard.press('End');
     await page.keyboard.type(' Edited body.');
+    await openActionMenu(page, 'Note actions');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     const saved = noteDetailSchema.parse(

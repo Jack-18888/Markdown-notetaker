@@ -1,3 +1,4 @@
+import { openActionMenu } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 
 test('body edits preserve Mermaid payloads and title-only writes retain the acknowledged source', async ({
@@ -33,6 +34,7 @@ test('body edits preserve Mermaid payloads and title-only writes retain the ackn
   await body.locator(':scope > p').last().click();
   await page.keyboard.press('End');
   await page.keyboard.type(' Latest writing.');
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   const acknowledged = (await notes.read(note.id)).content;
@@ -86,18 +88,21 @@ test('failed and conflicting body saves retain local writing without replacing t
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
   await body.fill('Retained writing');
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     'Could not reach your local workspace',
   );
   await expect(body).toHaveText('Retained writing');
   await page.unrouteAll({ behavior: 'wait' });
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   await body.fill('Competing local writing');
   await request.patch(`/api/notes/${note.id}`, {
     data: { expectedRevision: 2, content: 'Other tab writing' },
   });
+  await openActionMenu(page, 'Note actions');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('changed');
   await expect(body).toHaveText('Competing local writing');
