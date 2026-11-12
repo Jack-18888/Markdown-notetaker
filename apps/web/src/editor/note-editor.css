@@ -1,7 +1,7 @@
 .note-editor .tiptap {
-  min-height: 260px;
-  padding: 12px 16px 40px;
-  margin-inline: -16px;
+  min-height: 360px;
+  padding: 0 0 64px;
+  margin: 0;
   border-radius: 2px;
 }
 .note-editor .tiptap:focus-visible {
@@ -16,9 +16,4 @@
   height: 0;
   pointer-events: none;
   color: var(--muted);
-}
-.writing-help {
-  font-size: 0.78rem;
-  color: var(--muted);
-  line-height: 1.6;
 }

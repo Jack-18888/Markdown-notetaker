@@ -212,8 +212,27 @@
 }
 .folder-contents,
 .note-surface {
-  max-width: 860px;
+  margin-inline: auto;
+  max-width: 720px;
   padding: 32px 0 0;
+}
+.note-surface {
+  font-family: var(--font-prose);
+  font-size: 1.125rem;
+  max-width: 66ch;
+}
+.note-title-row,
+.title-editor,
+.body-save-row,
+.conflict-recovery,
+.source-fallback {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+}
+.workspace-identity button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .folder-contents h1,
 .note-surface h1 {
@@ -373,6 +392,7 @@
   padding: 0;
 }
 .header-save {
+  align-self: center;
   flex-shrink: 0;
   font-size: 0.78rem;
   color: var(--accent);
@@ -416,7 +436,7 @@
     margin-inline: 8px 16px;
     align-self: center;
   }
-  .workspace-context > .action-menu:only-of-type {
+  .workspace-context > .breadcrumbs + .action-menu {
     margin-left: auto;
   }
   .workspace-sidebar {

@@ -1,6 +1,20 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { renderDiagram, type DiagramResult } from './diagram-renderer.js';
 import './mermaid-view.css';
+
+const themeQuery = '(prefers-color-scheme: dark)';
+const readTheme = () => window.matchMedia(themeQuery).matches;
+const subscribeTheme = (notify: () => void) => {
+  const media = window.matchMedia(themeQuery);
+  media.addEventListener('change', notify);
+  return () => media.removeEventListener('change', notify);
+};
 
 export default function MermaidView({
   source,
@@ -14,6 +28,7 @@ export default function MermaidView({
   onHistory(redo: boolean): void;
 }) {
   const id = useId();
+  const dark = useSyncExternalStore(subscribeTheme, readTheme);
   const [editing, setEditing] = useState(!source.trim());
   const input = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -21,25 +36,28 @@ export default function MermaidView({
   }, [editing]);
   const [view, setView] = useState<{
     source: string;
+    dark: boolean;
     result: DiagramResult;
   } | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       void renderDiagram(source, controller.signal).then((result) => {
-        if (result && !controller.signal.aborted) setView({ source, result });
+        if (result && !controller.signal.aborted)
+          setView({ source, dark, result });
       });
     }, 350);
     return () => {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [source]);
-  const current = view?.source === source ? view.result : null;
+  }, [source, dark]);
+  const current =
+    view?.source === source && view.dark === dark ? view.result : null;
   return (
     <section className="mermaid-block" aria-label="Mermaid diagram">
       <div className="mermaid-actions">
-        <span className="workspace-eyebrow">Diagram</span>
+        <span className="workspace-eyebrow">Mermaid</span>
         <button
           type="button"
           aria-expanded={editing}

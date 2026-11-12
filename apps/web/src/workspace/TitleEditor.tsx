@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { nameSchema } from '@markdown-note-taker/contracts';
 import type { SaveCoordinator, SaveState } from './SaveCoordinator.js';
 import './title-editor.css';
+import Icon from '../Icon.js';
 
 export default function TitleEditor({
   session,
@@ -32,9 +33,11 @@ export default function TitleEditor({
             ref={editButton}
             type="button"
             className="workspace-retry"
+            aria-label="Edit title"
+            title="Edit title"
             onClick={() => setEditing(true)}
           >
-            Edit title
+            <Icon name="edit" />
           </button>
         )}
       </div>
