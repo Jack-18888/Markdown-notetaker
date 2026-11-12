@@ -3,6 +3,8 @@
   border: 1px solid var(--border);
   background: var(--surface);
   font-family: var(--font-ui);
+  border-radius: 6px;
+  overflow: hidden;
 }
 .mermaid-actions {
   display: flex;
@@ -11,9 +13,13 @@
   gap: 8px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
+  background: var(--explorer);
 }
 .mermaid-actions .workspace-eyebrow {
   margin-right: auto;
+  font-size: 0.78rem;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .mermaid-actions button {
   border: 0;

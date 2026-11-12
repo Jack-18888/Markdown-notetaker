@@ -2,6 +2,10 @@
 
 ## Rich editing
 
+The [editor UI redesign](../../roadmaps/editor-ui-redesign.md) centers the title, compact toolbar, and prose in a roughly 66-character writing column. Instrument Sans, Spectral, and IBM Plex Mono are local font packages bundled into the frontend. Shared light/dark tokens follow the system theme across writing, navigation, dialogs, menus, code, source fallback, and recovery. Icon controls retain accessible names and visible focus. Layout and theme changes keep the same editor and save session, preserving drafts, selections, and undo history.
+
+Breadcrumbs, save status, and Note actions stay in the sticky workspace header. Failed/conflicted saves link to focusable recovery controls beside the retained draft. The detailed failure is announced once as an alert; the compact header remains a status region. Mermaid previews use the current theme tokens and rerender on system-theme changes without changing diagram source or writing notes.
+
 The writing interface uses open-source Tiptap 3.33.0 with `@tiptap/markdown`, chosen for extensible rich blocks and local Markdown conversion. The [extension configuration](../../apps/web/src/editor/extensions.ts) covers the release's rich blocks and marks, including nested tasks and a dedicated Mermaid node. Underline and automatic trailing paragraphs are disabled because they have no reliable source representation here.
 
 [Schema/DOM fixtures](../../apps/web/src/editor/__test__/extensions.test.ts) verify supported block round trips and literal code/diagram rendering. Code fences grow to exceed any embedded backtick run. Application UI must use the [conversion boundary](../../apps/web/src/editor/markdown.ts) before loading external Markdown, rather than calling Tiptap's raw parser or Markdown commands directly.

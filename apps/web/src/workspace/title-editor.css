@@ -1,16 +1,21 @@
 .note-title-row {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 12px 24px;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin-bottom: 18px;
 }
-.note-title-row h1 {
-  flex: 1;
+.note-surface .note-title-row h1 {
+  flex: 0 1 auto;
   min-width: 0;
+  margin: 0;
 }
 .note-title-row button {
   flex-shrink: 0;
   font-size: 0.8rem;
+  border: 0;
+  padding: 8px;
+  color: var(--muted);
 }
 .title-editor {
   max-width: 620px;

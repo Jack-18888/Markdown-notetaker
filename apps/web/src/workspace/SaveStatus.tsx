@@ -22,7 +22,7 @@ export default function SaveStatus({
         : 'Saved.');
   if (compact)
     return (
-      <div className="header-save" role={failed ? 'alert' : 'status'}>
+      <div className="header-save" role="status">
         {failed ? (
           <a
             href="#save-recovery"

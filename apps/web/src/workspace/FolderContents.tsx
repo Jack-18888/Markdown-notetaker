@@ -1,5 +1,6 @@
 import type { ParentId } from '@markdown-note-taker/contracts';
 import type { Selection, WorkspaceTree } from './tree.js';
+import Icon from '../Icon.js';
 
 export default function FolderContents({
   tree,
@@ -24,7 +25,7 @@ export default function FolderContents({
       {empty ? (
         <div className="workspace-empty">
           <span aria-hidden="true" className="empty-symbol">
-            ▱
+            <Icon name="folder" />
           </span>
           <h2>
             {id === null ? 'Your workspace is ready.' : 'This folder is empty.'}
@@ -57,7 +58,7 @@ export default function FolderContents({
                   aria-label={`Open folder ${folder.name}`}
                 >
                   <span className="contents-symbol" aria-hidden="true">
-                    ▱
+                    <Icon name="folder" />
                   </span>
                   <span>{folder.name}</span>
                   <span className="contents-kind">Folder</span>
@@ -72,7 +73,7 @@ export default function FolderContents({
                   aria-label={`Open note ${note.title}`}
                 >
                   <span className="contents-symbol" aria-hidden="true">
-                    ≡
+                    <Icon name="note" />
                   </span>
                   <span>{note.title}</span>
                   <span className="contents-kind">Note</span>

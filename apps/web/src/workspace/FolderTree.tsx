@@ -1,5 +1,6 @@
 import type { ParentId, ResourceId } from '@markdown-note-taker/contracts';
 import type { Selection, WorkspaceTree } from './tree.js';
+import Icon from '../Icon.js';
 
 interface Props {
   tree: WorkspaceTree;
@@ -46,7 +47,7 @@ export default function FolderTree({
                 onClick={() => onSelect({ kind: 'folder', id: folder.id })}
               >
                 <span className="item-symbol" aria-hidden="true">
-                  ▱
+                  <Icon name="folder" />
                 </span>
                 <span>{folder.name}</span>
               </button>
@@ -74,7 +75,7 @@ export default function FolderTree({
               onClick={() => onSelect({ kind: 'note', id: note.id })}
             >
               <span className="item-symbol" aria-hidden="true">
-                ≡
+                <Icon name="note" />
               </span>
               <span>{note.title}</span>
             </button>

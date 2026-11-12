@@ -53,3 +53,9 @@ Shared tokens cover surfaces, text, focus, controls, dialogs, recovery, and edit
 ### T02 · Workspace
 
 Implemented the explorer, sticky context header, scoped action disclosures, and empty-folder creation. Keyboard checks at 1280 px and 320 px verify explorer focus/return, menu traversal, modal cancellation, and no writes during those interactions. A failed mobile note load leaves the explorer available; a successful retry closes it and focuses content. Existing real API/SQLite lifecycle checks verify action targets, revision conflicts, deletion cancellation/confirmation, and failed-operation retention. Focused navigation, lifecycle, and export runs pass, including an export that drains newer edits during a delayed save. The complete suite is recorded with T04.
+
+### T03 · Editor
+
+Implemented the centered prose column, aligned title/edit control, compact named formatting icons, shared vector icons, and themed dialogs, source fallback, and Mermaid blocks. Diagram rendering uses application-owned theme tokens while retaining the strict input/SVG safety boundary. System-theme changes discard obsolete previews without editing their source.
+
+Fourteen focused browser checks pass: screenshots in both themes/widths, draft/undo preservation across explorer toggles/resizing/theme changes, slash insertion, formatting/link selection and focus, and safe source fallback. The mounted toolbar unit test passes with accessible-name queries. Additional accessibility/renderer checks passed (16 of 17 in the first combined run); a save-button timing assumption in the long slash test was corrected and that scenario passes in the 14-test rerun. Final screenshots and complete checks follow in T04.

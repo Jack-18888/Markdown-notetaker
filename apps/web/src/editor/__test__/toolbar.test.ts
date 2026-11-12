@@ -20,7 +20,7 @@ it('tracks selection, formatting, block type, and history using the mounted edit
     });
     const button = (label: string) =>
       [...host.querySelectorAll('button')].find(
-        (item) => item.textContent === label,
+        (item) => item.getAttribute('aria-label') === label,
       )!;
     expect(button('Undo').disabled).toBe(true);
     await act(async () => {

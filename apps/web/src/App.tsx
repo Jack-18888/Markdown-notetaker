@@ -18,6 +18,7 @@ import { useNoteTransition } from './workspace/useNoteTransition.js';
 import ImportDialog from './workspace/ImportDialog.js';
 import ActionMenu from './workspace/ActionMenu.js';
 import ResourceActions from './workspace/ResourceActions.js';
+import Icon from './Icon.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -178,7 +179,7 @@ export default function App() {
               setSidebarOpen((value) => !value);
             }}
           >
-            Folders
+            <Icon name="panel" /> <span>Folders</span>
           </button>
         </div>
         <div className="workspace-context" ref={setHeader} />

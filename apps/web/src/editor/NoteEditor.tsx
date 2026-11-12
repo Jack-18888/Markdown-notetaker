@@ -45,7 +45,7 @@ export default function NoteEditor({
   return (
     <section aria-label="Note writing">
       {editor && <EditorToolbar editor={editor} />}
-      <p id="writing-help" className="writing-help">
+      <p id="writing-help" className="visually-hidden">
         Start writing, or type / at the start of a paragraph to insert a block.
         Changes save automatically.
       </p>

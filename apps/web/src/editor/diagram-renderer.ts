@@ -16,9 +16,14 @@ const configuration = {
   logLevel: 'fatal',
   maxTextSize: diagramLimits.bytes,
   maxEdges: diagramLimits.edges,
-  flowchart: { htmlLabels: false },
-  fontFamily: 'Trebuchet MS, sans-serif',
-  theme: 'neutral',
+  flowchart: {
+    htmlLabels: false,
+    nodeSpacing: 20,
+    rankSpacing: 24,
+    padding: 8,
+  },
+  fontFamily: 'Instrument Sans Variable, sans-serif',
+  theme: 'base',
   secure: [
     'secure',
     'securityLevel',
@@ -38,13 +43,7 @@ let queue: Promise<unknown> = Promise.resolve();
 
 function loadRenderer() {
   library ??= import('mermaid')
-    .then(({ default: mermaid }) => {
-      mermaid.initialize({
-        ...configuration,
-        secure: [...configuration.secure],
-      });
-      return mermaid;
-    })
+    .then(({ default: mermaid }) => mermaid)
     .catch(() => {
       library = undefined;
       throw new Error('Diagram renderer unavailable.');
@@ -75,6 +74,22 @@ export function renderDiagram(
     try {
       const mermaid = await loadRenderer();
       if (signal.aborted) return null;
+      const styles = getComputedStyle(document.documentElement);
+      const color = (token: string) => styles.getPropertyValue(token).trim();
+      mermaid.initialize({
+        ...configuration,
+        secure: [...configuration.secure],
+        themeVariables: {
+          darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+          primaryColor: color('--selected'),
+          primaryTextColor: color('--text'),
+          primaryBorderColor: color('--control-border'),
+          lineColor: color('--muted'),
+          secondaryColor: color('--explorer'),
+          tertiaryColor: color('--surface'),
+          edgeLabelBackground: color('--surface'),
+        },
+      });
       document.body.append(host);
       signal.addEventListener('abort', remove, { once: true });
       const id = `diagram-${crypto.randomUUID()}`;
