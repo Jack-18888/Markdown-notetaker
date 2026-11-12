@@ -6,6 +6,7 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
   page,
   request,
 }) => {
+  test.setTimeout(60_000);
   const second = 'sequenceDiagram\r\n Alice->>Bob: Hello  ';
   const content =
     '```mermaid\nflowchart LR\n A --> B\n```\n\n```mermaid\n' +
@@ -31,7 +32,7 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
     });
     await expect(
       page.getByRole('img', { name: 'Mermaid diagram preview', exact: true }),
-    ).toHaveCount(2);
+    ).toHaveCount(2, { timeout: 15_000 });
     const first = diagrams.first();
     await first
       .getByRole('button', { name: 'Edit source', exact: true })

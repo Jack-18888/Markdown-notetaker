@@ -32,6 +32,19 @@ export default function App() {
     () => !window.matchMedia('(max-width: 760px)').matches,
   );
   const [header, setHeader] = useState<HTMLDivElement | null>(null);
+  const shell = useRef<HTMLDivElement>(null);
+  const headerElement = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = headerElement.current!;
+    const observer = new ResizeObserver(() => {
+      shell.current?.style.setProperty(
+        '--workspace-header-height',
+        `${element.getBoundingClientRect().height}px`,
+      );
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const [action, setAction] = useState<LifecycleAction | null>(null);
   const [noteEpoch, setNoteEpoch] = useState(0);
   const [unsavedNote, setUnsavedNote] = useState(false);
@@ -161,11 +174,11 @@ export default function App() {
   }
 
   return (
-    <div className="workspace" data-sidebar-open={sidebarOpen}>
+    <div className="workspace" data-sidebar-open={sidebarOpen} ref={shell}>
       <a className="skip-link" href="#workspace-content">
         Skip to notes
       </a>
-      <header className="workspace-header">
+      <header className="workspace-header" ref={headerElement}>
         <div className="workspace-identity">
           <span className="workspace-brand">Workspace</span>
           <button

@@ -5,7 +5,7 @@
   border-radius: 2px;
 }
 .note-editor .tiptap:focus-visible {
-  outline: 2px solid var(--muted);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 .note-editor

@@ -131,9 +131,6 @@ test('slash insertion supports keyboard, pointer, dismissal, and fresh note hist
     await page.keyboard.type('/literal');
     await expect(menu).toHaveCount(0);
     await expect(body.locator('pre code')).toHaveText('/literal');
-    await openActionMenu(page, 'Note actions');
-    const save = page.getByRole('button', { name: 'Save note', exact: true });
-    if (await save.isEnabled()) await save.click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     await page
       .getByRole('navigation', { name: 'Workspace folders' })

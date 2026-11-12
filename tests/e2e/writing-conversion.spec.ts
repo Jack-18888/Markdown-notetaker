@@ -57,6 +57,7 @@ test('an unrepresentable edit retains writing and source until undo restores a s
     ).toBe(content);
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect(body.locator('blockquote')).toHaveCount(0);
+    await openActionMenu(page, 'Note actions');
     await expect(
       page.getByRole('button', { name: 'Save note', exact: true }),
     ).toBeDisabled();
