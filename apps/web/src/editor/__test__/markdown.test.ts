@@ -38,8 +38,8 @@ describe('source-retaining conversion boundary', () => {
 
   it.each([
     '<script>alert(1)</script>',
-    '![image](https://example.com/image.png)',
-    '| A | B |\n| --- | --- |\n| x | y |',
+    '![image](javascript:example)',
+    '| A | B |\n| --- | --- |\n| x | <script>alert(1)</script> |',
     '---\r\ntitle: Original\r\n---\r\nBody',
     '[unsafe](javascript:alert%281%29)',
     '\ufeff# Preserved',

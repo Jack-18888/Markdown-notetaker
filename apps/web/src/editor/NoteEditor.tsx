@@ -4,6 +4,8 @@ import type { Node } from '@tiptap/pm/model';
 import type { SaveCoordinator } from '../workspace/SaveCoordinator.js';
 import { editorExtensions } from './extensions.js';
 import type { LoadedMarkdown } from './markdown.js';
+import { followMarkdownAnchor } from './markdown-media.js';
+import { pasteMarkdown } from './markdown-paste.js';
 import EditorToolbar from './EditorToolbar.js';
 import SlashMenu from './SlashMenu.js';
 import '../workspace/note-preview.css';
@@ -29,6 +31,8 @@ export default function NoteEditor({
       extensions: editorExtensions({ diagramViews: true }),
       content: baseline.current.document,
       editorProps: {
+        handleDOMEvents: { click: followMarkdownAnchor },
+        handlePaste: pasteMarkdown,
         attributes: {
           role: 'textbox',
           'aria-label': 'Note content',

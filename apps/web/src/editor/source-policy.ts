@@ -1,6 +1,8 @@
-import { Lexer, type Token, type Tokens } from 'marked';
+import type { Token, Tokens } from 'marked';
 import { utf8ByteLength } from '@markdown-note-taker/contracts';
 import { isSafeLink } from './links.js';
+import { lexMarkdown } from './markdown-lexer.js';
+import { isSafeImageSource } from './markdown-media.js';
 
 export const editorLimits = {
   sourceBytes: 128 * 1024,
@@ -32,6 +34,9 @@ const supportedTokens = new Set([
   'link',
   'escape',
   'checkbox',
+  'table',
+  'image',
+  'markdownAnchor',
 ]);
 
 /** Inspect tokens, never HTML. Call before handing external source to Tiptap. */
@@ -44,7 +49,7 @@ export function assessSource(source: string): FallbackReason | null {
   if (/^(---|\+\+\+)\r?\n[\s\S]*?\r?\n\1[ \t]*(?:\r?\n|$)/.test(source))
     return 'unsupported';
   try {
-    const tokens = Lexer.lex(source, { gfm: true });
+    const tokens = lexMarkdown(source);
     // Definitions are not represented in the rich schema, including unused ones.
     if (Object.keys(tokens.links).length) return 'unsupported';
     const pending = tokens.map((token) => ({ token, depth: 0 }));
@@ -55,6 +60,8 @@ export function assessSource(source: string): FallbackReason | null {
         return 'conversion-limit';
       if (!supportedTokens.has(token.type)) return 'unsupported';
       if (token.type === 'link' && !isSafeLink(token.href))
+        return 'unsafe-link';
+      if (token.type === 'image' && !isSafeImageSource(token.href))
         return 'unsafe-link';
       if (token.type === 'code') {
         if (token.lang && !/^[a-z\d_+#.-]+$/i.test(token.lang))
@@ -72,9 +79,11 @@ export function assessSource(source: string): FallbackReason | null {
       const children: Token[] =
         token.type === 'list'
           ? token.items
-          : 'tokens' in token
-            ? (token.tokens ?? [])
-            : [];
+          : token.type === 'table'
+            ? tableTokens(token as Tokens.Table)
+            : 'tokens' in token
+              ? (token.tokens ?? [])
+              : [];
       if (
         token.type === 'text' &&
         children.length === 0 &&
@@ -88,4 +97,11 @@ export function assessSource(source: string): FallbackReason | null {
   } catch {
     return 'conversion-failed';
   }
+}
+
+function tableTokens({ header, rows }: Tokens.Table): Token[] {
+  // Empty cells have no inline tokens but still consume schema nodes.
+  return [header, ...rows].flatMap((row) =>
+    row.map((cell) => ({ type: 'text', raw: '', tokens: cell.tokens })),
+  );
 }

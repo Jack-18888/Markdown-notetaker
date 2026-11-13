@@ -1,5 +1,5 @@
 import type { JSONContent } from '@tiptap/core';
-import { Lexer } from 'marked';
+import { lexMarkdown } from './markdown-lexer.js';
 import { editorLimits } from './source-policy.js';
 
 /** Recover only real top-level code tokens, mapped back to the original bytes. */
@@ -15,7 +15,7 @@ export function restoreMermaidSource(
     originalOffsets.push(index + 1);
   }
   let offset = 0;
-  for (const token of Lexer.lex(normalized, { gfm: true })) {
+  for (const token of lexMarkdown(normalized)) {
     if (!normalized.startsWith(token.raw, offset))
       throw new Error('Token source mismatch.');
     const start = offset;

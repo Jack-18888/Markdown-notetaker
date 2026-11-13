@@ -97,7 +97,7 @@ for (const { label, source, fallback } of fixtures) {
     expect(externalRequests).toBe(0);
     await expect(
       page.locator(
-        '.note-surface script, .note-surface iframe, .note-surface img',
+        '.note-surface :is(script, iframe, img:not(.ProseMirror-separator))',
       ),
     ).toHaveCount(0);
   });
