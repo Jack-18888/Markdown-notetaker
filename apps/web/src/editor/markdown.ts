@@ -2,6 +2,8 @@ import { getSchema, type JSONContent } from '@tiptap/core';
 import { markdownSchema } from '@markdown-note-taker/contracts';
 import { editorExtensions, markdownManager } from './extensions.js';
 import { isSafeLink } from './links.js';
+import { anchorId } from './markdown-lexer.js';
+import { isSafeImageSource } from './markdown-media.js';
 import { restoreMermaidSource } from './mermaid-source.js';
 import {
   assessSource,
@@ -38,6 +40,19 @@ function checkedDocument(document: JSONContent) {
     if (++count > editorLimits.tokens || depth > editorLimits.depth)
       throw new MarkdownConversionError();
     if (node.type === 'mermaid' && typeof node.attrs?.source !== 'string')
+      throw new MarkdownConversionError();
+    if (
+      node.type === 'markdownImage' &&
+      (typeof node.attrs?.src !== 'string' ||
+        !isSafeImageSource(node.attrs.src) ||
+        typeof node.attrs.alt !== 'string' ||
+        (node.attrs.title !== null && typeof node.attrs.title !== 'string'))
+    )
+      throw new MarkdownConversionError();
+    if (
+      node.type === 'markdownAnchor' &&
+      (typeof node.attrs?.id !== 'string' || !anchorId.test(node.attrs.id))
+    )
       throw new MarkdownConversionError();
     if (
       node.type === 'codeBlock' &&

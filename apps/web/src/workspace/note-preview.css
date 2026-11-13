@@ -90,3 +90,50 @@
 .note-body ul[data-type='taskList'] > li p {
   margin: 0.3em 0;
 }
+.note-body li > p {
+  margin-block: 0.3em;
+}
+.note-body li > :is(ul, ol) {
+  margin-block: 0.25em;
+}
+.note-body li > div > ul[data-type='taskList'] {
+  padding-inline-start: 1.25em;
+}
+.note-body .markdown-table {
+  max-width: 100%;
+  margin-block: 1em;
+  overflow-x: auto;
+}
+.note-body .markdown-table:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.note-body .markdown-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.note-body .markdown-table :is(th, td) {
+  min-width: 5rem;
+  padding: 0.45em 0.65em;
+  border: 1px solid var(--border, #d8d8ca);
+  overflow-wrap: break-word;
+  text-align: start;
+  vertical-align: top;
+}
+.note-body .markdown-table th {
+  background: var(--explorer, #eeebe3);
+}
+.note-body [data-markdown-anchor] {
+  height: 0;
+}
+.note-body .markdown-image {
+  max-width: 100%;
+  height: auto;
+}
+.note-body .markdown-image-reference {
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding-inline: 0.25em;
+}
