@@ -22,7 +22,7 @@ The [source fallback view](../../apps/web/src/editor/SourceFallback.tsx) explain
 
 [Mermaid payload recovery](../../apps/web/src/editor/mermaid-source.ts) preserves top-level diagram strings before Marked normalizes line endings. Editing another block retains exact diagram text, including LF, CRLF, CR, trailing spaces/blank lines, invalid syntax, and embedded backticks. Unclosed diagram fences and unsupported container forms retain the original source in fallback. The [boundary fixtures](../../apps/web/src/editor/__test__/markdown.test.ts) verify source retention, guarded mutations, and exact diagram payloads after other body edits.
 
-Saved content is raw Markdown. The frontend loads that source into the rich editor's internal representation and serializes edits back to Markdown. Editor trees remain frontend state; the backend stores the complete source string. See [the storage decision](../decisions/0003-raw-markdown.md).
+Saved content is raw Markdown. The frontend loads that source into the rich editor's internal representation and serializes edits back to Markdown. Editor trees remain frontend state; the backend stores the complete source in a Markdown file. See [the storage decision](../decisions/0003-raw-markdown.md).
 
 Represent a diagram as a dedicated editor block containing plain Mermaid source. Frontend conversion hooks map that block to and from fenced `mermaid` Markdown. Parser and serializer fixtures must cover every supported block and mark before the writing interface relies on them.
 

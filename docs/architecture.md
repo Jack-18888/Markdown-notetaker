@@ -15,10 +15,11 @@ flowchart LR
     Person["Local user"] --> Web["React workspace<br/>rich editor and diagram previews"]
     Web <-->|"HTTP /api on loopback"| Server["Express API<br/>validation and application services"]
     Server <-->|"SQL and transactions"| DB[("Local SQLite database")]
+    Server <-->|"Read and write saved bodies"| NoteFiles["Local note files"]
     Web <-->|"user-selected import / download"| MD["Markdown files"]
 ```
 
-Raw Markdown crosses the API boundary as each note's content and is stored in SQLite. Rich editor conversion and rendering happen in the browser. Mermaid source remains in fenced Markdown blocks. See [the canonical storage decision](decisions/0003-raw-markdown.md).
+Raw Markdown crosses the API boundary as each note's content. The server stores the body in a Markdown file and keeps its relative path and metadata in SQLite. Rich editor conversion and rendering happen in the browser. Mermaid source remains in fenced Markdown blocks. See [the canonical storage decision](decisions/0003-raw-markdown.md).
 
 ## Components and responsibilities
 

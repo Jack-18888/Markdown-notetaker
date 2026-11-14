@@ -26,18 +26,18 @@ T01 selected TypeScript 5.9 because the TypeScript ESLint integration supports v
 
 ## Data directory and backup
 
-The default database is data/workspace.sqlite under the repository root. DATA_DIR can override its directory through the root .env or process environment. Relative values always resolve from the repository root, including when npm launches development from apps/server; absolute values are used directly. Empty paths and null characters are rejected. Startup creates missing directories, applies migrations, and reports inaccessible paths, locks, corrupt files, or incompatible migrations without resetting data or printing underlying SQL/note content.
+The defaults under the repository root are `data/workspace.sqlite` for metadata and `data/notes/` for the Markdown files. DATA_DIR can override its directory through the root .env or process environment. Relative values always resolve from the repository root, including when npm launches development from apps/server; absolute values are used directly. Empty paths and null characters are rejected. Startup creates missing directories, applies migrations, and reports inaccessible paths, locks, corrupt files, or incompatible migrations without resetting data or printing underlying SQL/note content.
 
 The HTTP/database lifecycle is managed by [startServer](../../apps/server/src/server.ts). Normal SIGINT/SIGTERM shutdown stops HTTP before closing SQLite; failed port binding closes the initialized database too. The connection factory accepts a directory/migration list for integration checks and a bounded busy-timeout override; normal startup uses 5000 ms.
 
 For a backup or restore:
 
-1. Wait for the note to show `Saved.`, then stop every backend using that data directory. A database backup contains saved notes, not pending browser edits.
-2. Copy the entire configured data directory to a new backup location, keeping any SQLite WAL/SHM sidecars with `workspace.sqlite`. Do not copy only the main file while a server is running.
+1. Wait for the note to show `Saved.`, then stop every backend using that data directory. The backup captures the data already saved to disk.
+2. Copy the entire configured data directory to a new backup location, including `notes/`, `workspace.sqlite`, and any SQLite WAL/SHM sidecars.
 3. To restore, keep the current directory separately and copy the complete backup into a new local directory. Set `DATA_DIR` to that restored directory in `.env` or the process environment.
 4. Start the app and verify its folder tree and notes. The previous directory and backup remain available if verification fails. Do not delete/reset a database to resolve an initialization or migration error.
 
-The [production acceptance scenario](../../tests/e2e/production.spec.ts) performs this stopped-server copy/restore into separate temporary directories and verifies exact source, IDs, revisions, and hierarchy through the restarted API. This validates the documented whole-directory workflow with the current schema; it does not validate hot backups or backups from future/incompatible app versions.
+The [production acceptance scenario](../../tests/e2e/production.spec.ts) performs this stopped-server copy/restore into separate temporary directories and verifies exact source, IDs, revisions, and hierarchy through the restarted API. The scenario covers the stopped-server backup workflow.
 
 ## Browser-test isolation
 

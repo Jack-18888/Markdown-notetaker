@@ -30,7 +30,7 @@ npm run dev:frontend
 
 Open http://127.0.0.1:5173. Vite serves React and proxies /api to Express at http://127.0.0.1:3001. Both processes bind to 127.0.0.1. Both apps import contracts directly from TypeScript source; there is no package build or separate compiler watcher. Stop each terminal with Ctrl+C. You can still use `npm run dev` to start everything together.
 
-Optionally copy .env.example to .env at the repository root and change PORT to select the Express port; Vite reads the same setting. Restart development after changing it. The frontend port is fixed at 5173 and startup fails if it is occupied. Environment files are ignored by Git except for .env.example. The backend creates and migrates data/workspace.sqlite before opening HTTP. Set DATA_DIR in .env to use another local directory; absolute paths are used directly, and relative paths resolve from the repository root in both development and production. Data files are ignored by Git. See [storage and backup guidance](docs/architecture/runtime.md#data-directory-and-backup).
+Optionally copy .env.example to .env at the repository root and change PORT to select the Express port; Vite reads the same setting. Restart development after changing it. The frontend port is fixed at 5173 and startup fails if it is occupied. Environment files are ignored by Git except for .env.example. The backend initializes `data/workspace.sqlite` and stores Markdown bodies under `data/notes/`. Set DATA_DIR in .env to use another local directory; absolute paths are used directly, and relative paths resolve from the repository root in both development and production. Data files are ignored by Git. See [storage and backup guidance](docs/architecture/runtime.md#data-directory-and-backup).
 
 ## Checks
 
@@ -54,7 +54,7 @@ npm run build
 npm start
 ```
 
-Open http://127.0.0.1:3001 (or the configured PORT). Express serves the built page, editor/diagram assets, and API together without Vite or a runtime CDN. Rebuild after changing source or dependencies. Stop with Ctrl+C before backing up or restoring the database; see [storage and backup guidance](docs/architecture/runtime.md#data-directory-and-backup). Missing frontend output and invalid port/data settings produce startup errors. Keep the project and installed dependencies alongside the build.
+Open http://127.0.0.1:3001 (or the configured PORT). Express serves the built page, editor/diagram assets, and API together without Vite or a runtime CDN. Rebuild after changing source or dependencies. Stop with Ctrl+C before backing up or restoring the data directory; see [storage and backup guidance](docs/architecture/runtime.md#data-directory-and-backup). Missing frontend output and invalid port/data settings produce startup errors. Keep the project and installed dependencies alongside the build.
 
 ## Limits to know
 
