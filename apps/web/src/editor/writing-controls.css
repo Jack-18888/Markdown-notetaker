@@ -38,3 +38,10 @@
   outline: 3px solid #8b4c1e;
   outline-offset: 2px;
 }
+.table-controls {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 6px;
+  padding-top: 4px;
+}

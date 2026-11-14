@@ -1,27 +1,33 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { loadMarkdown, MarkdownConversionError } from '../markdown.js';
+import { MarkdownConversionError } from '../markdown.js';
 import { supportedFixtures } from './fixtures.js';
+import { open, rich } from './editor-fixture.js';
 
 describe('source-retaining conversion boundary', () => {
   it.each(supportedFixtures)(
-    'keeps %s editable through the public boundary',
-    (_name, source) => {
-      const loaded = loadMarkdown(source);
-      expect(loaded.mode).toBe('rich');
-      if (loaded.mode !== 'rich')
-        throw new Error('Supported fixture unexpectedly fell back.');
-      loaded.document.content!.push({
-        type: 'paragraph',
-        content: [{ type: 'text', text: 'Another paragraph' }],
-      });
-      const reopened = loadMarkdown(loaded.serialize(loaded.document));
-      expect(reopened.mode).toBe('rich');
-      if (reopened.mode !== 'rich')
-        throw new Error('Edited fixture unexpectedly fell back.');
-      expect(reopened.document).toEqual(loaded.document);
+    'keeps %s editable through load, edit, and reopen',
+    async (_name, source) => {
+      const { loaded, view, close } = await rich(source);
+      try {
+        expect(loaded.serialize(view.state.doc)).toBe(source);
+        const { doc, schema } = view.state;
+        const updated = view.state.tr.insert(
+          doc.content.size,
+          schema.node('paragraph', null, schema.text('Another paragraph')),
+        ).doc;
+        const reopened = await rich(loaded.serialize(updated));
+        try {
+          expect(reopened.loaded.document.toJSON()).toEqual(updated.toJSON());
+        } finally {
+          reopened.close();
+        }
+      } finally {
+        close();
+      }
     },
   );
+
   it.each([
     '',
     '# Heading\r\n\r\nText.  \r\nNext\r\n',
@@ -29,140 +35,154 @@ describe('source-retaining conversion boundary', () => {
     '~~~js\nconst example = 1;\n~~~\n',
     '- Calculate with `$x$`',
     '> - Literal `$x$` in a quote',
-  ])('returns untouched original source %#', (source) => {
-    const loaded = loadMarkdown(source);
-    expect(loaded.mode).toBe('rich');
-    if (loaded.mode !== 'rich') throw new Error('Expected supported fixture.');
-    expect(loaded.serialize(loaded.document)).toBe(source);
+  ])('returns untouched original source %#', async (source) => {
+    const { loaded, close } = await rich(source);
+    try {
+      expect(loaded.serialize(loaded.document)).toBe(source);
+    } finally {
+      close();
+    }
   });
 
   it.each([
     '<script>alert(1)</script>',
     '![image](https://example.com/image.png)',
-    '| A | B |\n| --- | --- |\n| x | y |',
     '---\r\ntitle: Original\r\n---\r\nBody',
     '[unsafe](javascript:alert%281%29)',
     '\ufeff# Preserved',
     '> ```mermaid\n> A --> B\n> ```',
     '```mermaid\nA --> B',
-  ])('retains fallback bytes and exposes no lossy document %#', (source) => {
-    const loaded = loadMarkdown(source);
-    expect(loaded.mode).toBe('source');
-    expect(loaded.source).toBe(source);
-    expect(loaded).not.toHaveProperty('document');
-    expect(loaded).not.toHaveProperty('serialize');
-  });
+  ])(
+    'retains fallback bytes and exposes no lossy document %#',
+    async (source) => {
+      const instance = await open(source);
+      try {
+        expect(instance.loaded.mode).toBe('source');
+        expect(instance.loaded.source).toBe(source);
+        expect(instance.loaded).not.toHaveProperty('document');
+        expect(instance.loaded).not.toHaveProperty('serialize');
+      } finally {
+        instance.close();
+      }
+    },
+  );
 
   it.each(['\n', '\r\n', '\r'])(
     'retains exact diagram payloads across other body edits (%j)',
-    (ending) => {
+    async (ending) => {
       const diagram = ['flowchart LR', '  A --> B  ', ''].join(ending);
-      const source =
-        'Before' +
-        ending +
-        ending +
-        '~~~mermaid' +
-        ending +
-        diagram +
-        ending +
-        '~~~' +
-        ending;
-      const loaded = loadMarkdown(source);
-      expect(loaded.mode).toBe('rich');
-      if (loaded.mode !== 'rich') throw new Error('Expected editable diagram.');
-      expect(loaded.document.content?.[1]?.attrs?.source).toBe(diagram);
-      // Mutating the caller's JSON cannot mutate the captured baseline.
-      loaded.document.content!.push({
-        type: 'paragraph',
-        content: [{ type: 'text', text: 'After' }],
-      });
-      const saved = loaded.serialize(loaded.document);
-      expect(saved).not.toBe(source);
-      const reopened = loadMarkdown(saved);
-      expect(reopened.mode).toBe('rich');
-      if (reopened.mode !== 'rich')
-        throw new Error('Expected safe saved diagram.');
-      expect(reopened.document.content?.[1]?.attrs?.source).toBe(diagram);
+      const source = ['Before', '', '~~~mermaid', diagram, '~~~', ''].join(
+        ending,
+      );
+      const { loaded, view, close } = await rich(source);
+      try {
+        expect(loaded.document.child(1).attrs.source).toBe(diagram);
+        const saved = loaded.serialize(
+          view.state.tr.insertText('After ', 1).doc,
+        );
+        expect(saved).not.toBe(source);
+        const reopened = await rich(saved);
+        try {
+          expect(reopened.loaded.document.child(1).attrs.source).toBe(diagram);
+        } finally {
+          reopened.close();
+        }
+      } finally {
+        close();
+      }
     },
   );
 
-  it('keeps multiple diagrams and nested backticks in source order', () => {
-    const source =
-      '````mermaid\nA["```"] --> B\n````\n\n```mermaid\nsequenceDiagram\nA->>B: Hi\n```';
-    const loaded = loadMarkdown(source);
-    expect(loaded.mode).toBe('rich');
-    if (loaded.mode !== 'rich') throw new Error('Expected safe diagrams.');
-    loaded.document.content!.push({
-      type: 'paragraph',
-      content: [{ type: 'text', text: 'Edited' }],
-    });
-    const reopened = loadMarkdown(loaded.serialize(loaded.document));
-    expect(reopened.mode).toBe('rich');
-    if (reopened.mode !== 'rich')
-      throw new Error('Expected safe diagrams after edit.');
-    expect(
-      reopened.document.content?.slice(0, 2).map((node) => node.attrs?.source),
-    ).toEqual(['A["```"] --> B', 'sequenceDiagram\nA->>B: Hi']);
+  it('preserves multiple diagrams and embedded fences after a text edit', async () => {
+    const { loaded, view, close } = await rich(
+      '````mermaid\nA["```"] --> B\n````\n\nBetween\n\n```mermaid\nsequenceDiagram\nA->>B: Hi\n```',
+    );
+    try {
+      const updated = view.state.tr.insertText(
+        'Edited ',
+        view.state.doc.child(0).nodeSize + 1,
+      ).doc;
+      const reopened = await rich(loaded.serialize(updated));
+      try {
+        expect(reopened.loaded.document.child(0).attrs.source).toBe(
+          'A["```"] --> B',
+        );
+        expect(reopened.loaded.document.child(2).attrs.source).toBe(
+          'sequenceDiagram\nA->>B: Hi',
+        );
+      } finally {
+        reopened.close();
+      }
+    } finally {
+      close();
+    }
   });
 
   it.each([
-    ['# Heading', [0], 'level', 2],
-    ['- [ ] task', [0, 0], 'checked', true],
-    ['```mermaid\nA --> B\n```', [0], 'source', 'A --> C'],
-    ['```text\nLiteral code\n```', [0], 'language', 'js'],
+    ['# Heading', 0, 'level', 2],
+    ['- [ ] task', 1, 'checked', true],
+    ['```mermaid\nA --> B\n```', 0, 'source', 'A --> C'],
+    ['```text\nLiteral code\n```', 0, 'language', 'js'],
   ] as const)(
-    'serializes an attribute-only edit without changing its baseline: %s',
-    (source, path, attribute, value) => {
-      const loaded = loadMarkdown(source);
-      if (loaded.mode !== 'rich') throw new Error('Expected supported source.');
-      const original = structuredClone(loaded.document);
-      let node = loaded.document;
-      for (const index of path) node = node.content![index]!;
-      node.attrs![attribute] = value;
-      const saved = loaded.serialize(loaded.document);
-      expect(saved).not.toBe(source);
-      const reopened = loadMarkdown(saved);
-      if (reopened.mode !== 'rich') throw new Error('Expected supported edit.');
-      expect(reopened.document).toEqual(loaded.document);
-      expect(loaded.serialize(original)).toBe(source);
+    'serializes attribute-only edits: %s',
+    async (source, pos, attribute, value) => {
+      const { loaded, view, close } = await rich(source);
+      try {
+        const updated = view.state.tr.setNodeAttribute(
+          pos,
+          attribute,
+          value,
+        ).doc;
+        const saved = loaded.serialize(updated);
+        expect(saved).not.toBe(source);
+        const reopened = await rich(saved);
+        try {
+          expect(reopened.loaded.document.toJSON()).toEqual(updated.toJSON());
+        } finally {
+          reopened.close();
+        }
+        expect(loaded.serialize(loaded.document)).toBe(source);
+      } finally {
+        close();
+      }
     },
   );
 
-  it('keeps exposed link attributes separate from the captured baseline', () => {
-    const source = '[Example](https://example.com/original)';
-    const loaded = loadMarkdown(source);
-    if (loaded.mode !== 'rich') throw new Error('Expected supported source.');
-    const original = structuredClone(loaded.document);
-    loaded.document.content![0]!.content![0]!.marks![0]!.attrs!.href =
-      'https://example.com/changed';
-    expect(loaded.serialize(loaded.document)).toContain(
-      'https://example.com/changed',
-    );
-    expect(loaded.serialize(original)).toBe(source);
-  });
-
-  it('refuses unsupported nodes, unsafe links, invalid attributes, and excessive nesting', () => {
-    const loaded = loadMarkdown('Original');
-    if (loaded.mode !== 'rich') throw new Error('Expected simple document.');
-    const text = {
-      type: 'text',
-      text: 'unsafe',
-      marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }],
-    };
-    let nested = { type: 'blockquote', content: [{ type: 'paragraph' }] };
-    for (let index = 0; index < 40; index++)
-      nested = { type: 'blockquote', content: [nested] };
-    for (const node of [
-      { type: 'image', attrs: { src: 'https://example.com/image.png' } },
-      { type: 'paragraph', content: [text] },
-      { type: 'mermaid', attrs: { source: 42 } },
-      { type: 'codeBlock', attrs: { language: 'js\n```' } },
-      nested,
-    ])
-      expect(() => loaded.serialize({ type: 'doc', content: [node] })).toThrow(
-        MarkdownConversionError,
+  it('refuses unsafe links, invalid attributes, unsupported nodes, and excessive nesting', async () => {
+    const { loaded, view, close } = await rich('Original');
+    try {
+      const { schema } = view.state;
+      const unsafe = schema.node(
+        'paragraph',
+        null,
+        schema.text('Unsafe', [
+          schema.mark('link', { href: 'javascript:alert(1)' }),
+        ]),
       );
-    expect(loaded.source).toBe('Original');
-    expect(loaded.serialize(loaded.document)).toBe('Original');
+      let nested = schema.node('paragraph');
+      for (let depth = 0; depth < 40; depth++)
+        nested = schema.node('blockquote', null, nested);
+      for (const node of [
+        schema.node(
+          'paragraph',
+          null,
+          schema.node('image', { src: 'https://example.com/image.png' }),
+        ),
+        unsafe,
+        schema.node(
+          'blockquote',
+          null,
+          schema.node('mermaid', { source: 'A --> B' }),
+        ),
+        schema.node('code_block', { language: 'js\n```' }),
+        nested,
+      ])
+        expect(() => loaded.serialize(schema.node('doc', null, node))).toThrow(
+          MarkdownConversionError,
+        );
+      expect(loaded.serialize(loaded.document)).toBe('Original');
+    } finally {
+      close();
+    }
   });
 });

@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import type { Editor } from '@tiptap/core';
+import type { EditorView } from '@milkdown/kit/prose/view';
 import {
   blockCommands,
   canRunCommand,
+  editorLink,
   formatCommands,
   runCommand,
+  tableCommands,
 } from './commands.js';
 import LinkDialog from './LinkDialog.js';
 import { useEditorTransaction } from './useEditorTransaction.js';
 import './writing-controls.css';
 
-export default function EditorToolbar({ editor }: { editor: Editor }) {
+export default function EditorToolbar({ editor }: { editor: EditorView }) {
   useEditorTransaction(editor);
   const [linkOpen, setLinkOpen] = useState(false);
   const block = blockCommands.findLast((command) => command.active?.(editor));
@@ -21,7 +23,7 @@ export default function EditorToolbar({ editor }: { editor: Editor }) {
         <select
           aria-label="Block type"
           value={block?.id ?? ''}
-          disabled={!editor.isEditable}
+          disabled={!editor.editable}
           onChange={(event) => {
             const command = blockCommands.find(
               (item) => item.id === event.target.value,
@@ -57,9 +59,9 @@ export default function EditorToolbar({ editor }: { editor: Editor }) {
       ))}
       <button
         type="button"
-        disabled={!editor.isEditable}
+        disabled={!editor.editable}
         aria-haspopup="dialog"
-        aria-pressed={editor.isActive('link')}
+        aria-pressed={!!editorLink(editor)}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => setLinkOpen(true)}
       >
@@ -67,6 +69,25 @@ export default function EditorToolbar({ editor }: { editor: Editor }) {
       </button>
       {linkOpen && (
         <LinkDialog editor={editor} onClose={() => setLinkOpen(false)} />
+      )}
+      {block?.id === 'table' && (
+        <div
+          className="table-controls"
+          role="group"
+          aria-label="Table controls"
+        >
+          {tableCommands.map((command) => (
+            <button
+              key={command.id}
+              type="button"
+              disabled={!canRunCommand(editor, command)}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runCommand(editor, command)}
+            >
+              {command.label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

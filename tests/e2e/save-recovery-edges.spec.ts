@@ -42,7 +42,7 @@ test('a failed title request on source fallback can be retried after discarding 
   page,
   notes,
 }) => {
-  const content = '| A | B |\r\n| --- | --- |\r\n| keep | source |\r\n';
+  const content = '---\r\ntitle: Keep source\r\n---\r\nBody\r\n';
   const note = await notes.create('Fallback save retry', content);
   await page.clock.install();
   await page.goto('/');

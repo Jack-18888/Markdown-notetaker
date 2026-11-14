@@ -1,12 +1,7 @@
-import type { JSONContent } from '@tiptap/core';
 import { Lexer } from 'marked';
-import { editorLimits } from './source-policy.js';
 
 /** Recover only real top-level code tokens, mapped back to the original bytes. */
-export function restoreMermaidSource(
-  document: JSONContent,
-  source: string,
-): void {
+export function mermaidSources(source: string): string[] {
   const sources: string[] = [];
   const normalized = source.replace(/\r\n|\r/g, '\n');
   const originalOffsets = [0];
@@ -42,21 +37,5 @@ export function restoreMermaidSource(
     );
   }
   if (offset !== normalized.length) throw new Error('Token source mismatch.');
-  let index = 0;
-  let count = 0;
-  const pending = [document];
-  while (pending.length) {
-    if (++count > editorLimits.tokens)
-      throw new Error('Document exceeds conversion limit.');
-    const node = pending.pop()!;
-    if (node.type === 'mermaid') {
-      const source = sources[index++];
-      if (source === undefined) throw new Error('Diagram source mismatch.');
-      node.attrs = { ...node.attrs, source };
-    }
-    // Visit in document order, including diagrams inside allowed future containers.
-    for (let child = (node.content?.length ?? 0) - 1; child >= 0; child--)
-      pending.push(node.content![child]!);
-  }
-  if (index !== sources.length) throw new Error('Diagram source mismatch.');
+  return sources;
 }
