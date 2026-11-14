@@ -190,7 +190,7 @@ test('formatting and link controls preserve selection, reject unsafe links, and 
     for (const [label, tag] of [
       ['Bold', 'strong'],
       ['Italic', 'em'],
-      ['Strikethrough', 's'],
+      ['Strikethrough', 'del'],
       ['Inline code', 'code'],
     ] as const) {
       const button = page.getByRole('button', { name: label, exact: true });

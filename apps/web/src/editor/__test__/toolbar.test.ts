@@ -1,18 +1,15 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Editor } from '@tiptap/core';
+import { blockCommands, formatCommands, runCommand } from '../commands.js';
 import { expect, it } from 'vitest';
 import EditorToolbar from '../EditorToolbar.js';
-import { editorExtensions } from '../extensions.js';
+import { rich, select } from './editor-fixture.js';
 
 it('tracks selection, formatting, block type, and history using the mounted editor', async () => {
   const host = document.createElement('div');
   document.body.append(host);
-  const editor = new Editor({
-    extensions: editorExtensions(),
-    content: '<p>Write here</p>',
-  });
+  const { view: editor, close } = await rich('Write here');
   const root = createRoot(host);
   try {
     await act(async () => {
@@ -24,31 +21,34 @@ it('tracks selection, formatting, block type, and history using the mounted edit
       )!;
     expect(button('Undo').disabled).toBe(true);
     await act(async () => {
-      editor.commands.selectAll();
+      select(editor);
       button('Bold').click();
     });
-    expect(editor.isActive('bold')).toBe(true);
+    expect(formatCommands[0]!.active?.(editor)).toBe(true);
     expect(button('Bold').getAttribute('aria-pressed')).toBe('true');
     expect(button('Undo').disabled).toBe(false);
     await act(async () => {
       button('Undo').click();
     });
-    expect(editor.isActive('bold')).toBe(false);
+    expect(formatCommands[0]!.active?.(editor)).toBe(false);
     await act(async () => {
       button('Redo').click();
-      editor.commands.toggleTaskList();
+      runCommand(
+        editor,
+        blockCommands.find((command) => command.id === 'task-list')!,
+      );
     });
-    expect(editor.isActive('bold')).toBe(true);
+    expect(formatCommands[0]!.active?.(editor)).toBe(true);
     expect(host.querySelector('select')!.value).toBe('task-list');
     await act(async () => {
-      editor.commands.setTextSelection(1);
+      select(editor, 3);
     });
     expect(host.querySelector('[aria-label="Text formatting"]')).not.toBeNull();
   } finally {
     await act(async () => {
       root.unmount();
     });
-    editor.destroy();
+    close();
     host.remove();
   }
 });

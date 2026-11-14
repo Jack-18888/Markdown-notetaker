@@ -1,4 +1,4 @@
-import { Schema } from '@tiptap/pm/model';
+import { Schema } from '@milkdown/kit/prose/model';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   ApiErrorCode,
