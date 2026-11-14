@@ -87,12 +87,6 @@ export function assessSource(source: string): FallbackReason | null {
             : 'tokens' in token
               ? (token.tokens ?? [])
               : [];
-      if (
-        token.type === 'text' &&
-        children.length === 0 &&
-        /\$\$|\$[^$\n]+\$/.test(token.text ?? '')
-      )
-        return 'unsupported';
       for (const child of children)
         pending.push({ token: child, depth: depth + 1 });
     }

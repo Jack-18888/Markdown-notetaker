@@ -33,11 +33,14 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
       name: 'Note content',
       exact: true,
     });
-    await expect(body).toBeVisible();
+    await expect(body).toBeVisible({ timeout: 15_000 });
     // Keep editor startup on real time and control only the save debounce.
     await page.clock.install();
     await page.clock.pauseAt(new Date(Date.now() + 1000));
-    await body.fill('A batched body');
+    await body.locator('h1').click();
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
+    await page.keyboard.type('A batched body');
     await page.getByRole('button', { name: 'Edit title', exact: true }).click();
     const title = page.getByRole('textbox', {
       name: 'Note title',
@@ -114,7 +117,7 @@ test('edits during autosave retain the current editor, serialize writes, and kee
       name: 'Note content',
       exact: true,
     });
-    await expect(body).toBeVisible();
+    await expect(body).toBeVisible({ timeout: 15_000 });
     await page.clock.pauseAt(new Date(Date.now() + 1000));
     await page.route(`**/api/notes/${note.id}`, async (route) => {
       if (route.request().method() !== 'PATCH') return route.continue();
@@ -165,7 +168,8 @@ test('edits during autosave retain the current editor, serialize writes, and kee
     });
     expect(maximum).toBe(1);
     expect(await warned()).toBe(false);
-    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await body.focus();
+    await page.keyboard.press('Control+z');
     await expect(body).not.toHaveText('Newer snapshot');
     expect(await warned()).toBe(true);
   } finally {

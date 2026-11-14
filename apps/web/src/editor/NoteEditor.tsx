@@ -2,15 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { EditorView } from '@milkdown/kit/prose/view';
 import type { SaveCoordinator } from '../workspace/SaveCoordinator.js';
 import { openEditor } from './extensions.js';
-import EditorToolbar from './EditorToolbar.js';
-import SlashMenu from './SlashMenu.js';
 import SourceFallback from './SourceFallback.js';
 import type { FallbackReason } from './source-policy.js';
-import '@milkdown/crepe/theme/classic.css';
-import '@milkdown/crepe/theme/common/prosemirror.css';
-import '@milkdown/crepe/theme/common/placeholder.css';
-import '@milkdown/crepe/theme/common/table.css';
-import '../workspace/note-preview.css';
+import '@milkdown/crepe/theme/common/style.css';
+import '@milkdown/crepe/theme/nord.css';
 import './note-editor.css';
 
 export default function NoteEditor({
@@ -70,17 +65,15 @@ export default function NoteEditor({
     return <SourceFallback document={{ mode: 'source', source, reason }} />;
   return (
     <section aria-label="Note writing">
-      {view && <EditorToolbar editor={view} />}
       {view ? (
         <p id="writing-help" className="writing-help">
-          Type / at the start of a paragraph to insert a block. Changes save
+          Type / to insert a block. Select text to format. Changes save
           automatically.
         </p>
       ) : (
         <p role="status">Preparing note…</p>
       )}
       <div className="note-body note-editor" ref={host} hidden={!view} />
-      {view && <SlashMenu editor={view} />}
     </section>
   );
 }

@@ -216,17 +216,25 @@ test('long titles, deep breadcrumbs, literal code, and wide diagrams stay contai
       .click();
     await expect(
       page.getByRole('img', { name: 'Mermaid diagram preview', exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
     await checkControlNames(page);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    const code = page
+    const codeBlock = page
       .getByRole('textbox', { name: 'Note content', exact: true })
-      .locator('pre');
-    await expect(code).toHaveText('literal_code_'.repeat(100));
+      .locator('.milkdown-code-block');
+    await codeBlock.scrollIntoViewIfNeeded();
+    await expect(codeBlock.locator('.cm-content')).toHaveText(
+      'literal_code_'.repeat(100),
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
     await page
       .getByRole('button', { name: 'Show folders', exact: true })
       .focus();

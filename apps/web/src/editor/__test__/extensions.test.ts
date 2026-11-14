@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { setEditorLink } from '../commands.js';
 import { isSafeLink } from '../links.js';
 import { rich, select } from './editor-fixture.js';
 
@@ -18,6 +17,7 @@ describe('mounted Milkdown schema', () => {
       close();
     }
   });
+
   it.each([
     'javascript:alert(1)',
     'data:text/html,x',
@@ -26,17 +26,24 @@ describe('mounted Milkdown schema', () => {
     'java\nscript:x',
     '\\evil.example',
     'javascript&colon;x',
-  ])('rejects unsafe link %# in both policy and commands', async (href) => {
+  ])('rejects unsafe link %# in both policy and transactions', async (href) => {
     expect(isSafeLink(href)).toBe(false);
     const { view, close } = await rich();
     try {
       select(view);
-      expect(setEditorLink(view, href)).toBe(false);
+      const { from, to } = view.state.selection;
+      const linkMark = view.state.schema.marks.link!;
+      const link = linkMark.create({ href });
+      view.dispatch(view.state.tr.addMark(from, to, link));
+      expect(
+        view.state.doc.rangeHasMark(0, view.state.doc.content.size, linkMark),
+      ).toBe(false);
       expect(view.dom.querySelector('a')).toBeNull();
     } finally {
       close();
     }
   });
+
   it.each([
     'https://example.com',
     'http://localhost:3001',

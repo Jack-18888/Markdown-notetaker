@@ -20,6 +20,8 @@ export const supportedFixtures = [
     'multiple diagrams',
     '```mermaid\nA --> B\n```\n\nBetween\n\n```mermaid\nsequenceDiagram\nA->>B: Hi\n```',
   ],
+  ['inline math', 'Inline math $E = mc^2$ and $x_i$'],
+  ['math block', '$$\nx = y\n$$'],
 ] as const;
 
 export const unsupportedFixtures = [
@@ -33,7 +35,6 @@ export const unsupportedFixtures = [
   ['reference links', '[label][target]\n\n[target]: https://example.com'],
   ['unused definitions', 'Text\n\n[target]: https://example.com'],
   ['footnotes', 'Text[^1]\n\n[^1]: Details'],
-  ['math', '$$\nx = y\n$$'],
   ['fence metadata', '```js title="keep me"\nconst x = 1\n```'],
   ['nested diagram', '> ```mermaid\n> A --> B\n> ```'],
   ['mixed task list', '- plain\n- [ ] task'],

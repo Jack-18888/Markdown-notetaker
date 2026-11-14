@@ -1,6 +1,5 @@
-import { CrepeBuilder } from '@milkdown/crepe/builder';
-import { placeholder } from '@milkdown/crepe/feature/placeholder';
-import { table } from '@milkdown/crepe/feature/table';
+import { Crepe, CrepeFeature } from '@milkdown/crepe';
+import { codeBlockConfig } from '@milkdown/kit/component/code-block';
 import {
   editorStateOptionsCtx,
   editorViewCtx,
@@ -20,11 +19,14 @@ import {
 import { Slice } from '@milkdown/kit/prose/model';
 import type { EditorView } from '@milkdown/kit/prose/view';
 import { literalCodeBlock, mermaidSchema } from './code-blocks.js';
+import {
+  crepePlaygroundBridge,
+  diagramIcon,
+  insertMermaidDiagram,
+} from './crepe-bridge.js';
 import { isSafeLink } from './links.js';
 import { loadMarkdown, type LoadedMarkdown } from './markdown.js';
 import { mermaidView } from './mermaid-node-view.js';
-import { taskItemView } from './task-item.js';
-import { notifyEditorTransaction } from './useEditorTransaction.js';
 import { assessSource } from './source-policy.js';
 
 const safeLink = linkSchema.extendSchema((base) => (ctx) => {
@@ -73,37 +75,64 @@ export function openEditor({
   }
   const host = document.createElement('div');
   root.append(host);
-  const crepe = new CrepeBuilder({ root: host });
+  const crepe = new Crepe({
+    root: host,
+    features: {
+      [CrepeFeature.Cursor]: interactive,
+      [CrepeFeature.ListItem]: interactive,
+      [CrepeFeature.LinkTooltip]: interactive,
+      [CrepeFeature.ImageBlock]: false,
+      [CrepeFeature.BlockEdit]: interactive,
+      [CrepeFeature.Placeholder]: interactive,
+      [CrepeFeature.Toolbar]: interactive,
+      [CrepeFeature.CodeMirror]: true,
+      [CrepeFeature.Table]: interactive,
+      [CrepeFeature.Latex]: true,
+      [CrepeFeature.TopBar]: false,
+      [CrepeFeature.AI]: false,
+    },
+    featureConfigs: {
+      [CrepeFeature.Placeholder]: {
+        text: 'Please enter...',
+        mode: 'doc',
+      },
+      [CrepeFeature.BlockEdit]: {
+        advancedGroup: { image: null },
+        buildMenu(builder) {
+          builder.getGroup('advanced').addItem('diagram', {
+            label: 'Mermaid Diagram',
+            icon: diagramIcon,
+            onRun: insertMermaidDiagram,
+          });
+        },
+      },
+      [CrepeFeature.CodeMirror]: {
+        previewToggleText: (previewOnly) => (previewOnly ? 'Edit' : 'Hide'),
+      },
+      [CrepeFeature.Latex]: {
+        katexOptions: { trust: false },
+      },
+    },
+  });
   const editor = crepe.editor;
   const initial: { loaded: LoadedMarkdown } = {
     loaded: { mode: 'source', source, reason: 'conversion-failed' },
   };
-  if (interactive) {
-    crepe
-      .addFeature(placeholder, {
-        text: 'Your next idea starts here…',
-        mode: 'doc',
-      })
-      .addFeature(table, {
-        addRowIcon: '<span aria-label="Add table row">+</span>',
-        addColIcon: '<span aria-label="Add table column">+</span>',
-        deleteRowIcon: '<span aria-label="Delete table row">×</span>',
-        deleteColIcon: '<span aria-label="Delete table column">×</span>',
-        alignLeftIcon: '<span aria-label="Align table column left">←</span>',
-        alignCenterIcon: '<span aria-label="Center table column">↔</span>',
-        alignRightIcon: '<span aria-label="Align table column right">→</span>',
-      });
-    editor.use(mermaidView);
-  }
+  if (interactive) editor.use(mermaidView);
   editor
     .use([
       mermaidSchema,
       ...literalCodeBlock,
       ...safeLink,
       ...inertImage,
-      taskItemView,
+      crepePlaygroundBridge,
     ])
     .config((ctx) => {
+      // Remove Crepe's default dark theme extension while retaining keymaps and highlight styles.
+      ctx.update(codeBlockConfig.key, (config) => ({
+        ...config,
+        extensions: config.extensions.slice(0, 2),
+      }));
       ctx.update(remarkStringifyOptionsCtx, (options) => ({
         ...options,
         bullet: '-' as const,
@@ -131,7 +160,6 @@ export function openEditor({
         dispatchTransaction(this: EditorView, tr) {
           const previous = this.state;
           this.updateState(previous.apply(tr));
-          notifyEditorTransaction(this);
           onTransaction?.(this, previous);
         },
         handlePaste(view, event) {
