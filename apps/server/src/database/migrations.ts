@@ -7,6 +7,7 @@ import {
 } from './errors.js';
 import { initialWorkspaceMigration } from './migrations/001-workspace.js';
 import { markdownMigration } from './migrations/002-markdown.js';
+import { markdownFilesMigration } from './migrations/003-markdown-files.js';
 
 /** Code-owned SQL; the runner owns the transaction and version bookkeeping. */
 export interface Migration {
@@ -14,12 +15,16 @@ export interface Migration {
   readonly name: string;
   readonly sql: string;
   /** Register versioned SQL helpers before this migration runs. */
-  readonly registerFunctions?: (database: Database.Database) => void;
+  readonly registerFunctions?: (
+    database: Database.Database,
+    dataDirectory: string,
+  ) => void;
 }
 
 export const workspaceMigrations: readonly Migration[] = [
   initialWorkspaceMigration,
   markdownMigration,
+  markdownFilesMigration,
 ];
 
 interface AppliedMigration {
@@ -51,6 +56,7 @@ function validateDefinitions(migrations: readonly Migration[]) {
 export function applyMigrations(
   database: Database.Database,
   migrations: readonly Migration[],
+  dataDirectory: string,
 ) {
   validateDefinitions(migrations);
   database
@@ -110,7 +116,7 @@ export function applyMigrations(
       );
       for (const migration of migrations.slice(applied.length)) {
         try {
-          migration.registerFunctions?.(database);
+          migration.registerFunctions?.(database, dataDirectory);
           database.exec(migration.sql);
           recordMigration.run(
             migration.version,

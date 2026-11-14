@@ -4,6 +4,7 @@ export enum DatabaseErrorCode {
   INVALID_BUSY_TIMEOUT = 'invalid_busy_timeout',
   INVALID_MIGRATIONS = 'invalid_migrations',
   DATABASE_UNAVAILABLE = 'database_unavailable',
+  MISSING_DATABASE = 'missing_database',
   DATABASE_LOCKED = 'database_locked',
   DATABASE_CORRUPT = 'database_corrupt',
   MIGRATION_HISTORY_MISMATCH = 'migration_history_mismatch',
@@ -21,6 +22,8 @@ const messages: Record<DatabaseErrorCode, string> = {
     'Migration definitions must start at 1, increase by 1, and contain names and SQL.',
   [DatabaseErrorCode.DATABASE_UNAVAILABLE]:
     'Cannot open or configure the database. Check DATA_DIR, file permissions, and available disk space.',
+  [DatabaseErrorCode.MISSING_DATABASE]:
+    'Note files exist but their SQLite database is missing. Restore the complete data directory from a verified backup.',
   [DatabaseErrorCode.DATABASE_LOCKED]:
     'The database is locked. Close the other writer and retry startup.',
   [DatabaseErrorCode.DATABASE_CORRUPT]:

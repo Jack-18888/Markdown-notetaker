@@ -5,6 +5,8 @@
 
 Local single-user note workspace with nested folders, a rich block editor, SQLite persistence, Mermaid, and Markdown import/export.
 
+This roadmap records the initial release. The [current storage architecture](../docs/architecture/persistence.md) describes the later move from SQLite bodies to Markdown files.
+
 This document owns the initial release's design, detailed requirements, implementation tasks, and verification evidence. Task statuses describe implementation in the PR stack; review and merge remain separate. Product-level goals live in [product requirements](../docs/requirements.md); the [architecture](../docs/architecture.md) explains the system in greater depth.
 
 ## Goal and scope

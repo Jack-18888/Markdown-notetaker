@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { databaseFileName, resolveDataDirectory } from '../config.js';
@@ -12,6 +12,8 @@ import {
   workspaceMigrations,
   type Migration,
 } from './migrations.js';
+
+import { noteFiles } from './note-files.js';
 
 export interface DatabaseOptions {
   dataDirectory?: string;
@@ -38,7 +40,10 @@ export function openDatabase(options: DatabaseOptions = {}): Database.Database {
 
   let database: Database.Database | undefined;
   try {
-    database = new Database(join(directory, databaseFileName), { timeout });
+    const databasePath = join(directory, databaseFileName);
+    if (!existsSync(databasePath) && noteFiles(directory).hasBodies())
+      throw new DatabaseInitializationError(DatabaseErrorCode.MISSING_DATABASE);
+    database = new Database(databasePath, { timeout });
     database.pragma('foreign_keys = ON');
     if (database.pragma('journal_mode = WAL', { simple: true }) !== 'wal') {
       throw new DatabaseInitializationError(
@@ -46,7 +51,11 @@ export function openDatabase(options: DatabaseOptions = {}): Database.Database {
       );
     }
     database.pragma('synchronous = FULL');
-    applyMigrations(database, options.migrations ?? workspaceMigrations);
+    applyMigrations(
+      database,
+      options.migrations ?? workspaceMigrations,
+      directory,
+    );
     return database;
   } catch (error) {
     if (database?.open) database.close();

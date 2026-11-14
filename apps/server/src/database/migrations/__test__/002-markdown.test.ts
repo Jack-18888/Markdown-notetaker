@@ -6,7 +6,12 @@ import {
 } from '../../../__test__/temporary-workspace.js';
 import { DatabaseErrorCode } from '../../errors.js';
 import { initialWorkspaceMigration } from '../001-workspace.js';
-import { workspaceMigrations } from '../../migrations.js';
+import { markdownMigration } from '../002-markdown.js';
+
+const migrationsThroughMarkdown = [
+  initialWorkspaceMigration,
+  markdownMigration,
+];
 
 const directories: ReturnType<typeof temporaryWorkspace>[] = [];
 function legacyWorkspace() {
@@ -71,7 +76,7 @@ describe('raw Markdown migration', () => {
     );
     database.close();
 
-    const upgraded = temporary.open();
+    const upgraded = temporary.open({ migrations: migrationsThroughMarkdown });
     const noteQuery =
       'SELECT id, title, folder_id AS folderId, content, revision, created_at AS createdAt, updated_at AS updatedAt FROM notes WHERE id = ?';
     const expected = {
@@ -96,9 +101,12 @@ describe('raw Markdown migration', () => {
       upgraded.prepare('SELECT * FROM notes WHERE id = ?').get(fixtureIds.note),
     ).not.toHaveProperty('document_json');
     upgraded.close();
-    expect(temporary.open().prepare(noteQuery).get(fixtureIds.note)).toEqual(
-      expected,
-    );
+    expect(
+      temporary
+        .open({ migrations: migrationsThroughMarkdown })
+        .prepare(noteQuery)
+        .get(fixtureIds.note),
+    ).toEqual(expected);
     expect(() =>
       temporary.open({ migrations: [initialWorkspaceMigration] }),
     ).toThrow(
@@ -134,7 +142,7 @@ describe('raw Markdown migration', () => {
     expect(() =>
       temporary.open({
         migrations: [
-          ...workspaceMigrations,
+          ...migrationsThroughMarkdown,
           {
             version: 3,
             name: 'fail_after_conversion',

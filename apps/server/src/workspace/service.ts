@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { dirname } from 'node:path';
 import type Database from 'better-sqlite3';
 import {
   ApiErrorCode,
@@ -22,7 +23,8 @@ import {
   type UpdateNoteRequest,
 } from '@markdown-note-taker/contracts';
 import { guarded, WorkspaceError } from './errors.js';
-import { createWorkspaceRepository } from './repository.js';
+import { noteFiles } from '../database/note-files.js';
+import { createWorkspaceRepository, type StoredNote } from './repository.js';
 import type { WorkspaceService } from './types.js';
 import { validate } from './validation.js';
 
@@ -31,9 +33,44 @@ export function createWorkspaceService(
   database: Database.Database,
 ): WorkspaceService {
   const repository = guarded(() => createWorkspaceRepository(database));
+  const files = noteFiles(dirname(database.name));
 
   const write = <T>(operation: () => T): T =>
     guarded(() => database.transaction(operation).immediate());
+
+  function finishFiles(staged: string[] = [], startup = false) {
+    try {
+      database
+        .transaction(() => {
+          const pending = startup ? files.pending() : staged;
+          for (const path of new Set([
+            ...pending,
+            ...repository.queuedFiles(),
+          ])) {
+            files.finish(path, repository.referencesFile(path));
+            repository.dequeueFile(path);
+          }
+        })
+        .immediate();
+    } catch {
+      // Committed metadata is authoritative. Retry cleanup on next startup.
+    }
+  }
+
+  finishFiles([], true);
+
+  function writeWithFiles<T>(operation: (staged: string[]) => T): T {
+    const staged: string[] = [];
+    try {
+      return write(() => operation(staged));
+    } finally {
+      finishFiles(staged);
+    }
+  }
+
+  function readNote({ contentPath, ...metadata }: StoredNote): NoteDetail {
+    return { ...metadata, content: files.read(contentPath) };
+  }
 
   // find the target folder in folders, throws an error if DNE
   function requireFolder(id: ResourceId): Folder {
@@ -43,7 +80,7 @@ export function createWorkspaceService(
   }
 
   // find the target note in notes, throws an error if DNE
-  function requireNote(id: ResourceId): NoteDetail {
+  function requireNote(id: ResourceId): StoredNote {
     const note = repository.findNote(id);
     if (!note) throw new WorkspaceError(ApiErrorCode.NOT_FOUND);
     return note;
@@ -92,7 +129,8 @@ export function createWorkspaceService(
 
     getNote(id: ResourceId): NoteDetail {
       const noteId = validate(resourceIdSchema, id);
-      return guarded(() => requireNote(noteId));
+      // Keep the file live until the read finishes, even with another server connection.
+      return write(() => readNote(requireNote(noteId)));
     },
 
     createFolder(input: CreateFolderRequest): Folder {
@@ -134,7 +172,7 @@ export function createWorkspaceService(
 
     deleteFolder(id: ResourceId): void {
       const folderId = validate(resourceIdSchema, id);
-      return write(() => {
+      return writeWithFiles(() => {
         const folder = requireFolder(folderId);
         validateFolderDestination(folder.parentId, folderId);
         // Foreign-key cascades delete the complete subtree in this transaction.
@@ -145,51 +183,59 @@ export function createWorkspaceService(
 
     createNote(input: CreateNoteRequest): NoteDetail {
       const body = validate(createNoteRequestSchema, input);
-      return write(() => {
+      return writeWithFiles((staged) => {
         validateFolderDestination(body.folderId);
         const timestamp = new Date().toISOString();
-        const note: NoteDetail = {
-          id: randomUUID(),
+        const id = randomUUID();
+        const content = body.content ?? '';
+        const contentPath = files.stage(id, Buffer.from(content));
+        staged.push(contentPath);
+        repository.insertNote({
+          id,
           title: body.title,
           folderId: body.folderId,
-          content: body.content ?? '',
+          contentPath,
           revision: 1,
           createdAt: timestamp,
           updatedAt: timestamp,
-        };
-        repository.insertNote(note);
-        return requireNote(note.id);
+        });
+        return readNote(requireNote(id));
       });
     },
 
     updateNote(id: ResourceId, input: UpdateNoteRequest): NoteDetail {
       const noteId = validate(resourceIdSchema, id);
       const body = validate(updateNoteRequestSchema, input);
-      return write(() => {
+      return writeWithFiles((staged) => {
         const current = requireNote(noteId);
         assertExpectedRevision(current, body.expectedRevision);
         const folderId =
           body.folderId === undefined ? current.folderId : body.folderId;
         validateFolderDestination(folderId);
-        const next: NoteDetail = {
+        const previous = files.read(current.contentPath);
+        let contentPath = current.contentPath;
+        if (body.content !== undefined && body.content !== previous) {
+          contentPath = files.stage(noteId, Buffer.from(body.content));
+          staged.push(contentPath);
+        }
+        const next: StoredNote = {
           ...current,
           title: body.title ?? current.title,
           folderId,
-          content: body.content ?? current.content,
+          contentPath,
           updatedAt: new Date().toISOString(),
         };
         if (repository.updateNote(next, body.expectedRevision).changes !== 1)
           throw new WorkspaceError(ApiErrorCode.INTERNAL_ERROR);
-        return requireNote(noteId);
+        return readNote(requireNote(noteId));
       });
     },
 
     deleteNote(id: ResourceId, input: DeleteNoteRequest): void {
       const noteId = validate(resourceIdSchema, id);
       const body = validate(deleteNoteRequestSchema, input);
-      return write(() => {
-        const current = repository.findNoteMetadata(noteId);
-        if (!current) throw new WorkspaceError(ApiErrorCode.NOT_FOUND);
+      return writeWithFiles(() => {
+        const current = requireNote(noteId);
         assertExpectedRevision(current, body.expectedRevision);
         if (repository.deleteNote(noteId, body.expectedRevision).changes !== 1)
           throw new WorkspaceError(ApiErrorCode.INTERNAL_ERROR);

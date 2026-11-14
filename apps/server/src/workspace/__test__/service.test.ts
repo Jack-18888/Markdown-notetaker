@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   ApiErrorCode,
@@ -11,6 +13,7 @@ import {
   fixtureIds,
   temporaryWorkspace,
 } from '../../__test__/temporary-workspace.js';
+import { noteFiles } from '../../database/note-files.js';
 import { WorkspaceError } from '../errors.js';
 import { createWorkspaceService } from '../service.js';
 
@@ -609,9 +612,11 @@ describe('workspace persistence services', () => {
   );
 
   it('rolls back failed note saves without leaking SQL or local content', () => {
-    const { service, database } = setup();
+    const { service, database, temporary } = setup();
     const { root, note } = hierarchy(service);
     const before = state(service);
+    const directory = join(temporary.dataDirectory, 'notes');
+    const savedFiles = readdirSync(directory);
     database.exec(
       "CREATE TRIGGER fail_note_update BEFORE UPDATE ON notes BEGIN SELECT RAISE(ABORT, 'fixture update failure'); END;",
     );
@@ -629,6 +634,73 @@ describe('workspace persistence services', () => {
       /fixture update failure|private title|private body/,
     );
     expect(state(service)).toEqual(before);
+    expect(readdirSync(directory)).toEqual(savedFiles);
+    expect(createWorkspaceService(temporary.open()).getNote(note.id)).toEqual(
+      note,
+    );
+  });
+
+  it('keeps one file for each saved body and removes files for deleted notes and folders', () => {
+    const { service, temporary } = setup();
+    const { root, note } = hierarchy(service);
+    const directory = join(temporary.dataDirectory, 'notes');
+    const files = readdirSync(directory);
+    expect(files).toHaveLength(1);
+    const renamed = service.updateNote(note.id, {
+      expectedRevision: 1,
+      title: 'Renamed',
+    });
+    expect(readdirSync(directory)).toEqual(files);
+    const updated = service.updateNote(note.id, {
+      expectedRevision: renamed.revision,
+      content: '# Edited\r\n',
+    });
+    const current = readdirSync(directory);
+    expect(current).toHaveLength(1);
+    expect(current).not.toEqual(files);
+    expect(readFileSync(join(directory, current[0]!))).toEqual(
+      Buffer.from(updated.content),
+    );
+    const other = service.createNote({ title: 'At root', folderId: null });
+    service.deleteFolder(root.id);
+    expect(readdirSync(directory)).toHaveLength(1);
+    expect(service.getNote(other.id)).toEqual(other);
+    service.deleteNote(other.id, { expectedRevision: other.revision });
+    expect(readdirSync(directory)).toEqual([]);
+  });
+
+  it('cleans up an interrupted write without removing untracked Markdown', () => {
+    const { service, database, temporary } = setup();
+    const { note } = hierarchy(service);
+    const files = noteFiles(temporary.dataDirectory);
+    const directory = join(temporary.dataDirectory, 'notes');
+    const [current] = readdirSync(directory);
+    const untracked = current!.replace(/^[^-]+/, '01234567');
+    writeFileSync(join(directory, untracked), 'Untracked');
+    const pending = files.stage(note.id, Buffer.from('Uncommitted body'));
+    expect(readdirSync(directory)).toContain(pending);
+    database.close();
+
+    const reopened = createWorkspaceService(temporary.open());
+    expect(reopened.getNote(note.id)).toEqual(note);
+    expect(readdirSync(directory).sort()).toEqual([current, untracked].sort());
+  });
+
+  it('rejects externally changed note bodies before reads or updates', () => {
+    const { service, temporary } = setup();
+    const { note } = hierarchy(service);
+    const directory = join(temporary.dataDirectory, 'notes');
+    const [file] = readdirSync(directory);
+    const path = join(directory, file!);
+    writeFileSync(path, 'External change');
+    expectError(() => service.getNote(note.id), ApiErrorCode.INTERNAL_ERROR);
+    expectError(
+      () =>
+        service.updateNote(note.id, { expectedRevision: 1, content: 'New' }),
+      ApiErrorCode.INTERNAL_ERROR,
+    );
+    expect(service.listTree().notes[0]?.revision).toBe(1);
+    expect(readFileSync(path, 'utf8')).toBe('External change');
   });
 
   it('preserves raw Markdown bytes, empty content, and whitespace across reopen', () => {

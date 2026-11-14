@@ -32,12 +32,13 @@ describe('workspace database initialization', () => {
     expect(database.pragma('journal_mode', { simple: true })).toBe('wal');
     expect(database.pragma('busy_timeout', { simple: true })).toBe(5000);
     expect(database.pragma('synchronous', { simple: true })).toBe(2);
-    expect(database.pragma('user_version', { simple: true })).toBe(2);
+    expect(database.pragma('user_version', { simple: true })).toBe(3);
     expect(
       database.prepare('SELECT version, name FROM schema_migrations').all(),
     ).toEqual([
       { version: 1, name: 'initial_workspace' },
       { version: 2, name: 'raw_markdown_content' },
+      { version: 3, name: 'markdown_files' },
     ]);
   });
 
@@ -51,7 +52,7 @@ describe('workspace database initialization', () => {
       .prepare<
         [],
         {
-          content: string;
+          content_path: string;
           title: string;
           revision: number;
           folder_id: string;
@@ -60,7 +61,10 @@ describe('workspace database initialization', () => {
         }
       >('SELECT * FROM notes')
       .get()!;
-    expect(row.content).toBe(content);
+    expect(row).not.toHaveProperty('content');
+    expect(
+      readFileSync(join(temporary.dataDirectory, 'notes', row.content_path)),
+    ).toEqual(Buffer.from(content));
     expect(row).toMatchObject({
       title: 'Example',
       folder_id: fixtureIds.child,
@@ -143,12 +147,12 @@ describe('workspace database initialization', () => {
   });
 
   it.each([
-    ['UPDATE notes SET content = ? WHERE id = ?', null],
-    ['UPDATE notes SET content = ? WHERE id = ?', Buffer.from('blob')],
+    ['UPDATE notes SET content_path = ? WHERE id = ?', null],
+    ['UPDATE notes SET content_path = ? WHERE id = ?', Buffer.from('blob')],
     ['UPDATE notes SET revision = ? WHERE id = ?', 0],
     ['UPDATE notes SET revision = ? WHERE id = ?', Number.MAX_SAFE_INTEGER + 1],
   ] as const)(
-    'rejects invalid stored content/revision values (%#)',
+    'rejects invalid stored path/revision values (%#)',
     (sql, value) => {
       const database = workspace().open();
       seedWorkspace(database);

@@ -4,6 +4,7 @@ import { basename, dirname, join, resolve, sep } from 'node:path';
 import Database from 'better-sqlite3';
 import { databaseFileName } from '../config.js';
 import { openDatabase, type DatabaseOptions } from '../database/open.js';
+import { noteFiles } from '../database/note-files.js';
 import { openWorkspace } from '../workspace/open.js';
 import { createApp } from '../app.js';
 
@@ -98,13 +99,16 @@ export function seedWorkspace(database: Database.Database) {
     '# Fixture \u{1f4dd}\r\n\r\n**Markdown**\n<script>literal</script>\n';
   database
     .prepare(
-      'INSERT INTO notes (id, title, folder_id, content, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO notes (id, title, folder_id, content_path, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
     .run(
       fixtureIds.note,
       'Example',
       fixtureIds.child,
-      content,
+      noteFiles(dirname(database.name)).stage(
+        fixtureIds.note,
+        Buffer.from(content),
+      ),
       1,
       fixtureTimestamp,
       fixtureTimestamp,

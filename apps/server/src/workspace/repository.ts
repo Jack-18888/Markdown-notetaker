@@ -2,10 +2,11 @@ import type Database from 'better-sqlite3';
 import type {
   Folder,
   NoteMetadata,
-  NoteDetail,
   ResourceId,
   Revision,
 } from '@markdown-note-taker/contracts';
+
+export type StoredNote = NoteMetadata & { contentPath: string };
 
 type FolderAncestor = Pick<Folder, 'id' | 'parentId'>;
 
@@ -25,11 +26,8 @@ export function createWorkspaceRepository(database: Database.Database) {
   const folder = database.prepare<[ResourceId], Folder>(
     `SELECT ${folderColumns} FROM folders WHERE id = ?`,
   );
-  const note = database.prepare<[ResourceId], NoteDetail>(
-    `SELECT ${noteColumns}, content FROM notes WHERE id = ?`,
-  );
-  const noteMetadata = database.prepare<[ResourceId], NoteMetadata>(
-    `SELECT ${noteColumns} FROM notes WHERE id = ?`,
+  const note = database.prepare<[ResourceId], StoredNote>(
+    `SELECT ${noteColumns}, content_path AS contentPath FROM notes WHERE id = ?`,
   );
   const ancestors = database.prepare<[ResourceId], FolderAncestor>(`
     WITH RECURSIVE ancestors(id, parent_id) AS (
@@ -38,6 +36,15 @@ export function createWorkspaceRepository(database: Database.Database) {
       SELECT folders.id, folders.parent_id FROM folders JOIN ancestors ON folders.id = ancestors.parent_id
     ) SELECT id, parent_id AS parentId FROM ancestors
   `);
+  const queuedFiles = database.prepare<[], { path: string }>(
+    'SELECT path FROM note_file_cleanup',
+  );
+  const dequeueFile = database.prepare<[string]>(
+    'DELETE FROM note_file_cleanup WHERE path = ?',
+  );
+  const fileReference = database.prepare<[string], { found: 1 }>(
+    'SELECT 1 AS found FROM notes WHERE content_path = ?',
+  );
   const insertFolder = database.prepare(
     'INSERT INTO folders (id, name, parent_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
   );
@@ -46,10 +53,10 @@ export function createWorkspaceRepository(database: Database.Database) {
   );
   const deleteFolder = database.prepare('DELETE FROM folders WHERE id = ?');
   const insertNote = database.prepare(
-    'INSERT INTO notes (id, title, folder_id, content, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO notes (id, title, folder_id, content_path, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
   const updateNote = database.prepare(
-    'UPDATE notes SET title = ?, folder_id = ?, content = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
+    'UPDATE notes SET title = ?, folder_id = ?, content_path = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
   );
   const deleteNote = database.prepare(
     'DELETE FROM notes WHERE id = ? AND revision = ?',
@@ -60,7 +67,9 @@ export function createWorkspaceRepository(database: Database.Database) {
     listNotes: () => notes.all(),
     findFolder: (id: ResourceId) => folder.get(id),
     findNote: (id: ResourceId) => note.get(id),
-    findNoteMetadata: (id: ResourceId) => noteMetadata.get(id),
+    queuedFiles: () => queuedFiles.all().map(({ path }) => path),
+    dequeueFile: (path: string) => dequeueFile.run(path),
+    referencesFile: (path: string) => fileReference.get(path) !== undefined,
     // UNION terminates even if an externally edited database contains a cycle.
     ancestors: (id: ResourceId) => ancestors.all(id),
     insertFolder: (value: Folder) =>
@@ -74,21 +83,21 @@ export function createWorkspaceRepository(database: Database.Database) {
     updateFolder: (value: Folder) =>
       updateFolder.run(value.name, value.parentId, value.updatedAt, value.id),
     deleteFolder: (id: ResourceId) => deleteFolder.run(id),
-    insertNote: (value: NoteDetail) =>
+    insertNote: (value: StoredNote) =>
       insertNote.run(
         value.id,
         value.title,
         value.folderId,
-        value.content,
+        value.contentPath,
         value.revision,
         value.createdAt,
         value.updatedAt,
       ),
-    updateNote: (value: NoteDetail, expectedRevision: Revision) =>
+    updateNote: (value: StoredNote, expectedRevision: Revision) =>
       updateNote.run(
         value.title,
         value.folderId,
-        value.content,
+        value.contentPath,
         value.updatedAt,
         value.id,
         expectedRevision,
