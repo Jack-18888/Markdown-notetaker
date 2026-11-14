@@ -1,4 +1,4 @@
-import type { Node } from '@tiptap/pm/model';
+import type { Node } from '@milkdown/kit/prose/model';
 import {
   ApiErrorCode,
   nameSchema,

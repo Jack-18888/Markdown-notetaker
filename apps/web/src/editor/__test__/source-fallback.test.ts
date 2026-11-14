@@ -3,13 +3,14 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import SourceFallback from '../SourceFallback.js';
-import { loadMarkdown } from '../markdown.js';
+import { open } from './editor-fixture.js';
 
 describe('source fallback view', () => {
-  it('escapes hostile source, labels the view, and preserves selectable text', () => {
+  it('escapes hostile source, labels the view, and preserves selectable text', async () => {
     const source =
       '<script>alert(1)</script>\n<img src=x onerror=alert(1)>\n[unsafe](javascript:alert(1))';
-    const document = loadMarkdown(source);
+    const { loaded: document, close } = await open(source);
+    close();
     if (document.mode !== 'source')
       throw new Error('Expected source fallback.');
     const container = globalThis.document.createElement('div');

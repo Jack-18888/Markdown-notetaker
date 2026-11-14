@@ -1,8 +1,8 @@
-import { Node } from '@tiptap/core';
-import CodeBlock from '@tiptap/extension-code-block';
+import { codeBlockSchema } from '@milkdown/kit/preset/commonmark';
+import { $node } from '@milkdown/kit/utils';
 
 /** Always choose a delimiter longer than any run inside the source. */
-export function fencedSource(source: string, language = ''): string {
+export function fencedSource(source: string, language: string): string {
   let longest = 2;
   for (const [run] of source.matchAll(/`+/g))
     longest = Math.max(longest, run.length);
@@ -12,41 +12,44 @@ export function fencedSource(source: string, language = ''): string {
   return `${fence}${language}\n${source}${separator}${fence}`;
 }
 
-/** Literal conversion representation; the writing interface adds an optional node view. */
-export const MermaidBlock = Node.create({
-  name: 'mermaid',
+export const mermaidSchema = $node('mermaid', () => ({
   group: 'block',
   atom: true,
   code: true,
-  addAttributes() {
-    return { source: { default: '', rendered: false } };
+  attrs: { source: { default: '', validate: 'string' } },
+  toDOM: (node) => [
+    'pre',
+    { 'data-mermaid': '' },
+    ['code', {}, node.attrs.source],
+  ],
+  parseMarkdown: {
+    match: (node) => node.type === 'mermaid',
+    runner: (state, node, type) => {
+      state.addNode(type, { source: node.value });
+    },
   },
-  // Do not promote pasted HTML into a trusted diagram node.
-  parseHTML() {
-    return [];
+  toMarkdown: {
+    match: (node) => node.type.name === 'mermaid',
+    runner: (state, node) => {
+      // A raw block here carries a fenced diagram, including its exact payload.
+      state.addNode(
+        'html',
+        undefined,
+        fencedSource(node.attrs.source, 'mermaid'),
+      );
+    },
   },
-  renderHTML({ node }) {
-    return ['pre', { 'data-mermaid': '' }, ['code', {}, node.attrs.source]];
-  },
-  renderMarkdown(node) {
-    return fencedSource(node.attrs?.source ?? '', 'mermaid');
-  },
-});
+}));
 
-export const SourceCodeBlock = CodeBlock.extend({
-  parseMarkdown(token, helpers) {
-    if (token.lang === 'mermaid')
-      return helpers.createNode('mermaid', { source: token.text ?? '' });
-    return helpers.createNode(
-      'codeBlock',
-      { language: token.lang || null },
-      token.text ? [helpers.createTextNode(token.text)] : [],
-    );
+export const literalCodeBlock = codeBlockSchema.extendSchema(
+  (base) => (ctx) => {
+    const spec = base(ctx);
+    return {
+      ...spec,
+      parseMarkdown: {
+        ...spec.parseMarkdown,
+        match: (node) => node.type === 'code' && node.lang !== 'mermaid',
+      },
+    };
   },
-  renderMarkdown(node) {
-    const source = (node.content ?? [])
-      .map((child) => child.text ?? '')
-      .join('');
-    return fencedSource(source, node.attrs?.language ?? '');
-  },
-});
+);

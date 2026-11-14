@@ -32,9 +32,10 @@ const supportedTokens = new Set([
   'link',
   'escape',
   'checkbox',
+  'table',
 ]);
 
-/** Inspect tokens, never HTML. Call before handing external source to Tiptap. */
+/** Inspect tokens before handing external source to Milkdown. */
 export function assessSource(source: string): FallbackReason | null {
   if (utf8ByteLength(source) > editorLimits.sourceBytes)
     return 'conversion-limit';
@@ -53,6 +54,13 @@ export function assessSource(source: string): FallbackReason | null {
       const { token, depth } = pending.pop()!;
       if (++count > editorLimits.tokens || depth > editorLimits.depth)
         return 'conversion-limit';
+      // Milkdown uses an attribute-free, standalone <br /> for empty blocks.
+      if (
+        token.type === 'html' &&
+        depth === 0 &&
+        /^<br \/>\s*$/.test(token.raw)
+      )
+        continue;
       if (!supportedTokens.has(token.type)) return 'unsupported';
       if (token.type === 'link' && !isSafeLink(token.href))
         return 'unsafe-link';
@@ -72,9 +80,13 @@ export function assessSource(source: string): FallbackReason | null {
       const children: Token[] =
         token.type === 'list'
           ? token.items
-          : 'tokens' in token
-            ? (token.tokens ?? [])
-            : [];
+          : token.type === 'table'
+            ? [token.header, ...token.rows].flatMap((row: Tokens.TableCell[]) =>
+                row.map(({ tokens }) => ({ type: 'text', raw: '', tokens })),
+              )
+            : 'tokens' in token
+              ? (token.tokens ?? [])
+              : [];
       if (
         token.type === 'text' &&
         children.length === 0 &&

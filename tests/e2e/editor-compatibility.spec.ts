@@ -8,8 +8,9 @@ test('real editor edits retain Mermaid through the API and a browser reload', as
     '# Browser\r\n\r\n```mermaid\r\nflowchart LR\r\n A --> B  \r\n```\r\n';
   const result = await page.evaluate(async (content) => {
     const path = '/src/editor/__test__/browser-fixture.ts';
-    const { Editor, editorExtensions, loadMarkdown, noteDetailSchema } =
-      await import(/* @vite-ignore */ path);
+    const { openEditor, noteDetailSchema } = await import(
+      /* @vite-ignore */ path
+    );
     const created = await fetch('/api/notes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -21,22 +22,27 @@ test('real editor edits retain Mermaid through the API and a browser reload', as
     });
     if (created.status !== 201) throw new Error('Fixture creation failed.');
     const note = noteDetailSchema.parse(await created.json());
-    const loaded = loadMarkdown(note.content);
-    if (loaded.mode !== 'rich') throw new Error('Fixture is not editable.');
     const host = document.createElement('div');
     document.body.append(host);
-    const editor = new Editor({
-      element: host,
-      extensions: editorExtensions(),
-      content: loaded.document,
-    });
+    const editor = openEditor({ root: host, source: note.content });
     try {
-      const original = loaded.serialize(editor.getJSON());
-      editor.commands.insertContentAt(editor.state.doc.content.size, {
-        type: 'paragraph',
-        content: [{ type: 'text', text: 'Edited in the real browser' }],
-      });
-      const saved = loaded.serialize(editor.getJSON());
+      const result = await editor.ready;
+      if (!result || !('view' in result))
+        throw new Error('Fixture is not editable.');
+      const { loaded, view } = result;
+      const { doc, schema } = view.state;
+      const original = loaded.serialize(doc);
+      view.dispatch(
+        view.state.tr.insert(
+          doc.content.size,
+          schema.node(
+            'paragraph',
+            null,
+            schema.text('Edited in the real browser'),
+          ),
+        ),
+      );
+      const saved = loaded.serialize(view.state.doc);
       const updated = await fetch(`/api/notes/${note.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -44,7 +50,7 @@ test('real editor edits retain Mermaid through the API and a browser reload', as
       });
       return { id: note.id as string, original, saved, status: updated.status };
     } finally {
-      editor.destroy();
+      editor.close();
       host.remove();
     }
   }, source);
@@ -53,19 +59,27 @@ test('real editor edits retain Mermaid through the API and a browser reload', as
   await page.reload();
   const reopened = await page.evaluate(async (id) => {
     const path = '/src/editor/__test__/browser-fixture.ts';
-    const { loadMarkdown, noteDetailSchema } = await import(
+    const { openEditor, noteDetailSchema } = await import(
       /* @vite-ignore */ path
     );
     const response = await fetch(`/api/notes/${id}`);
     const note = noteDetailSchema.parse(await response.json());
-    const loaded = loadMarkdown(note.content);
-    if (loaded.mode !== 'rich')
-      throw new Error('Saved source is not editable.');
-    return {
-      content: note.content,
-      document: loaded.document,
-      revision: note.revision,
-    };
+    const editor = openEditor({
+      root: document.createElement('div'),
+      source: note.content,
+    });
+    try {
+      const result = await editor.ready;
+      if (!result || !('view' in result))
+        throw new Error('Saved source is not editable.');
+      return {
+        content: note.content,
+        document: result.loaded.document.toJSON(),
+        revision: note.revision,
+      };
+    } finally {
+      editor.close();
+    }
   }, result.id);
   expect(reopened.content).toBe(result.saved);
   expect(reopened.revision).toBe(2);
@@ -89,15 +103,18 @@ test('source fallback is literal, keyboard reachable, and contained on narrow sc
     'unbroken-source-'.repeat(30);
   await page.evaluate(async (source) => {
     const path = '/src/editor/__test__/browser-fixture.ts';
-    const { createElement, createRoot, SourceFallback, loadMarkdown } =
+    const { createElement, createRoot, SourceFallback, openEditor } =
       await import(/* @vite-ignore */ path);
-    const loaded = loadMarkdown(source);
-    if (loaded.mode !== 'source') throw new Error('Expected source fallback.');
+    const editor = openEditor({ root: document.createElement('div'), source });
+    const result = await editor.ready;
+    editor.close();
+    if (!result || result.loaded.mode !== 'source')
+      throw new Error('Expected source fallback.');
     const host = document.createElement('div');
     host.style.padding = '24px';
     document.body.append(host);
     createRoot(host).render(
-      createElement(SourceFallback, { document: loaded }),
+      createElement(SourceFallback, { document: result.loaded }),
     );
   }, source);
   const region = page.getByRole('region', { name: 'Markdown source' });

@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // Crepe's table node view bundles Vue's runtime.
+    define: {
+      __VUE_OPTIONS_API__: true,
+      __VUE_PROD_DEVTOOLS__: false,
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
+    },
     build: {
       rolldownOptions: {
         output: {
@@ -26,11 +32,24 @@ export default defineConfig(({ mode }) => {
     // Keep the first lazy editor import from triggering a development-page reload.
     optimizeDeps: {
       include: [
-        '@tiptap/core',
-        '@tiptap/extension-code-block',
-        '@tiptap/extension-list',
-        '@tiptap/markdown',
-        '@tiptap/starter-kit',
+        '@milkdown/crepe/builder',
+        '@milkdown/crepe/feature/placeholder',
+        '@milkdown/crepe/feature/table',
+        '@milkdown/kit/core',
+        '@milkdown/kit/plugin/clipboard',
+        '@milkdown/kit/plugin/listener',
+        '@milkdown/kit/plugin/trailing',
+        '@milkdown/kit/plugin/upload',
+        '@milkdown/kit/preset/commonmark',
+        '@milkdown/kit/preset/gfm',
+        '@milkdown/kit/prose/commands',
+        '@milkdown/kit/prose/history',
+        '@milkdown/kit/prose/model',
+        '@milkdown/kit/prose/schema-list',
+        '@milkdown/kit/prose/state',
+        '@milkdown/kit/prose/tables',
+        '@milkdown/kit/transformer',
+        '@milkdown/kit/utils',
         'marked',
         'mermaid',
         'dompurify',
