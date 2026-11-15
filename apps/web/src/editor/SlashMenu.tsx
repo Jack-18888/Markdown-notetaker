@@ -6,32 +6,26 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { Editor } from '@tiptap/core';
+import type { EditorView } from '@milkdown/kit/prose/view';
 import { canRunCommand, matchingBlocks, runCommand } from './commands.js';
 import { slashQuery } from './slash.js';
 import { useEditorTransaction } from './useEditorTransaction.js';
 import './slash-menu.css';
 
-export default function SlashMenu({ editor }: { editor: Editor }) {
-  useEditorTransaction(editor);
+export default function SlashMenu({ editor }: { editor: EditorView }) {
+  const state = useEditorTransaction(editor);
   const id = useId();
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [choice, setChoice] = useState({ key: '', index: 0 });
-  const [focused, setFocused] = useState(editor.isFocused);
+  const [focused, setFocused] = useState(() => editor.hasFocus());
   const menu = useRef<HTMLDivElement>(null);
   const query = slashQuery(editor);
   const key = query
     ? `${query.range.from}:${query.range.to}:${query.query}`
     : '';
   useEffect(() => {
-    const resetDismissal = () => {
-      if (!slashQuery(editor)) setDismissed(null);
-    };
-    editor.on('transaction', resetDismissal);
-    return () => {
-      editor.off('transaction', resetDismissal);
-    };
-  }, [editor]);
+    if (!slashQuery(editor)) setDismissed(null);
+  }, [editor, state]);
   const commands = useMemo(
     () =>
       query
@@ -52,7 +46,7 @@ export default function SlashMenu({ editor }: { editor: Editor }) {
     const place = () => {
       const element = menu.current;
       if (!element) return;
-      const caret = editor.view.coordsAtPos(editor.state.selection.from);
+      const caret = editor.coordsAtPos(editor.state.selection.from);
       const height = element.offsetHeight;
       const below = caret.bottom + 8;
       element.style.left = `${Math.max(12, Math.min(caret.left, window.innerWidth - element.offsetWidth - 12))}px`;
@@ -74,16 +68,16 @@ export default function SlashMenu({ editor }: { editor: Editor }) {
     const blur = () => {
       setFocused(false);
     };
-    editor.on('focus', focus);
-    editor.on('blur', blur);
+    editor.dom.addEventListener('focus', focus);
+    editor.dom.addEventListener('blur', blur);
     return () => {
-      editor.off('focus', focus);
-      editor.off('blur', blur);
+      editor.dom.removeEventListener('focus', focus);
+      editor.dom.removeEventListener('blur', blur);
     };
   }, [editor]);
   useEffect(() => {
     if (!open) return;
-    const dom = editor.view.dom;
+    const dom = editor.dom;
     dom.setAttribute('aria-controls', id);
     if (commands.length)
       dom.setAttribute('aria-activedescendant', `${id}-${index}`);

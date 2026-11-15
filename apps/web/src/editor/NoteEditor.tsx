@@ -1,56 +1,86 @@
 import { useEffect, useRef, useState } from 'react';
-import { Editor } from '@tiptap/core';
-import type { Node } from '@tiptap/pm/model';
+import type { EditorView } from '@milkdown/kit/prose/view';
 import type { SaveCoordinator } from '../workspace/SaveCoordinator.js';
-import { editorExtensions } from './extensions.js';
-import type { LoadedMarkdown } from './markdown.js';
+import { openEditor } from './extensions.js';
 import EditorToolbar from './EditorToolbar.js';
 import SlashMenu from './SlashMenu.js';
+import SourceFallback from './SourceFallback.js';
+import type { FallbackReason } from './source-policy.js';
+import '@milkdown/crepe/theme/classic.css';
+import '@milkdown/crepe/theme/common/prosemirror.css';
+import '@milkdown/crepe/theme/common/placeholder.css';
+import '@milkdown/crepe/theme/common/table.css';
 import '../workspace/note-preview.css';
 import './note-editor.css';
 
 export default function NoteEditor({
-  document,
+  source,
   session,
 }: {
-  document: Extract<LoadedMarkdown, { mode: 'rich' }>;
+  source: string;
   session: SaveCoordinator;
 }) {
   const host = useRef<HTMLDivElement>(null);
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const baseline = useRef(document);
+  const [view, setView] = useState<EditorView>();
+  const [reason, setReason] = useState<FallbackReason>();
   useEffect(() => {
-    const capture = (node: Node) => ({
-      node,
-      serialize: () => baseline.current.serialize(node.toJSON()),
-    });
-    const instance = new Editor({
-      element: host.current!,
-      extensions: editorExtensions({ diagramViews: true }),
-      content: baseline.current.document,
-      editorProps: {
-        attributes: {
-          role: 'textbox',
-          'aria-label': 'Note content',
-          'aria-multiline': 'true',
-          'aria-describedby': 'writing-help',
-        },
+    let active = true;
+    let capture:
+      | ((
+          node: EditorView['state']['doc'],
+        ) => Parameters<SaveCoordinator['setBody']>[0])
+      | undefined;
+    const instance = openEditor({
+      root: host.current!,
+      source,
+      interactive: true,
+      onTransaction(view, previous) {
+        if (!active) return;
+        if (capture && !previous.doc.eq(view.state.doc))
+          session.setBody(capture(view.state.doc));
       },
-      onUpdate: ({ editor }) => session.setBody(capture(editor.state.doc)),
     });
-    session.attachBody(capture(instance.state.doc));
-    setEditor(instance);
-    return () => instance.destroy();
-  }, [session]);
+    void instance.ready.then(
+      (result) => {
+        if (!active || !result) return;
+        if (!('view' in result)) {
+          instance.close();
+          setReason(result.loaded.reason);
+          return;
+        }
+        const { loaded, view } = result;
+        capture = (node) => ({ node, serialize: () => loaded.serialize(node) });
+        session.attachBody(capture(view.state.doc));
+        setView(view);
+      },
+      () => {
+        if (active) {
+          instance.close();
+          setReason('conversion-failed');
+        }
+      },
+    );
+    return () => {
+      active = false;
+      instance.close();
+    };
+  }, [session, source]);
+
+  if (reason)
+    return <SourceFallback document={{ mode: 'source', source, reason }} />;
   return (
     <section aria-label="Note writing">
-      {editor && <EditorToolbar editor={editor} />}
-      <p id="writing-help" className="writing-help">
-        Start writing, or type / at the start of a paragraph to insert a block.
-        Changes save automatically.
-      </p>
-      <div className="note-body note-editor" ref={host} />
-      {editor && <SlashMenu editor={editor} />}
+      {view && <EditorToolbar editor={view} />}
+      {view ? (
+        <p id="writing-help" className="writing-help">
+          Type / at the start of a paragraph to insert a block. Changes save
+          automatically.
+        </p>
+      ) : (
+        <p role="status">Preparing note…</p>
+      )}
+      <div className="note-body note-editor" ref={host} hidden={!view} />
+      {view && <SlashMenu editor={view} />}
     </section>
   );
 }

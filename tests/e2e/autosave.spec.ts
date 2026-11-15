@@ -25,7 +25,6 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
       writes.push(value.postDataJSON());
   });
   try {
-    await page.clock.install();
     await page.goto('/');
     await page
       .getByRole('button', { name: 'Open note Autosave batching', exact: true })
@@ -35,6 +34,8 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
       exact: true,
     });
     await expect(body).toBeVisible();
+    // Keep editor startup on real time and control only the save debounce.
+    await page.clock.install();
     await page.clock.pauseAt(new Date(Date.now() + 1000));
     await body.fill('A batched body');
     await page.getByRole('button', { name: 'Edit title', exact: true }).click();

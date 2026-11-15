@@ -1,63 +1,63 @@
 import { createRoot } from 'react-dom/client';
-import { closeHistory } from '@tiptap/pm/history';
-import { MermaidBlock } from './code-blocks.js';
+import { closeHistory, redo, undo } from '@milkdown/kit/prose/history';
+import { Selection } from '@milkdown/kit/prose/state';
+import { $view } from '@milkdown/kit/utils';
+import { mermaidSchema } from './code-blocks.js';
 import MermaidView from './MermaidView.js';
 
-/** Adds browser UI without changing the conversion schema or Markdown representation. */
-export const MermaidEditorBlock = MermaidBlock.extend({
-  addNodeView() {
-    return ({ node, editor, getPos }) => {
-      const dom = document.createElement('div');
-      dom.contentEditable = 'false';
-      dom.dataset.mermaidEditor = '';
-      const root = createRoot(dom);
-      let current = node;
-      const render = () =>
-        root.render(
-          <MermaidView
-            source={current.attrs.source}
-            onChange={(source) => {
-              const pos = getPos();
-              if (typeof pos === 'number' && editor.isEditable)
-                editor.view.dispatch(
-                  editor.state.tr.setNodeMarkup(pos, undefined, {
-                    ...current.attrs,
-                    source,
-                  }),
-                );
-            }}
-            onHistory={(redo) => {
-              if (redo) editor.commands.redo();
-              else editor.commands.undo();
-            }}
-            onRemove={() => {
-              const pos = getPos();
-              if (typeof pos === 'number' && editor.isEditable) {
-                editor.view.dispatch(closeHistory(editor.state.tr));
-                editor
-                  .chain()
-                  .focus()
-                  .deleteRange({ from: pos, to: pos + current.nodeSize })
-                  .run();
-              }
-            }}
-          />,
-        );
-      render();
-      return {
-        dom,
-        update(next) {
-          if (next.type !== current.type) return false;
-          current = next;
-          render();
-          return true;
-        },
-        stopEvent: () => true,
-        ignoreMutation: () => true,
-        destroy() {
-          queueMicrotask(() => root.unmount());
-        },
-      };
-    };
-  },
+export const mermaidView = $view(mermaidSchema, () => (node, view, getPos) => {
+  const dom = document.createElement('div');
+  dom.contentEditable = 'false';
+  dom.dataset.mermaidEditor = '';
+  const root = createRoot(dom);
+  let current = node;
+  const render = () =>
+    root.render(
+      <MermaidView
+        source={current.attrs.source}
+        onChange={(source) => {
+          const pos = getPos();
+          if (pos !== undefined && view.editable)
+            view.dispatch(
+              view.state.tr.setNodeAttribute(pos, 'source', source),
+            );
+        }}
+        onHistory={(forward) =>
+          (forward ? redo : undo)(view.state, view.dispatch)
+        }
+        onRemove={() => {
+          const pos = getPos();
+          if (pos === undefined || !view.editable) return;
+          const tr = closeHistory(view.state.tr).delete(
+            pos,
+            pos + current.nodeSize,
+          );
+          view.dispatch(
+            tr
+              .setSelection(
+                Selection.near(
+                  tr.doc.resolve(Math.min(pos, tr.doc.content.size)),
+                ),
+              )
+              .scrollIntoView(),
+          );
+          view.focus();
+        }}
+      />,
+    );
+  render();
+  return {
+    dom,
+    update(next) {
+      if (next.type !== current.type) return false;
+      if (!next.eq(current)) {
+        current = next;
+        render();
+      }
+      return true;
+    },
+    stopEvent: () => true,
+    ignoreMutation: () => true,
+    destroy: () => queueMicrotask(() => root.unmount()),
+  };
 });

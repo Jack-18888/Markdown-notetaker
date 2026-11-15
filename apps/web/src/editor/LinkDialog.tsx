@@ -1,32 +1,34 @@
 import { useId, useRef, useState } from 'react';
-import type { Editor } from '@tiptap/core';
+import type { EditorView } from '@milkdown/kit/prose/view';
 import Modal from '../workspace/Modal.js';
-import { setEditorLink } from './commands.js';
+import { editorLink, setEditorLink } from './commands.js';
 import { isSafeLink } from './links.js';
 
 export default function LinkDialog({
   editor,
   onClose,
 }: {
-  editor: Editor;
+  editor: EditorView;
   onClose(): void;
 }) {
   const id = useId();
   const selection = useRef(editor.state.selection);
-  const [href, setHref] = useState<string>(
-    editor.getAttributes('link').href ?? '',
-  );
+  const [href, setHref] = useState<string>(editorLink(editor) ?? '');
   const [error, setError] = useState('');
   function close() {
     onClose();
-    if (!editor.isDestroyed) editor.commands.focus();
+    // The native modal releases focus during the React unmount.
+    requestAnimationFrame(() => {
+      if (!editor.isDestroyed) editor.focus();
+    });
   }
   function apply(value: string | null) {
     if (value !== null && !isSafeLink(value)) {
       setError('Use an http, https, mailto, or relative link without spaces.');
       return;
     }
-    editor.commands.setTextSelection(selection.current);
+    if (editor.state.doc === selection.current.$from.doc)
+      editor.dispatch(editor.state.tr.setSelection(selection.current));
     if (setEditorLink(editor, value)) close();
     else
       setError('This selection cannot be linked. Select text and try again.');

@@ -1,21 +1,28 @@
-.note-editor .tiptap {
+.note-editor .ProseMirror {
   min-height: 260px;
   padding: 12px 16px 40px;
   margin-inline: -16px;
   border-radius: 2px;
 }
-.note-editor .tiptap:focus-visible {
+.note-editor .ProseMirror:focus-visible {
   outline: 2px solid #788465;
   outline-offset: 3px;
 }
-.note-editor
-  .tiptap
-  > p:only-child:has(> br.ProseMirror-trailingBreak)::before {
-  content: 'Your next idea starts here…';
-  float: left;
-  height: 0;
-  pointer-events: none;
-  color: #737b69;
+.note-editor .milkdown {
+  --crepe-color-background: #fcfaf5;
+  --crepe-color-on-background: #292d27;
+  --crepe-color-outline: #788465;
+  --crepe-color-primary: #40532e;
+  --crepe-color-selected: #dce3cf;
+  --crepe-color-surface: #eeebe3;
+}
+.note-editor .milkdown-table-block {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.note-editor .milkdown-table-block button:focus-visible {
+  outline: 3px solid #8b4c1e;
+  outline-offset: 2px;
 }
 .writing-help {
   font-size: 0.78rem;
