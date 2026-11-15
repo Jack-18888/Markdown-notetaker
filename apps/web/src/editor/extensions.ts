@@ -11,7 +11,6 @@ import { listener } from '@milkdown/kit/plugin/listener';
 import { trailing } from '@milkdown/kit/plugin/trailing';
 import { uploadConfig, uploadPlugin } from '@milkdown/kit/plugin/upload';
 import {
-  imageSchema,
   insertImageInputRule,
   linkSchema,
   syncHeadingIdPlugin,
@@ -28,6 +27,7 @@ import { isSafeLink } from './links.js';
 import { loadMarkdown, type LoadedMarkdown } from './markdown.js';
 import { mermaidView } from './mermaid-node-view.js';
 import { assessSource } from './source-policy.js';
+import { localImage, localImageView } from './images.js';
 
 const safeLink = linkSchema.extendSchema((base) => (ctx) => {
   const spec = base(ctx);
@@ -48,12 +48,6 @@ const safeLink = linkSchema.extendSchema((base) => (ctx) => {
       isSafeLink(mark.attrs.href) ? spec.toDOM!(mark, true) : ['span', 0],
   };
 });
-
-const inertImage = imageSchema.extendSchema((base) => (ctx) => ({
-  ...base(ctx),
-  parseDOM: [],
-  toDOM: () => ['span', { hidden: 'hidden' }],
-}));
 
 type RichDocument = Extract<LoadedMarkdown, { mode: 'rich' }>;
 
@@ -124,7 +118,8 @@ export function openEditor({
       mermaidSchema,
       ...literalCodeBlock,
       ...safeLink,
-      ...inertImage,
+      ...localImage,
+      localImageView,
       crepePlaygroundBridge,
     ])
     .config((ctx) => {

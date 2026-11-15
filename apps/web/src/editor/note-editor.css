@@ -183,6 +183,39 @@
   border: 0;
 }
 
+.note-editor .note-image {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+
+.note-editor .note-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: inherit;
+}
+
+.note-editor .note-image img[hidden],
+.note-editor .note-image-error[hidden] {
+  display: none;
+}
+
+.note-editor .note-image.ProseMirror-selectednode {
+  outline: 2px solid var(--crepe-color-primary, #47664c);
+  outline-offset: 3px;
+}
+
+.note-editor .note-image-error {
+  display: inline-block;
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  border-radius: inherit;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 760px) {
   .note-editor .milkdown .ProseMirror {
     font-size: 1rem;

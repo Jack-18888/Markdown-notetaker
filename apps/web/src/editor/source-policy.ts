@@ -1,5 +1,8 @@
 import { Lexer, type Token, type Tokens } from 'marked';
-import { utf8ByteLength } from '@markdown-note-taker/contracts';
+import {
+  isLocalImageUrl,
+  utf8ByteLength,
+} from '@markdown-note-taker/contracts';
 import { isSafeLink } from './links.js';
 
 export const editorLimits = {
@@ -33,6 +36,7 @@ const supportedTokens = new Set([
   'escape',
   'checkbox',
   'table',
+  'image',
 ]);
 
 /** Inspect tokens before handing external source to Milkdown. */
@@ -62,6 +66,8 @@ export function assessSource(source: string): FallbackReason | null {
       )
         continue;
       if (!supportedTokens.has(token.type)) return 'unsupported';
+      if (token.type === 'image' && !isLocalImageUrl(token.href))
+        return 'unsupported';
       if (token.type === 'link' && !isSafeLink(token.href))
         return 'unsafe-link';
       if (token.type === 'code') {

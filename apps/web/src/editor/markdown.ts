@@ -1,4 +1,7 @@
-import { markdownSchema } from '@markdown-note-taker/contracts';
+import {
+  isLocalImageUrl,
+  markdownSchema,
+} from '@markdown-note-taker/contracts';
 import type { Ctx } from '@milkdown/kit/ctx';
 import { remarkCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core';
 import type { Node } from '@milkdown/kit/prose/model';
@@ -37,7 +40,7 @@ function checkDocument(document: Node) {
       throw new MarkdownConversionError();
     if (
       (node.type.name === 'mermaid' && depth !== 1) ||
-      node.type.name === 'image' ||
+      (node.type.name === 'image' && !isLocalImageUrl(node.attrs.src)) ||
       node.type.name.startsWith('footnote') ||
       node.type.name.includes('html')
     )
