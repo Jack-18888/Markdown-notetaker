@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 const secondMigration: Migration = {
-  version: 3,
+  version: 4,
   name: 'fixture_upgrade',
   sql: 'CREATE TABLE migration_probe (id INTEGER PRIMARY KEY) STRICT; INSERT INTO migration_probe VALUES (1);',
 };
@@ -47,7 +47,7 @@ describe('workspace migrations through the connection factory', () => {
     const migrations = [...workspaceMigrations, secondMigration];
     const upgraded = temporary.open({ migrations });
     expect(upgraded.prepare('SELECT * FROM notes').all()).toEqual(before);
-    expect(upgraded.pragma('user_version', { simple: true })).toBe(3);
+    expect(upgraded.pragma('user_version', { simple: true })).toBe(4);
     upgraded.close();
     const reopened = temporary.open({ migrations });
     expect(reopened.prepare('SELECT * FROM migration_probe').all()).toEqual([
@@ -58,7 +58,7 @@ describe('workspace migrations through the connection factory', () => {
       reopened
         .prepare('SELECT version FROM schema_migrations ORDER BY version')
         .all(),
-    ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
+    ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }]);
   });
 
   it('rolls back the entire pending batch and saved data on migration failure', () => {
@@ -75,7 +75,7 @@ describe('workspace migrations through the connection factory', () => {
         sql: secondMigration.sql + ' UPDATE notes SET revision = revision + 1;',
       },
       {
-        version: 4,
+        version: 5,
         name: 'fixture_failure',
         sql: 'CREATE TABLE failed_probe (id INTEGER); INSERT INTO missing_fixture_table VALUES (1);',
       },
@@ -83,7 +83,7 @@ describe('workspace migrations through the connection factory', () => {
     expect(() => temporary.open({ migrations })).toThrow(
       expect.objectContaining({
         code: DatabaseErrorCode.MIGRATION_FAILED,
-        migrationVersion: 4,
+        migrationVersion: 5,
       }),
     );
     const reopened = temporary.open();
@@ -91,7 +91,7 @@ describe('workspace migrations through the connection factory', () => {
     expect(reopened.prepare('SELECT * FROM schema_migrations').all()).toEqual(
       history,
     );
-    expect(reopened.pragma('user_version', { simple: true })).toBe(2);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(3);
     expect(
       reopened
         .prepare(
@@ -122,7 +122,7 @@ describe('workspace migrations through the connection factory', () => {
       raw.prepare("SELECT name FROM sqlite_schema WHERE type = 'table'").all(),
     ).toEqual([]);
     raw.close();
-    expect(temporary.open().pragma('user_version', { simple: true })).toBe(2);
+    expect(temporary.open().pragma('user_version', { simple: true })).toBe(3);
   });
 
   it.each(['sql', 'name'] as const)(
@@ -160,7 +160,7 @@ describe('workspace migrations through the connection factory', () => {
         code: DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
       }),
     );
-    expect(temporary.raw().pragma('user_version', { simple: true })).toBe(3);
+    expect(temporary.raw().pragma('user_version', { simple: true })).toBe(4);
   });
 
   it('reports an incompatible migration journal without changing saved notes', () => {
@@ -181,7 +181,7 @@ describe('workspace migrations through the connection factory', () => {
   it('rejects inconsistent journal/version metadata without repairing it silently', () => {
     const temporary = workspace();
     const initial = temporary.open();
-    initial.pragma('user_version = 3');
+    initial.pragma('user_version = 4');
     initial.close();
     expect(() => temporary.open()).toThrow(
       expect.objectContaining({
@@ -189,10 +189,11 @@ describe('workspace migrations through the connection factory', () => {
       }),
     );
     const raw = temporary.raw();
-    expect(raw.pragma('user_version', { simple: true })).toBe(3);
+    expect(raw.pragma('user_version', { simple: true })).toBe(4);
     expect(raw.prepare('SELECT version FROM schema_migrations').all()).toEqual([
       { version: 1 },
       { version: 2 },
+      { version: 3 },
     ]);
   });
 

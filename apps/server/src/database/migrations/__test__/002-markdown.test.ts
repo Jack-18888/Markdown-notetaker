@@ -136,7 +136,7 @@ describe('raw Markdown migration', () => {
         migrations: [
           ...workspaceMigrations,
           {
-            version: 3,
+            version: 4,
             name: 'fail_after_conversion',
             sql: 'INSERT INTO missing_fixture_table VALUES (1);',
           },
@@ -145,7 +145,7 @@ describe('raw Markdown migration', () => {
     ).toThrow(
       expect.objectContaining({
         code: DatabaseErrorCode.MIGRATION_FAILED,
-        migrationVersion: 3,
+        migrationVersion: 4,
       }),
     );
     const unchanged = temporary.open({

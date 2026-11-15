@@ -1,3 +1,4 @@
+import type { ImageService } from './images.js';
 import type {
   CreateFolderRequest,
   CreateNoteRequest,
@@ -11,7 +12,7 @@ import type {
 } from '@markdown-note-taker/contracts';
 
 /** Folder/note operations and their committed results. */
-export interface WorkspaceService {
+export interface WorkspaceService extends ImageService {
   listTree(): TreeResponse;
   getNote(id: ResourceId): NoteDetail;
   createFolder(input: CreateFolderRequest): Folder;

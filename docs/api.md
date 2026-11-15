@@ -1,5 +1,19 @@
 # Initial API contracts
 
+## Clipboard image resources
+
+`POST /api/images` accepts a raw `image/png`, `image/jpeg`, or `image/webp`
+body of at most 5 MiB. The server validates the signature against the declared
+type and stores bytes locally. Success returns `201 { id, url }`, where `url` is
+`/api/images/{id}`. Identical bytes reuse the same resource. Empty/mismatched
+content returns 400, excessive size 413, and unsupported type/encoding 415.
+
+`GET /api/images/{id}` returns stored bytes with their MIME type and
+`X-Content-Type-Options: nosniff`; missing resources return 404. Both routes use
+loopback protection, and uploads use the origin policy. Images are workspace
+resources with no deletion endpoint in this version. The portable image
+contracts live in `packages/contracts/src/images.ts`.
+
 **Implementation status:** All routes below run over HTTP with shared contracts, SQLite-backed workspace services, transport protections, and public error handling. Raw Markdown is canonical. Rich writing, diagram previews, coordinated autosave and conflict recovery, and Markdown import/export are implemented. [Editor architecture](architecture/editor.md) describes conversion, source preservation, and the verified scope.
 
 The source of truth is [the contracts package](../packages/contracts/src/index.ts). The private package exports TypeScript source directly; editor navigation, development, and tests need no package build. Both apps import it as `@markdown-note-taker/contracts`. Zod supplies runtime validation and inferred TypeScript types without Node, SQLite, React, or DOM dependencies. The [route registry](../packages/contracts/src/api.ts) pairs each method/path with parameter, request, successful response, and status contracts. A `null` body/response schema means no HTTP body, not JSON `null`.
