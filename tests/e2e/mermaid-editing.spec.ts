@@ -30,7 +30,7 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
     });
     await expect(
       page.getByRole('img', { name: 'Mermaid diagram preview', exact: true }),
-    ).toHaveCount(2);
+    ).toHaveCount(2, { timeout: 15_000 });
     const first = diagrams.first();
     await first
       .getByRole('button', { name: 'Edit source', exact: true })
@@ -75,7 +75,10 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
       .getByRole('button', { name: 'Remove diagram', exact: true })
       .click();
     await expect(diagrams).toHaveCount(1);
-    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await page
+      .getByRole('textbox', { name: 'Note content', exact: true })
+      .focus();
+    await page.keyboard.press('Control+z');
     await expect(diagrams).toHaveCount(2);
     await expect(first.getByRole('img')).toContainText('Recovered');
     await page

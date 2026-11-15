@@ -60,9 +60,9 @@ test('body edits preserve Mermaid payloads and title-only writes retain the ackn
     })
     .click();
   await expect(body).toContainText('Closing paragraph Latest writing.');
-  await expect(
-    page.getByRole('button', { name: 'Undo', exact: true }),
-  ).toBeDisabled();
+  await body.focus();
+  await page.keyboard.press('Control+z');
+  await expect(body).toContainText('Closing paragraph Latest writing.');
 });
 
 test('failed and conflicting body saves retain local writing without replacing the remote revision', async ({

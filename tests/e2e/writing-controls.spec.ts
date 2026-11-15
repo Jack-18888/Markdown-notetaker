@@ -14,7 +14,7 @@ test('a fresh slash invocation reopens after dismissal in the same paragraph', a
     })
     .click();
   const body = page.getByRole('textbox', { name: 'Note content', exact: true });
-  const menu = page.getByRole('listbox', { name: 'Insert block' });
+  const menu = page.locator('.milkdown-slash-menu');
   await body.fill('/');
   await expect(menu).toBeVisible();
   await body.press('Escape');
@@ -31,54 +31,7 @@ test('a fresh slash invocation reopens after dismissal in the same paragraph', a
   await expect(menu).toBeVisible();
 });
 
-for (const [label, source, selector] of [
-  ['Bullet list', '- **Keep my text**', 'ul'],
-  ['Numbered list', '1. **Keep my text**', 'ol'],
-  ['Checklist', '- [ ] **Keep my text**', 'ul'],
-  ['Quote', '> **Keep my text**', 'blockquote'],
-] as const) {
-  test(`Text removes ${label} formatting and persists the plain block`, async ({
-    page,
-    notes,
-  }) => {
-    const note = await notes.create(`Plain block from ${label}`, source);
-    await page.goto('/');
-    await page
-      .getByRole('button', {
-        name: `Open note Plain block from ${label}`,
-        exact: true,
-      })
-      .click();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
-    await body.locator('p').first().click();
-    const select = page.getByRole('combobox', {
-      name: 'Block type',
-      exact: true,
-    });
-    await expect(select.locator('option:checked')).toHaveText(label);
-    await select.selectOption({ label: 'Text' });
-    await expect(body.locator(selector)).toHaveCount(0);
-    await expect(body.locator('strong')).toHaveText('Keep my text');
-    await expect(select).toHaveValue('paragraph');
-    await expect
-      .poll(async () => (await notes.read(note.id)).content)
-      .toBe('**Keep my text**');
-    await page.reload();
-    await page
-      .getByRole('button', {
-        name: `Open note Plain block from ${label}`,
-        exact: true,
-      })
-      .click();
-    await expect(body.locator(selector)).toHaveCount(0);
-    await expect(body.locator('strong')).toHaveText('Keep my text');
-  });
-}
-
-test('slash insertion supports keyboard, pointer, dismissal, and fresh note history', async ({
+test('slash insertion supports keyboard, pointer, CodeMirror code, Mermaid Diagram, and fresh note history', async ({
   page,
   request,
 }) => {
@@ -102,50 +55,62 @@ test('slash insertion supports keyboard, pointer, dismissal, and fresh note hist
       name: 'Note content',
       exact: true,
     });
-    await body.fill('/heading');
-    const menu = page.getByRole('listbox', { name: 'Insert block' });
-    await expect(menu.getByRole('option')).toHaveCount(6);
+    await body.fill('/Heading');
+    const menu = page.locator('.milkdown-slash-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.locator('.menu-group li')).toHaveCount(6);
     await body.press('ArrowDown');
     await body.press('Enter');
     await page.keyboard.type('A considered heading');
     await expect(body.locator('h2')).toHaveText('A considered heading');
+
     await body.press('Enter');
     await page.keyboard.type('/quote');
-    await menu.getByRole('option', { name: 'Quote', exact: true }).click();
+    await menu.locator('.menu-group li', { hasText: 'Quote' }).first().click();
     await page.keyboard.type('A useful quotation');
     await expect(body.locator('blockquote')).toHaveText('A useful quotation');
+
     await body.press('Enter');
     await body.press('Enter');
     await page.keyboard.type('/nothing-matches');
-    await expect(
-      page.getByText('No matching blocks. Keep typing or press Escape.'),
-    ).toBeVisible();
-    await body.press('Escape');
-    await expect(menu).toHaveCount(0);
+    await expect(menu).toBeHidden();
     await expect(body).toContainText('/nothing-matches');
-    await body.press('Control+Backspace');
-    await body.press('Control+a');
+    for (let i = 0; i < '/nothing-matches'.length; i++)
+      await page.keyboard.press('Backspace');
+
     await page.keyboard.type('/code');
-    await menu.getByRole('option', { name: 'Code block', exact: true }).click();
+    await expect(menu).toBeVisible();
+    await menu.locator('.menu-group li', { hasText: 'Code' }).first().click();
+    const codeEditor = body.locator('.milkdown-code-block .cm-content');
+    await expect(codeEditor).toBeVisible();
     await page.keyboard.type('/literal');
-    await expect(menu).toHaveCount(0);
-    await expect(body.locator('pre code')).toHaveText('/literal');
+    await expect(menu).toBeHidden();
+    await expect(codeEditor).toHaveText('/literal');
+
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+
+    await codeEditor.press('Control+Enter');
+    await page.keyboard.type('/mermaid');
+    await expect(menu).toBeVisible();
+    await menu
+      .locator('.menu-group li', { hasText: 'Mermaid Diagram' })
+      .first()
+      .click();
+    await expect(body.locator('[data-mermaid-editor]')).toBeVisible();
+    await page.getByRole('button', { name: 'Save note', exact: true }).click();
+    await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+
     await page
       .getByRole('navigation', { name: 'Workspace folders' })
       .getByRole('button', { name: 'Separate history', exact: true })
       .click();
     await expect(body).toHaveText('');
-    await expect(
-      page.getByRole('button', { name: 'Undo', exact: true }),
-    ).toBeDisabled();
-    await body.fill('Only this note');
-    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await body.press('Control+z');
     await expect(body).toHaveText('');
-    await expect(
-      page.getByRole('button', { name: 'Undo', exact: true }),
-    ).toBeDisabled();
+    await body.fill('Only this note');
+    await body.press('Control+z');
+    await expect(body).toHaveText('');
   } finally {
     for (const note of notes) {
       const saved = noteDetailSchema.parse(
@@ -158,7 +123,7 @@ test('slash insertion supports keyboard, pointer, dismissal, and fresh note hist
   }
 });
 
-test('formatting and link controls preserve selection, reject unsafe links, and restore keyboard focus', async ({
+test('floating toolbar formatting, math, link tooltip, unsafe link rejection, and mobile width', async ({
   page,
   request,
 }) => {
@@ -185,47 +150,69 @@ test('formatting and link controls preserve selection, reject unsafe links, and 
       name: 'Note content',
       exact: true,
     });
-    await body.focus();
-    await body.press('Control+a');
+    const toolbar = page.locator('.milkdown-toolbar');
+    await body.locator('p').click();
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
+    await expect(toolbar).toBeVisible();
+
     for (const [label, tag] of [
       ['Bold', 'strong'],
       ['Italic', 'em'],
       ['Strikethrough', 'del'],
       ['Inline code', 'code'],
     ] as const) {
-      const button = page.getByRole('button', { name: label, exact: true });
+      const button = toolbar.getByRole('button', { name: label, exact: true });
       await button.click();
       await expect(body.locator(tag)).toHaveText('Selected words');
       await button.click();
       await expect(body.locator(tag)).toHaveCount(0);
     }
-    await page.getByRole('button', { name: 'Link', exact: true }).focus();
-    await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: 'Edit link' });
-    const address = dialog.getByRole('textbox', { name: 'Link address' });
+
+    await toolbar
+      .getByRole('button', { name: 'Inline math', exact: true })
+      .click();
+    await expect(body.locator('[data-type="math_inline"]')).toHaveCount(1);
+    await body.press('Control+z');
+    await expect(body.locator('[data-type="math_inline"]')).toHaveCount(0);
+
+    await body.locator('p').click();
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
+    await expect(toolbar).toBeVisible();
+    await toolbar.getByRole('button', { name: 'Link', exact: true }).click();
+    const linkEdit = page.locator('.milkdown-link-edit');
+    await expect(linkEdit).toBeVisible();
+    const address = linkEdit.getByRole('textbox', {
+      name: 'Link destination',
+      exact: true,
+    });
     await expect(address).toBeFocused();
     await address.fill('javascript:alert(1)');
-    await dialog
-      .getByRole('button', { name: 'Apply link', exact: true })
-      .click();
-    await expect(dialog.getByRole('alert')).toContainText('Use an http');
+    await address.press('Enter');
+    await expect(linkEdit.getByRole('alert')).toContainText('Use an http');
     await expect(body.locator('a')).toHaveCount(0);
     await address.fill('#safe-section');
-    await dialog
-      .getByRole('button', { name: 'Apply link', exact: true })
-      .click();
+    await address.press('Enter');
     await expect(body.locator('a')).toHaveAttribute('href', '#safe-section');
-    await expect(body).toBeFocused();
-    await page.getByRole('button', { name: 'Link', exact: true }).click();
+
+    await body.locator('a').hover();
+    const linkPreview = page.locator('.milkdown-link-preview');
+    await expect(linkPreview).toBeVisible();
+    await linkPreview
+      .getByRole('button', { name: 'Edit link', exact: true })
+      .click();
     await expect(address).toHaveValue('#safe-section');
     await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(body).toBeFocused();
-    await page.getByRole('button', { name: 'Link', exact: true }).click();
-    await dialog
+    await expect(linkEdit).toBeHidden();
+
+    await body.locator('a').hover();
+    await expect(linkPreview).toBeVisible();
+    await linkPreview
       .getByRole('button', { name: 'Remove link', exact: true })
       .click();
     await expect(body.locator('a')).toHaveCount(0);
+
     await body.press('Control+Home');
     await body.press('Control+a');
     await body.press('Control+b');
@@ -237,6 +224,7 @@ test('formatting and link controls preserve selection, reject unsafe links, and 
         await (await request.get(`/api/notes/${note.id}`)).json(),
       ).content,
     ).toBe('**Selected words**');
+
     await page.setViewportSize({ width: 375, height: 812 });
     await expect(body).toBeVisible();
     expect(
@@ -284,9 +272,8 @@ test('unsupported and hostile saved Markdown exposes only literal source and pre
     await expect(
       page.getByRole('textbox', { name: 'Note content', exact: true }),
     ).toHaveCount(0);
-    await expect(
-      page.getByRole('group', { name: 'Text formatting' }),
-    ).toHaveCount(0);
+    await expect(page.locator('.milkdown-toolbar')).toHaveCount(0);
+    await expect(page.locator('.milkdown-slash-menu')).toHaveCount(0);
     await expect(
       page.getByRole('button', { name: 'Save note', exact: true }),
     ).toHaveCount(0);

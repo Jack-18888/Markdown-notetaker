@@ -162,13 +162,14 @@ test('reload requires confirmation, retains local edits on failure, and resets h
     page.getByRole('heading', { name: 'Server version', exact: true }),
   ).toBeVisible();
   await expect(body).toHaveText('Saved remote writing');
-  await expect(
-    page.getByRole('button', { name: 'Undo', exact: true }),
-  ).toBeDisabled();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Edit title', exact: true }),
   ).toBeFocused();
+  await body.focus();
+  await page.keyboard.press('Control+z');
+  await expect(body).toHaveText('Saved remote writing');
+  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
 });
 
 test('confirmed reload restores focus for a note with read-only source', async ({

@@ -136,9 +136,9 @@ test('navigation drains in-flight edits and honors the latest requested destinat
     expect(writes).toBe(2);
     expect(skippedReads).toBe(0);
     await expect(body).toHaveText('Original');
-    await expect(
-      page.getByRole('button', { name: 'Undo', exact: true }),
-    ).toBeDisabled();
+    await body.focus();
+    await page.keyboard.press('Control+z');
+    await expect(body).toHaveText('Original');
   } finally {
     release();
     await page.unrouteAll({ behavior: 'wait' });

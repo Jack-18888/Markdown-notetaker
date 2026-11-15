@@ -28,15 +28,12 @@ describe('source compatibility policy', () => {
     '- Calculate with `$x$`',
     '- **Calculate** with `$$x$$`',
     '> - Literal `$x$` inside a quote',
-  ])('accepts supported source %# without interpreting code', (source) => {
+    '- Calculate with $x$',
+    '> - Math $$x$$',
+    '$$\nx = y\n$$',
+  ])('accepts supported source %#', (source) => {
     expect(assessSource(source)).toBeNull();
   });
-  it.each(['- Calculate with $x$', '> - Math $$x$$'])(
-    'still rejects actual math in nested text: %s',
-    (source) => {
-      expect(assessSource(source)).toBe('unsupported');
-    },
-  );
   it('bounds source bytes before tokenization', () => {
     expect(assessSource('é'.repeat(editorLimits.sourceBytes / 2))).toBeNull();
     expect(assessSource('é'.repeat(editorLimits.sourceBytes / 2) + 'a')).toBe(

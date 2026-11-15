@@ -36,9 +36,7 @@ test('an unrepresentable edit retains writing and source until undo restores a s
     });
     await body.focus();
     await body.press('Control+a');
-    await page
-      .getByRole('combobox', { name: 'Block type' })
-      .selectOption('blockquote');
+    await body.press('Control+Shift+b');
     await expect(
       body.locator('blockquote [data-mermaid-editor]'),
     ).toBeVisible();
@@ -53,7 +51,8 @@ test('an unrepresentable edit retains writing and source until undo restores a s
         await (await request.get(`/api/notes/${note.id}`)).json(),
       ).content,
     ).toBe(content);
-    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await body.focus();
+    await body.press('Control+z');
     await expect(body.locator('blockquote')).toHaveCount(0);
     await expect(
       page.getByRole('button', { name: 'Save note', exact: true }),

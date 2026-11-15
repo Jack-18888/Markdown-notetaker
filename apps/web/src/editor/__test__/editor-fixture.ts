@@ -2,13 +2,17 @@ import { AllSelection, TextSelection } from '@milkdown/kit/prose/state';
 import type { EditorView } from '@milkdown/kit/prose/view';
 import { openEditor } from '../extensions.js';
 
-export async function open(source: string) {
+export async function open(
+  source: string,
+  options: { interactive?: boolean } = {},
+) {
   const host = document.createElement('div');
   document.body.append(host);
   let updates = 0;
   const instance = openEditor({
     root: host,
     source,
+    interactive: options.interactive ?? false,
     onTransaction(view, previous) {
       if (!view.state.doc.eq(previous.doc)) updates++;
     },
@@ -25,8 +29,11 @@ export async function open(source: string) {
   };
 }
 
-export async function rich(source = 'Original text') {
-  const instance = await open(source);
+export async function rich(
+  source = 'Original text',
+  options: { interactive?: boolean } = {},
+) {
+  const instance = await open(source, options);
   if (!('view' in instance)) {
     instance.close();
     throw new Error(`Expected editable fixture: ${instance.loaded.reason}`);

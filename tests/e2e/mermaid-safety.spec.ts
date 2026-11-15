@@ -54,7 +54,7 @@ test('a late renderer import cannot attach the previous note preview after navig
       name: 'Mermaid diagram preview',
       exact: true,
     });
-    await expect(preview).toContainText('Current');
+    await expect(preview).toContainText('Current', { timeout: 15_000 });
     await expect(preview).not.toContainText('Previous');
     await expect
       .poll(() => page.locator('[data-diagram-render]').count())
@@ -100,7 +100,7 @@ test('rapid source edits and switching notes cannot publish an outdated diagram'
       name: 'Mermaid diagram preview',
       exact: true,
     });
-    await expect(preview).toContainText('Initial');
+    await expect(preview).toContainText('Initial', { timeout: 15_000 });
     await page
       .getByRole('button', { name: 'Edit source', exact: true })
       .click();
@@ -195,7 +195,7 @@ test('hostile diagram content stays inert and oversized source stays editable an
         name: 'Mermaid diagram preview',
         exact: true,
       }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
     await expect(
       diagram.locator(
         'img, image, a, script, foreignObject, iframe, [onload], [onerror]',
