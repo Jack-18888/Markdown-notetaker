@@ -68,6 +68,10 @@ for (const width of [1280, 320]) {
     await checkControlNames(page);
     const exported = page.waitForEvent('download');
     await page
+      .getByRole('button', { name: 'Note actions', exact: true })
+      .focus();
+    await page.keyboard.press('Enter');
+    await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .focus();
     await page.keyboard.press('Enter');
@@ -81,6 +85,12 @@ for (const width of [1280, 320]) {
         .focus();
       await page.keyboard.press('Enter');
     }
+    const actions = page.getByRole('button', {
+      name: 'Workspace actions',
+      exact: true,
+    });
+    await actions.focus();
+    await page.keyboard.press('Enter');
     const importButton = page.getByRole('button', {
       name: 'Import Markdown',
       exact: true,

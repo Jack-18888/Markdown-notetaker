@@ -1,20 +1,22 @@
-.mermaid-block {
-  margin-block: 20px;
+.ProseMirror .mermaid-block {
+  margin-block: 14px;
   border: 1px solid var(--crepe-color-inline-area, #d8dae0);
   border-radius: 8px;
   background: var(--crepe-color-surface, #f8f9ff);
   font-family: var(--crepe-font-default, sans-serif);
 }
-.mermaid-actions {
+.mermaid-block .mermaid-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 5px 10px;
   border-bottom: 1px solid var(--crepe-color-inline-area, #d8dae0);
 }
-.mermaid-actions .workspace-eyebrow {
+.mermaid-actions .mermaid-label {
   margin-right: auto;
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 .mermaid-actions button {
   border: 0;
@@ -27,7 +29,7 @@
 .mermaid-actions button:hover {
   background: var(--crepe-color-hover, #eceef4);
 }
-.mermaid-source {
+.mermaid-block .mermaid-source {
   padding: 16px;
   border-bottom: 1px solid var(--crepe-color-inline-area, #d8dae0);
 }
@@ -51,9 +53,9 @@
   outline: 2px solid var(--crepe-color-primary, #37618e);
   outline-offset: 2px;
 }
-.mermaid-preview {
+.mermaid-block .mermaid-preview {
   overflow: auto;
-  padding: 24px 16px;
+  padding: 10px 12px;
 }
 .mermaid-preview:focus-visible {
   outline: 2px solid var(--crepe-color-primary, #37618e);
@@ -61,11 +63,10 @@
 }
 .mermaid-preview svg {
   display: block;
-  max-width: 100%;
   height: auto;
   margin: auto;
 }
-.mermaid-message {
+.mermaid-block .mermaid-message {
   font: 0.82rem / 1.6 var(--crepe-font-default, sans-serif);
   padding: 16px;
   color: var(--crepe-color-on-surface-variant, #43474e);

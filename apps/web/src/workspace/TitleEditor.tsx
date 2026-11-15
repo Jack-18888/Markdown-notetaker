@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { nameSchema } from '@markdown-note-taker/contracts';
 import type { SaveCoordinator, SaveState } from './SaveCoordinator.js';
 import './title-editor.css';
@@ -13,83 +13,86 @@ export default function TitleEditor({
   focusOnMount?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-  const editButton = useRef<HTMLButtonElement>(null);
-  const opened = useRef(false);
-  useEffect(() => {
+  const input = useRef<HTMLTextAreaElement>(null);
+  const titleButton = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(focusOnMount);
+  const invalid = !nameSchema.safeParse(state.title).success;
+
+  useLayoutEffect(() => {
     if (editing) {
-      opened.current = true;
-      input.current?.focus();
-    } else if (opened.current || focusOnMount) editButton.current?.focus();
-  }, [editing, focusOnMount]);
-  const pending = state.status === 'saving';
+      const field = input.current;
+      field?.focus();
+      field?.setSelectionRange(field.value.length, field.value.length);
+    } else if (restoreFocus.current) {
+      restoreFocus.current = false;
+      titleButton.current?.focus();
+    }
+  }, [editing]);
+
+  function finishEditing() {
+    restoreFocus.current = true;
+    setEditing(false);
+  }
+
   return (
-    <>
-      <div className="note-title-row">
-        <h1>{state.note.title}</h1>
-        {!editing && (
+    <div className="note-title-row">
+      {editing ? (
+        <textarea
+          ref={input}
+          className="note-title-input"
+          rows={1}
+          maxLength={400}
+          value={state.title}
+          aria-label="Note title"
+          aria-description="Enter to save. Escape to discard unsaved title changes."
+          aria-invalid={invalid}
+          aria-describedby={
+            invalid && state.status === 'error'
+              ? 'note-save-message'
+              : undefined
+          }
+          onChange={(event) => session.setTitle(event.currentTarget.value)}
+          onBlur={() => {
+            if (!invalid) setEditing(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              const current = session.getSnapshot();
+              if (current.status === 'saving') return;
+              if (current.title !== current.note.title)
+                session.setTitle(current.note.title);
+              finishEditing();
+            }
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              const field = event.currentTarget;
+              void session.flush().then((saved) => {
+                if (
+                  saved &&
+                  session.getSnapshot().title === saved.title &&
+                  input.current === field &&
+                  field.ownerDocument.activeElement === field
+                )
+                  finishEditing();
+              });
+            }
+          }}
+        />
+      ) : (
+        <h1 aria-label={state.title}>
           <button
-            ref={editButton}
+            ref={titleButton}
             type="button"
-            className="workspace-retry"
+            className="note-title-button"
+            title="Edit note title"
             onClick={() => setEditing(true)}
           >
-            Edit title
+            {state.title}
           </button>
-        )}
-      </div>
-      {editing && (
-        <form
-          className="title-editor"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void session.flush().then((saved) => {
-              if (saved && session.getSnapshot().title === saved.title)
-                setEditing(false);
-            });
-          }}
-        >
-          <label htmlFor={`title-${state.note.id}`}>Note title</label>
-          <input
-            ref={input}
-            id={`title-${state.note.id}`}
-            value={state.title}
-            required
-            maxLength={400}
-            aria-invalid={!nameSchema.safeParse(state.title).success}
-            aria-describedby={`title-status-${state.note.id}`}
-            onChange={(event) => session.setTitle(event.target.value)}
-          />
-          <div className="title-actions">
-            <button
-              type="submit"
-              className="workspace-retry title-save"
-              disabled={
-                pending ||
-                state.title === state.note.title ||
-                state.status === 'conflict'
-              }
-            >
-              {pending ? 'Saving title…' : 'Save title'}
-            </button>
-            <button
-              type="button"
-              className="workspace-retry"
-              disabled={pending}
-              onClick={() => {
-                session.setTitle(state.note.title);
-                setEditing(false);
-              }}
-            >
-              Discard title changes
-            </button>
-          </div>
-          <p id={`title-status-${state.note.id}`} className="title-status">
-            Title changes save automatically. Save title saves all pending note
-            changes now.
-          </p>
-        </form>
+        </h1>
       )}
-    </>
+    </div>
   );
 }

@@ -15,6 +15,12 @@ describe('source compatibility policy', () => {
       expect(assessSource(source)).toBe('unsafe-link');
     },
   );
+  it.each(['One <br /> two', '> <br class="custom" />', '<br />\nText'])(
+    'restricts empty paragraph markers to standalone, attribute-free blocks (%j)',
+    (source) => {
+      expect(assessSource(source)).toBe('unsupported');
+    },
+  );
   it.each([
     '',
     '# Heading\n\n**bold** *italic* ~~strike~~',

@@ -1,88 +1,53 @@
 import type { NoteMetadata } from '@markdown-note-taker/contracts';
-import type { LifecycleAction, ResourceTarget } from './lifecycle.js';
-import type { Selection, WorkspaceTree } from './tree.js';
+import ActionDisclosure from './ActionDisclosure.js';
+import type { LifecycleAction } from './lifecycle.js';
+import type { Selection } from './tree.js';
 
 export default function WorkspaceActions({
-  tree,
   selection,
   note,
   onAction,
+  onRefresh,
 }: {
-  tree: WorkspaceTree;
   selection: Selection;
   note: NoteMetadata | null;
   onAction(action: LifecycleAction): void;
+  onRefresh(): void;
 }) {
   const parentId =
     selection.kind === 'folder' ? selection.id : (note?.folderId ?? null);
-  const target: ResourceTarget | null =
-    selection.kind === 'folder'
-      ? selection.id === null
-        ? null
-        : { kind: 'folder', value: tree.folders.get(selection.id)! }
-      : note
-        ? { kind: 'note', value: note }
-        : null;
   const waiting = selection.kind === 'note' && !note;
   return (
-    <div
-      className="lifecycle-tools"
-      role="group"
-      aria-label="Workspace actions"
-    >
+    <div className="sidebar-actions">
       <button
         type="button"
-        className="workspace-retry"
+        className="quiet-button new-note"
         disabled={waiting}
         onClick={() => onAction({ kind: 'create', resource: 'note', parentId })}
       >
-        New note
+        <span aria-hidden="true">+</span> New note
       </button>
-      <button
-        type="button"
-        className="workspace-retry"
-        disabled={waiting}
-        onClick={() =>
-          onAction({ kind: 'create', resource: 'folder', parentId })
-        }
-      >
-        New folder
-      </button>
-      <button
-        type="button"
-        className="workspace-retry"
-        disabled={waiting}
-        onClick={() => onAction({ kind: 'import', parentId })}
-      >
-        Import Markdown
-      </button>
-      {target && (
+      <ActionDisclosure label="Workspace actions" iconOnly>
         <button
           type="button"
-          className="workspace-retry"
-          onClick={() => onAction({ kind: 'rename', target })}
+          disabled={waiting}
+          onClick={() =>
+            onAction({ kind: 'create', resource: 'folder', parentId })
+          }
         >
-          Rename {target.kind}
+          New folder
         </button>
-      )}
-      {target && (
         <button
           type="button"
-          className="workspace-retry"
-          onClick={() => onAction({ kind: 'move', target })}
+          disabled={waiting}
+          onClick={() => onAction({ kind: 'import', parentId })}
         >
-          Move {target.kind}
+          Import Markdown
         </button>
-      )}
-      {target && (
-        <button
-          type="button"
-          className="workspace-retry"
-          onClick={() => onAction({ kind: 'delete', target })}
-        >
-          Delete {target.kind}
+        <button type="button" onClick={onRefresh}>
+          Refresh workspace
         </button>
-      )}
+      </ActionDisclosure>
     </div>
   );
 }

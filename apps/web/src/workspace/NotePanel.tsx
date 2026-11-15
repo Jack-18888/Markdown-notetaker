@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import type {
   NoteDetail,
   ParentId,
@@ -23,6 +24,9 @@ import { useNoteSession } from './useNoteSession.js';
 import type { SaveCoordinator } from './SaveCoordinator.js';
 import ConflictRecovery from './ConflictRecovery.js';
 import ExportMarkdown from './ExportMarkdown.js';
+import ResourceActions from './ResourceActions.js';
+import type { LifecycleAction } from './lifecycle.js';
+import type { NoteTransitionState } from './useNoteTransition.js';
 
 const NoteContent = lazy(() => import('./NoteContent.js'));
 
@@ -52,6 +56,9 @@ class PreviewBoundary extends Component<
 export default function NotePanel({
   id,
   tree,
+  header,
+  transitionState,
+  onAction,
   onNavigate,
   onDirtyChange,
   onNoteUpdated,
@@ -60,6 +67,9 @@ export default function NotePanel({
 }: {
   id: ResourceId;
   tree: WorkspaceTree;
+  header: HTMLDivElement | null;
+  transitionState: NoteTransitionState;
+  onAction(action: LifecycleAction): void;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
@@ -72,23 +82,41 @@ export default function NotePanel({
     note: NoteDetail;
     epoch: number;
   } | null>(null);
+  const entry = tree.notes.get(id);
+  const pendingBreadcrumb =
+    header && entry
+      ? createPortal(
+          <Breadcrumbs
+            path={tree.breadcrumbs(entry.folderId)}
+            noteTitle={entry.title}
+            onNavigate={onNavigate}
+          />,
+          header,
+        )
+      : null;
   if (state.status === 'loading')
     return (
-      <p role="status" className="workspace-message">
-        Loading note…
-      </p>
+      <>
+        {pendingBreadcrumb}
+        <p role="status" className="workspace-message">
+          Loading note…
+        </p>
+      </>
     );
   if (state.status === 'error')
     return (
-      <div role="alert" className="workspace-message">
-        <h1>Could not open this note.</h1>
-        <p>
-          {state.error?.message ?? 'The note could not be loaded. Try again.'}
-        </p>
-        <button type="button" className="workspace-retry" onClick={retry}>
-          Retry note
-        </button>
-      </div>
+      <>
+        {pendingBreadcrumb}
+        <div role="alert" className="workspace-message">
+          <h1>Could not open this note.</h1>
+          <p>
+            {state.error?.message ?? 'The note could not be loaded. Try again.'}
+          </p>
+          <button type="button" className="workspace-retry" onClick={retry}>
+            Retry note
+          </button>
+        </div>
+      </>
     );
   return (
     <NoteArticle
@@ -96,6 +124,9 @@ export default function NotePanel({
       initial={replacement?.note ?? state.value}
       focusTitle={replacement !== null}
       tree={tree}
+      header={header}
+      transitionState={transitionState}
+      onAction={onAction}
       onNavigate={onNavigate}
       onDirtyChange={onDirtyChange}
       onNoteUpdated={onNoteUpdated}
@@ -115,6 +146,9 @@ function NoteArticle({
   initial,
   focusTitle,
   tree,
+  header,
+  transitionState,
+  onAction,
   onNavigate,
   onDirtyChange,
   onNoteUpdated,
@@ -125,6 +159,9 @@ function NoteArticle({
   initial: NoteDetail;
   focusTitle: boolean;
   tree: WorkspaceTree;
+  header: HTMLDivElement | null;
+  transitionState: NoteTransitionState;
+  onAction(action: LifecycleAction): void;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
   onNoteUpdated(note: NoteDetail): void;
@@ -137,6 +174,7 @@ function NoteArticle({
     onNoteUpdated,
     onDirtyChange,
   );
+  const [exportMessage, setExportMessage] = useState('');
   useEffect(() => {
     onSession(session);
     return () => onSession(null);
@@ -144,20 +182,50 @@ function NoteArticle({
   const note = state.note;
   return (
     <>
-      <Breadcrumbs
-        path={tree.breadcrumbs(note.folderId)}
-        noteTitle={note.title}
-        onNavigate={onNavigate}
-      />
+      {header &&
+        createPortal(
+          <>
+            <Breadcrumbs
+              path={tree.breadcrumbs(note.folderId)}
+              noteTitle={note.title}
+              onNavigate={onNavigate}
+            />
+            <div className="note-header-actions">
+              <SaveStatus
+                session={session}
+                state={state}
+                transitionState={transitionState}
+                exportMessage={exportMessage}
+              >
+                {state.status === 'conflict' && (
+                  <ConflictRecovery
+                    session={session}
+                    onReload={onReload}
+                    onCopy={onRecoveryCopy}
+                  />
+                )}
+              </SaveStatus>
+              <ResourceActions
+                target={{ kind: 'note', value: note }}
+                onAction={onAction}
+              >
+                <ExportMarkdown
+                  session={session}
+                  onMessage={setExportMessage}
+                />
+              </ResourceActions>
+            </div>
+          </>,
+          header,
+        )}
       <article className="note-surface">
-        <p className="workspace-eyebrow">Your writing</p>
         <TitleEditor
           session={session}
           state={state}
           focusOnMount={focusTitle}
         />
         {note.folderId !== null && !tree.folders.has(note.folderId) && (
-          <p role="status">
+          <p role="status" className="note-feedback">
             This note's location changed. Refresh the workspace to update its
             path.
           </p>
@@ -165,7 +233,7 @@ function NoteArticle({
         <PreviewBoundary key={note.id} source={note.content}>
           <Suspense
             fallback={
-              <p role="status" className="workspace-message">
+              <p role="status" className="note-feedback workspace-message">
                 Preparing note…
               </p>
             }
@@ -173,15 +241,6 @@ function NoteArticle({
             <NoteContent source={initial.content} session={session} />
           </Suspense>
         </PreviewBoundary>
-        <SaveStatus session={session} state={state} />
-        <ExportMarkdown session={session} />
-        {state.status === 'conflict' && (
-          <ConflictRecovery
-            session={session}
-            onReload={onReload}
-            onCopy={onRecoveryCopy}
-          />
-        )}
       </article>
     </>
   );

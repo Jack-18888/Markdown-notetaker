@@ -1,5 +1,8 @@
 export const supportedFixtures = [
   ['paragraphs', 'First paragraph.\n\nSecond paragraph.'],
+  ['blank paragraphs', '<br />\n\nFirst paragraph.\n\n<br />\n\n<br />'],
+  ['blank paragraphs in quotes', '> One\n>\n> <br />\n>\n> Two'],
+  ['blank paragraphs in list items', '- One\n\n  <br />\n\n  Two'],
   [
     'headings',
     '# One\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five\n\n###### Six',

@@ -1,3 +1,4 @@
+import { noteTitleButton } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -54,15 +55,13 @@ test('a failed title request on source fallback can be retried after discarding 
   await page.route(`**/api/notes/${note.id}`, (route) =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
-  await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+  await noteTitleButton(page, note.title).click();
   await page
     .getByRole('textbox', { name: 'Note title', exact: true })
     .fill('Unconfirmed title');
-  await page.getByRole('button', { name: 'Save title', exact: true }).click();
+  await page.keyboard.press('Enter');
   await expect(page.getByRole('alert')).toContainText('Could not reach');
-  await page
-    .getByRole('button', { name: 'Discard title changes', exact: true })
-    .click();
+  await page.keyboard.press('Escape');
   await page.unrouteAll({ behavior: 'wait' });
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();

@@ -15,9 +15,6 @@ export default function FolderContents({
   const title = id === null ? 'Workspace' : tree.folders.get(id)!.name;
   return (
     <section className="folder-contents" aria-label="Folder contents">
-      <p className="workspace-eyebrow">
-        {id === null ? 'A place for your thinking' : 'Folder'}
-      </p>
       <h1>{title}</h1>
       {empty ? (
         <div className="workspace-empty">

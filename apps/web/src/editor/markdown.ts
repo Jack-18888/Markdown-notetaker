@@ -86,15 +86,6 @@ function parse(source: string, ctx: Ctx) {
   return document;
 }
 
-/** Skip the final typing paragraph, which has no Markdown representation. */
-function comparable(document: Node) {
-  return document.childCount > 1 &&
-    document.lastChild?.type.name === 'paragraph' &&
-    !document.lastChild.content.size
-    ? document.cut(0, document.content.size - document.lastChild.nodeSize)
-    : document;
-}
-
 export function loadMarkdown(source: string, ctx: Ctx): LoadedMarkdown {
   if (!markdownSchema.safeParse(source).success)
     return { mode: 'source', source, reason: 'invalid-content' };
@@ -105,14 +96,23 @@ export function loadMarkdown(source: string, ctx: Ctx): LoadedMarkdown {
     const serialize = ctx.get(serializerCtx);
     const roundTrip = (document: Node) => {
       checkDocument(document);
-      const serialized = serialize(document);
+      const last = document.lastChild;
+      // Milkdown drops one trailing empty paragraph as a typing area. Supply
+      // that extra paragraph only to the serializer so real blank lines survive.
+      const snapshot =
+        document.childCount > 1 &&
+        last?.type.name === 'paragraph' &&
+        !last.content.size
+          ? document.copy(document.content.addToEnd(last))
+          : document;
+      const serialized = serialize(snapshot);
       const next = serialized.endsWith('\n')
         ? serialized.slice(0, -1)
         : serialized;
       if (
         !markdownSchema.safeParse(next).success ||
         assessSource(next) ||
-        !comparable(parse(next, ctx)).eq(comparable(document))
+        !parse(next, ctx).eq(document)
       )
         throw new MarkdownConversionError();
       return next;
@@ -124,9 +124,7 @@ export function loadMarkdown(source: string, ctx: Ctx): LoadedMarkdown {
       document: baseline,
       serialize(document) {
         try {
-          return comparable(document).eq(comparable(baseline))
-            ? source
-            : roundTrip(document);
+          return document.eq(baseline) ? source : roundTrip(document);
         } catch {
           throw new MarkdownConversionError();
         }

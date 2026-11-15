@@ -18,6 +18,7 @@ import MoveDialog from './workspace/MoveDialog.js';
 import DeleteDialog from './workspace/DeleteDialog.js';
 import { useNoteTransition } from './workspace/useNoteTransition.js';
 import ImportDialog from './workspace/ImportDialog.js';
+import ResourceActions from './workspace/ResourceActions.js';
 
 const loadTree = async (signal: AbortSignal) =>
   indexTree(await getTree(signal));
@@ -28,6 +29,7 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(rootSelection);
   const [expanded, setExpanded] = useState(new Set<string>());
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [header, setHeader] = useState<HTMLDivElement | null>(null);
   const [action, setAction] = useState<LifecycleAction | null>(null);
   const [noteEpoch, setNoteEpoch] = useState(0);
   const loadedNote = useRef<NoteDetail | null>(null);
@@ -44,11 +46,11 @@ export default function App() {
   }, [unsavedNote]);
   const main = useRef<HTMLElement>(null);
   const sidebar = useRef<HTMLElement>(null);
+  const sidebarToggle = useRef<HTMLButtonElement>(null);
   const focusSidebar = useRef(false);
   useEffect(() => {
     if (sidebarOpen && focusSidebar.current && sidebar.current) {
       sidebar.current.scrollTop = 0;
-      sidebar.current.scrollIntoView({ block: 'start' });
       sidebar.current
         .querySelector<HTMLButtonElement>('.folder-tree button')
         ?.focus({ preventScroll: true });
@@ -58,13 +60,23 @@ export default function App() {
   const focusSelection = useRef(false);
   useEffect(() => {
     if (focusSelection.current) {
-      main.current?.focus();
+      if (main.current) {
+        main.current.scrollTop = 0;
+        main.current.focus({ preventScroll: true });
+      }
       focusSelection.current = false;
     }
   }, [selection]);
   const tree = state.status === 'ready' ? state.value : null;
   const missing = tree !== null && !tree.has(selection);
   const active = missing ? rootSelection : selection;
+  const activeFolder =
+    active.kind === 'folder' && active.id ? tree?.folders.get(active.id) : null;
+
+  function closeSidebar() {
+    setSidebarOpen(false);
+    sidebarToggle.current?.focus();
+  }
 
   function select(next: Selection) {
     if (next.kind === selection.kind && next.id === selection.id) {
@@ -156,39 +168,59 @@ export default function App() {
         Skip to notes
       </a>
       <header className="workspace-header">
-        <span className="workspace-brand">{applicationName}</span>
-        <div className="workspace-actions">
+        <div className="workspace-identity">
           <button
+            ref={sidebarToggle}
             type="button"
+            className="quiet-button sidebar-toggle"
             aria-label={sidebarOpen ? 'Hide folders' : 'Show folders'}
             aria-expanded={sidebarOpen}
             aria-controls="workspace-sidebar"
             onClick={() => {
-              focusSidebar.current = !sidebarOpen;
-              setSidebarOpen((value) => !value);
+              if (sidebarOpen) closeSidebar();
+              else {
+                focusSidebar.current = true;
+                setSidebarOpen(true);
+              }
             }}
           >
+            <span aria-hidden="true" className="sidebar-toggle-icon" />
             Folders
           </button>
-          <button
-            type="button"
-            aria-label="Refresh workspace"
-            onClick={refresh}
-          >
-            Refresh
-          </button>
+          <span className="workspace-brand">{applicationName}</span>
+        </div>
+        <div className="workspace-context" ref={setHeader}>
+          {tree && active.kind === 'folder' && (
+            <>
+              <Breadcrumbs
+                path={tree.breadcrumbs(active.id)}
+                onNavigate={(id) => select({ kind: 'folder', id })}
+              />
+              {activeFolder && (
+                <ResourceActions
+                  target={{ kind: 'folder', value: activeFolder }}
+                  onAction={openAction}
+                />
+              )}
+            </>
+          )}
         </div>
       </header>
       <aside
         id="workspace-sidebar"
         className="workspace-sidebar"
+        aria-label="Folders"
         ref={sidebar}
         hidden={!sidebarOpen}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeSidebar();
+          }
+        }}
       >
-        <p className="sidebar-caption">Personal workspace</p>
         {tree && (
           <WorkspaceActions
-            tree={tree}
             selection={active}
             note={
               active.kind === 'note' && loadedNote.current?.id === active.id
@@ -196,6 +228,7 @@ export default function App() {
                 : null
             }
             onAction={openAction}
+            onRefresh={refresh}
           />
         )}
         {tree && (
@@ -207,13 +240,6 @@ export default function App() {
             onToggle={toggle}
           />
         )}
-        <p className="workspace-status" role="status">
-          {state.status === 'ready'
-            ? 'Local workspace ready'
-            : state.status === 'loading'
-              ? 'Loading workspace…'
-              : 'Workspace unavailable'}
-        </p>
       </aside>
       <main
         id="workspace-content"
@@ -221,17 +247,6 @@ export default function App() {
         tabIndex={-1}
         ref={main}
       >
-        {transition.state === 'saving' && (
-          <p role="status" className="workspace-message">
-            Saving changes before continuing…
-          </p>
-        )}
-        {transition.state === 'error' && (
-          <p role="alert" className="workspace-message">
-            Could not continue. Your changes are still here. Retry saving or
-            resolve the conflict, then try again.
-          </p>
-        )}
         {state.status === 'loading' && (
           <p className="workspace-message">Loading your workspace…</p>
         )}
@@ -255,18 +270,15 @@ export default function App() {
               </p>
             )}
             {active.kind === 'folder' ? (
-              <>
-                <Breadcrumbs
-                  path={tree.breadcrumbs(active.id)}
-                  onNavigate={(id) => select({ kind: 'folder', id })}
-                />
-                <FolderContents tree={tree} id={active.id} onSelect={select} />
-              </>
+              <FolderContents tree={tree} id={active.id} onSelect={select} />
             ) : (
               <NotePanel
                 key={`${active.id}:${noteEpoch}`}
                 id={active.id}
                 tree={tree}
+                header={header}
+                transitionState={transition.state}
+                onAction={openAction}
                 onDirtyChange={setUnsavedNote}
                 onNoteUpdated={noteUpdated}
                 onSession={transition.register}
