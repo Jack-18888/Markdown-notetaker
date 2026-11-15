@@ -1,24 +1,44 @@
-import type { LoadedMarkdown } from './markdown.js';
-import './source-fallback.css';
-
-type SourceDocument = Extract<LoadedMarkdown, { mode: 'source' }>;
+import { useEffect, useState } from 'react';
+import type { SaveCoordinator } from '../workspace/SaveCoordinator.js';
+import { normalizedSource, reconcileSource } from './source-text.js';
 
 export default function SourceFallback({
-  document,
+  session,
 }: {
-  document: SourceDocument;
+  session: SaveCoordinator;
 }) {
+  const [source, setSource] = useState(() => {
+    try {
+      return session.localContent();
+    } catch {
+      return session.getSnapshot().note.content;
+    }
+  });
+  useEffect(() => {
+    session.attachBody();
+  }, [session]);
   return (
-    <section className="source-fallback" aria-label="Markdown source">
-      <p className="source-fallback-label">Original source · Read only</p>
-      <h2>Your Markdown is preserved.</h2>
-      <p className="source-fallback-description">
-        This note contains content the rich editor cannot safely preserve. You
-        can read and copy the original source below.
-      </p>
-      <pre tabIndex={0} aria-label="Read-only Markdown source">
-        {document.source}
-      </pre>
+    <section className="folio-writing">
+      <div
+        className="folio-source note-body"
+        role="region"
+        aria-label="Markdown source"
+      >
+        <p role="status">
+          The block editor could not open. You can still edit the Markdown
+          source.
+        </p>
+        <textarea
+          aria-label="Raw Markdown source"
+          value={normalizedSource(source)}
+          spellCheck={false}
+          onChange={(event) => {
+            const next = reconcileSource(source, event.currentTarget.value);
+            setSource(next);
+            session.setBody(next);
+          }}
+        />
+      </div>
     </section>
   );
 }

@@ -1,1 +1,1 @@
-export { default } from '../editor/NoteEditor.js';
+export { default } from '../editor/FolioEditor.js';

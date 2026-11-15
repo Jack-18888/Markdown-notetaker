@@ -12,40 +12,21 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    // Crepe's table node view bundles Vue's runtime.
-    define: {
-      __VUE_OPTIONS_API__: true,
-      __VUE_PROD_DEVTOOLS__: false,
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
-    },
-    build: {
-      rolldownOptions: {
-        output: {
-          codeSplitting: {
-            groups: [
-              { name: 'markdown-parser', test: /node_modules[\\/]marked[\\/]/ },
-            ],
-          },
-        },
-      },
-    },
     // Keep the first lazy editor import from triggering a development-page reload.
     optimizeDeps: {
       include: [
-        '@milkdown/crepe',
-        '@milkdown/kit/component/code-block',
-        '@milkdown/kit/core',
-        '@milkdown/kit/plugin/clipboard',
-        '@milkdown/kit/plugin/listener',
-        '@milkdown/kit/plugin/trailing',
-        '@milkdown/kit/plugin/upload',
-        '@milkdown/kit/preset/commonmark',
-        '@milkdown/kit/prose/model',
-        '@milkdown/kit/prose/state',
-        '@milkdown/kit/prose/transform',
-        '@milkdown/kit/transformer',
-        '@milkdown/kit/utils',
-        'marked',
+        '@lezer/css',
+        '@lezer/highlight',
+        '@lezer/html',
+        '@lezer/javascript',
+        '@lezer/json',
+        '@lezer/python',
+        'katex',
+        'remark-gfm',
+        'remark-math',
+        'remark-parse',
+        'remark-stringify',
+        'unified',
         'mermaid',
         'dompurify',
       ],
@@ -54,7 +35,9 @@ export default defineConfig(({ mode }) => {
       host: '127.0.0.1',
       port: 5173,
       strictPort: true,
-      proxy: { '/api': `http://127.0.0.1:${port}` },
+      proxy: {
+        '/api': { target: `http://127.0.0.1:${port}`, changeOrigin: false },
+      },
     },
   };
 });

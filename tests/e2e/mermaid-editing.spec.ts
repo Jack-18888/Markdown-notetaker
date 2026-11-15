@@ -44,11 +44,8 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
       'could not be previewed',
     );
     await expect(diagrams.nth(1).getByRole('img')).toBeVisible();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
-    await body.locator(':scope > p').last().click();
+    const body = page.getByRole('group', { name: 'Note content', exact: true });
+    await body.locator('.folio-block > p').last().click();
     await page.keyboard.press('End');
     await page.keyboard.type(' Edited body.');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
@@ -75,10 +72,7 @@ test('multiple diagrams stay editable through invalid source, save/reopen, undo,
       .getByRole('button', { name: 'Remove diagram', exact: true })
       .click();
     await expect(diagrams).toHaveCount(1);
-    await page
-      .getByRole('textbox', { name: 'Note content', exact: true })
-      .focus();
-    await page.keyboard.press('Control+z');
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect(diagrams).toHaveCount(2);
     await expect(first.getByRole('img')).toContainText('Recovered');
     await page

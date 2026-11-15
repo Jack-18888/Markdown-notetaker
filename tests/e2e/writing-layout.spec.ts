@@ -23,10 +23,7 @@ for (const width of [1440, 320]) {
     await page.getByRole('button', { name: `Open note ${note.title}` }).click();
     const main = page.getByRole('main');
     const title = main.getByRole('heading', { name: note.title, exact: true });
-    const body = main.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
+    const body = main.getByRole('group', { name: 'Note content', exact: true });
     const heading = body.getByRole('heading', {
       name: 'A quieter place to write',
     });
@@ -54,8 +51,8 @@ for (const width of [1440, 320]) {
       ).toBeLessThan(12);
     } else {
       for (const block of [
-        body.locator('.milkdown-table-block'),
-        body.locator('.cm-scroller'),
+        body.locator('.folio-table-frame'),
+        body.locator('.folio-code pre'),
         diagram,
       ]) {
         const sizes = await block.evaluate((el) => ({
@@ -89,7 +86,7 @@ test('disclosures and the sidebar keep the active editor and undo history', asyn
   const note = await notes.create('Layout history', 'Original paragraph');
   await page.goto('/');
   await page.getByRole('button', { name: `Open note ${note.title}` }).click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('group', { name: 'Note content', exact: true });
   await expect(body).toBeVisible();
   const root = page
     .getByRole('navigation', { name: 'Workspace folders' })
@@ -138,10 +135,14 @@ test('disclosures and the sidebar keep the active editor and undo history', asyn
   ).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(sidebarToggle).toBeFocused();
-  await expect(body).toHaveText('Original paragraph with a draft');
-  await body.focus();
+  const paragraph = body.getByRole('textbox', {
+    name: 'Paragraph',
+    exact: true,
+  });
+  await expect(paragraph).toHaveText('Original paragraph with a draft');
+  await paragraph.focus();
   await page.keyboard.press('ControlOrMeta+z');
-  await expect(body).toHaveText('Original paragraph');
+  await expect(paragraph).toHaveText('Original paragraph');
 });
 
 test('a long title wraps and autosaves after returning to the body at 320px', async ({
@@ -156,7 +157,7 @@ test('a long title wraps and autosaves after returning to the body at 320px', as
   await page
     .getByRole('button', { name: `Open note ${note.title}`, exact: true })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('group', { name: 'Note content', exact: true });
   await expect(body).toBeVisible();
   await noteTitleButton(page, note.title).click();
   const title = page.getByRole('textbox', { name: 'Note title', exact: true });
@@ -166,12 +167,9 @@ test('a long title wraps and autosaves after returning to the body at 320px', as
   expect(editingHeight).toBeGreaterThan(initialHeight);
   await page.screenshot({ path: 'test-results/inline-title-320.png' });
   await title.press('Tab');
-  await expect(body).toBeFocused();
-  await expect(body).toHaveCSS('outline-style', 'none');
-  await expect(page.locator('.note-editor .milkdown')).toHaveCSS(
-    'background-color',
-    'rgba(0, 0, 0, 0)',
-  );
+  await expect(
+    body.getByRole('button', { name: 'Add block below', exact: true }),
+  ).toBeFocused();
   const resting = noteTitleButton(page, newTitle);
   await expect(resting).toBeVisible();
   expect((await resting.boundingBox())!.height).toBeCloseTo(editingHeight, 0);

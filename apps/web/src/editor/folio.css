@@ -1,0 +1,703 @@
+/* Folio's zinc palette, editorial type and quiet writing surface. */
+.workspace {
+  --font-text: 'Segoe UI', system-ui, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-code: 'Cascadia Code', Consolas, monospace;
+  --canvas: #fff;
+  --sidebar: #fafafa;
+  --surface: #fff;
+  --surface-low: #f4f4f5;
+  --ink: #18181b;
+  --muted: #52525b;
+  --accent: #2456a6;
+  --selected: #ececf0;
+  --hover: #f1f1f3;
+  --line: #e4e4e7;
+  --control-line: #a1a1aa;
+  --error: #9f1c36;
+  --popup-shadow: 0 8px 28px #18181b1c;
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: var(--font-text);
+  color-scheme: light;
+}
+
+.workspace[data-theme='dark'] {
+  --canvas: #111113;
+  --sidebar: #18181b;
+  --surface: #202024;
+  --surface-low: #27272a;
+  --ink: #f4f4f5;
+  --muted: #b5b5bc;
+  --accent: #8ebaff;
+  --selected: #303038;
+  --hover: #2b2b31;
+  --line: #37373e;
+  --control-line: #71717a;
+  --error: #fda4af;
+  --rust: #fdb48b;
+  --red: #fda4af;
+  --popup-shadow: 0 8px 28px #0008;
+  color-scheme: dark;
+}
+
+.workspace-brand {
+  color: var(--ink);
+  font-size: 1.125rem;
+  letter-spacing: -0.05em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.workspace-brand span {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+.folio-theme {
+  margin-inline-start: auto;
+}
+.folio-favorite[aria-pressed='true'] {
+  color: #9a6209;
+}
+[data-theme='dark'] .folio-favorite[aria-pressed='true'] {
+  color: #f1bd65;
+}
+.folio-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 35px;
+  background: var(--surface);
+  border-color: var(--line);
+  margin-bottom: 12px;
+  text-align: start;
+}
+.folio-search-trigger kbd {
+  font: 0.7rem var(--font-code);
+  color: var(--muted);
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+.folio-favorites {
+  padding: 8px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.folio-favorites h2 {
+  margin: 0 0 4px 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.folio-favorites ul,
+.folio-search ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.folio-favorites button,
+.folio-search li button {
+  width: 100%;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.folio-favorites button[aria-current] {
+  background: var(--selected);
+}
+.folio-search {
+  display: grid;
+  gap: 12px;
+}
+.folio-search label {
+  display: grid;
+  gap: 6px;
+}
+.folio-search ul {
+  max-height: min(50vh, 420px);
+  overflow: auto;
+}
+.folio-search li button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.folio-search li button span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.folio-note-controls,
+.folio-view-toggle,
+.folio-code-tools,
+.folio-table-tools,
+.folio-source-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.folio-view-toggle {
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-low);
+}
+.folio-view-toggle button {
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.folio-view-toggle button[aria-pressed='true'] {
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--surface);
+}
+.folio-icon-menu {
+  position: relative;
+  display: table;
+  margin-inline: var(--writing-gutter) var(--writing-end);
+  margin-bottom: 8px;
+}
+.folio-icon-menu > summary {
+  display: grid;
+  place-items: center;
+  list-style: none;
+  width: 42px;
+  height: 42px;
+  background: var(--surface-low);
+  color: var(--ink);
+  border-radius: 9px;
+  font-size: 1.35rem;
+}
+.folio-icon-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.folio-icon-menu > div {
+  position: absolute;
+  inset: calc(100% + 4px) auto auto 0;
+  z-index: 2;
+  display: flex;
+  gap: 3px;
+  padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--popup-shadow);
+}
+.folio-icon-menu button {
+  width: 29px;
+  height: 29px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+}
+.folio-icon-menu button:hover {
+  background: var(--hover);
+}
+.note-surface[data-font='serif'] :is(.note-title-row, .editor-prose) {
+  font-family: var(--font-serif);
+}
+.note-surface .note-title-row {
+  margin-bottom: clamp(18px, 3vw, 30px);
+}
+.folio-writing,
+.folio-print-view {
+  margin-inline: var(--writing-gutter) var(--writing-end);
+}
+.folio-print-view {
+  display: none;
+}
+
+.folio-blocks {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.folio-block {
+  position: relative;
+  min-width: 0;
+  padding-block: 2px;
+  border-top: 2px solid transparent;
+}
+.folio-block[data-drop='true'] {
+  border-top-color: var(--accent);
+}
+.folio-gutter {
+  position: absolute;
+  inset: 3px 100% auto auto;
+  padding-right: 3px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  opacity: 0;
+  z-index: 1;
+}
+.folio-block:hover > .folio-gutter,
+.folio-block:focus-within > .folio-gutter,
+.folio-gutter:has(details[open]) {
+  opacity: 1;
+}
+.folio-block-button,
+.folio-block-menu > summary {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 26px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  list-style: none;
+  font-size: 17px;
+}
+.folio-block-menu > summary {
+  cursor: grab;
+}
+.folio-block-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.folio-block-button:hover,
+.folio-block-menu > summary:hover {
+  background: var(--hover);
+}
+.folio-block-menu > div,
+.folio-slash {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  z-index: 4;
+  min-width: max-content;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--popup-shadow);
+}
+.folio-block-menu > div button,
+.folio-slash button {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 5px;
+  text-align: start;
+  font: 0.8125rem var(--font-text);
+  color: var(--ink);
+  background: transparent;
+}
+.folio-block-menu button:disabled {
+  opacity: 0.55;
+}
+.folio-block-menu button:not(:disabled):hover,
+.folio-slash button:hover,
+.folio-slash button[data-selected='true'] {
+  background: var(--hover);
+}
+.folio-slash {
+  width: min(250px, 100%);
+  min-width: 0;
+}
+.folio-slash input {
+  width: 100%;
+  margin-bottom: 4px;
+}
+.folio-slash-results {
+  max-height: 225px;
+  overflow: auto;
+}
+
+.editor-prose {
+  font-size: 1rem;
+  line-height: 1.63;
+  overflow-wrap: anywhere;
+}
+.editor-prose :is(p, ul, ol, blockquote, pre, hr) {
+  margin: 0;
+}
+.editor-prose h1,
+.editor-prose h2,
+.editor-prose h3,
+.editor-prose h4,
+.editor-prose h5,
+.editor-prose h6 {
+  margin: 0.35em 0 0;
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+}
+.editor-prose h1 {
+  font-size: clamp(1.7rem, 3.2vw, 2.15rem);
+}
+.editor-prose h2 {
+  font-size: 1.48rem;
+}
+.editor-prose h3 {
+  font-size: 1.18rem;
+}
+.editor-prose a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+.editor-prose mark {
+  background: #fef08a;
+  color: #27272a;
+  border-radius: 2px;
+}
+.editor-prose :not(pre) > code {
+  border: 1px solid var(--line);
+  padding: 0.1em 0.32em;
+  border-radius: 4px;
+  background: var(--surface-low);
+  color: var(--rust);
+  font: 0.9em var(--font-code);
+}
+.editor-prose blockquote {
+  border-inline-start: 3px solid var(--control-line);
+  padding-inline-start: 13px;
+  color: var(--muted);
+}
+.editor-prose hr {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  margin-block: 11px;
+}
+.editor-prose ul,
+.editor-prose ol {
+  padding-inline-start: 24px;
+}
+.editor-prose li {
+  margin-block: 3px;
+}
+.folio-task {
+  list-style: none;
+  position: relative;
+}
+.folio-task > input {
+  position: absolute;
+  top: 4px;
+  right: calc(100% + 8px);
+  accent-color: var(--accent);
+}
+.folio-editable {
+  display: block;
+  position: relative;
+  min-height: 1.55em;
+  outline: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.folio-editable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.folio-block:first-child :is(.folio-editable:only-child):empty::before {
+  content: 'Type / to insert a block';
+  color: var(--muted);
+  pointer-events: none;
+}
+.folio-format {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateY(-93%);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: var(--popup-shadow);
+  font: 0.8rem var(--font-text);
+}
+.folio-format button {
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--ink);
+  background: transparent;
+}
+.folio-format button:hover {
+  background: var(--hover);
+}
+.folio-format form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+}
+.folio-inline-atom {
+  color: var(--muted);
+}
+.folio-inline-atom sup {
+  color: var(--accent);
+}
+.folio-inline-settings {
+  font: 0.8rem / 1.5 var(--font-text);
+  color: var(--muted);
+}
+.folio-inline-settings summary {
+  padding: 2px 0;
+}
+.folio-field {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0;
+  font: 0.8rem / 1.5 var(--font-text);
+}
+.folio-field label {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  color: var(--muted);
+}
+.folio-field input,
+.folio-source textarea,
+.folio-slash input,
+.folio-code input,
+.folio-code textarea,
+.folio-block-label select,
+.folio-align {
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--control-line);
+  border-radius: 5px;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+}
+.folio-field [role='alert'],
+.folio-feedback {
+  color: var(--error);
+}
+
+.folio-alert,
+.folio-toggle,
+.folio-definition {
+  padding: 10px 13px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-low);
+}
+.folio-alert {
+  border-inline-start: 3px solid var(--accent);
+}
+.folio-alert[data-alert='TIP'] {
+  border-inline-start-color: #19895c;
+}
+.folio-alert[data-alert='IMPORTANT'] {
+  border-inline-start-color: #8566bd;
+}
+.folio-alert[data-alert='WARNING'] {
+  border-inline-start-color: #c18518;
+}
+.folio-alert[data-alert='CAUTION'] {
+  border-inline-start-color: #bd5268;
+}
+.folio-toggle > summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+.folio-block-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font: 0.8rem var(--font-text);
+}
+.folio-nested {
+  margin: 5px 0 0 12px;
+}
+.folio-nested .folio-gutter {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+  transform: translateX(-100%);
+}
+
+.folio-code,
+.folio-literal,
+.folio-table-frame,
+.folio-img,
+.folio-source {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.folio-code-tools,
+.folio-table-tools,
+.folio-source-bar {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+  font: 0.8rem var(--font-text);
+  color: var(--muted);
+}
+.folio-code input {
+  width: 10ch;
+}
+.folio-code pre,
+.folio-literal {
+  overflow: auto;
+  padding: 12px;
+  font: 0.86rem / 1.6 var(--font-code);
+  color: var(--ink);
+  background: var(--surface-low);
+}
+.folio-code pre {
+  border-radius: 0 0 8px 8px;
+}
+.folio-code code,
+.folio-literal code {
+  font: inherit;
+}
+.folio-code .folio-code-print {
+  display: none;
+}
+.folio-code textarea {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  font: 0.86rem / 1.6 var(--font-code);
+}
+.tok-keyword,
+.tok-operatorKeyword {
+  color: #7146b1;
+  font-weight: 600;
+}
+.tok-string,
+.tok-string2 {
+  color: #08785b;
+}
+.tok-typeName,
+.tok-className,
+.tok-variableName.tok-definition {
+  color: var(--accent);
+}
+.tok-number,
+.tok-bool {
+  color: var(--rust);
+}
+.tok-comment {
+  color: var(--muted);
+  font-style: italic;
+}
+[data-theme='dark'] .tok-keyword,
+[data-theme='dark'] .tok-operatorKeyword {
+  color: #c5a5fd;
+}
+[data-theme='dark'] .tok-string,
+[data-theme='dark'] .tok-string2 {
+  color: #80dfac;
+}
+.folio-literal {
+  white-space: pre-wrap;
+}
+.folio-table-frame,
+.folio-math-block {
+  overflow-x: auto;
+}
+.folio-table-frame table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+.folio-table-frame :is(th, td) {
+  min-width: 108px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+}
+.folio-table-frame th {
+  background: var(--surface-low);
+}
+.folio-table-frame tr > :first-child {
+  border-inline-start: 0;
+}
+.folio-table-frame tr > :last-child {
+  border-inline-end: 0;
+}
+.folio-align {
+  font-size: 0.72rem;
+}
+.folio-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.folio-source-bar span:first-child {
+  margin-inline-end: auto;
+  color: var(--ink);
+}
+.folio-source textarea {
+  display: block;
+  resize: vertical;
+  width: 100%;
+  min-height: min(62vh, 580px);
+  padding: 14px;
+  border: 0;
+  border-radius: 0 0 8px 8px;
+  font: 0.86rem / 1.65 var(--font-code);
+  tab-size: 2;
+}
+.folio-source > p {
+  padding: 0 12px;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .folio-view-toggle button {
+    padding-inline: 6px;
+  }
+}
+@media (hover: none) {
+  .folio-gutter {
+    opacity: 1;
+  }
+}
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+  body,
+  html,
+  .workspace,
+  .workspace-main {
+    display: block !important;
+    background: #fff !important;
+    color: #18181b !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .workspace {
+    --ink: #18181b;
+    --surface-low: #fafafa;
+    --line: #dedee2;
+  }
+  .workspace-header,
+  .workspace-sidebar,
+  .no-print,
+  .workspace .skip-link {
+    display: none !important;
+  }
+  .note-surface {
+    max-width: none;
+    padding: 0;
+  }
+  .note-title-row,
+  .folio-print-view {
+    margin-inline: 0;
+  }
+  .folio-print-view {
+    display: block;
+  }
+  .folio-code pre {
+    display: block !important;
+    white-space: pre-wrap;
+  }
+}

@@ -45,7 +45,7 @@ npm run build
 npm run test:production
 ```
 
-The development browser suite uses an isolated temporary database; ports 5173 and 3001 must be free. After building, the production suite starts the built app on available loopback ports and verifies restart and stopped-server backup/restore with temporary storage. Both launchers clean up their own processes and data. Chromium installation is only needed once per Playwright browser version. Unit/integration checks use isolated databases, including migration rollback, foreign keys, and reopen durability. Use npm run format to apply formatting.
+The development browser suite uses an isolated temporary database and available loopback ports. After building, the production suite starts the built app on available loopback ports and verifies restart and stopped-server backup/restore with temporary storage. Both launchers clean up their own processes and data. Chromium installation is only needed once per Playwright browser version. Unit/integration checks use isolated databases, including migration rollback, foreign keys, and reopen durability. Use npm run format to apply formatting.
 
 ## Run a production build locally
 

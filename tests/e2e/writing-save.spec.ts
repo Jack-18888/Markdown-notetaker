@@ -24,8 +24,11 @@ test('Enter on the first line autosaves and keeps the blank line on reopen', asy
   const note = noteDetailSchema.parse(await (await created).json());
   notes.track(note.id);
 
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
-  const paragraphs = body.locator(':scope > p');
+  const body = page.getByRole('group', { name: 'Note content', exact: true });
+  const paragraphs = body.getByRole('textbox', {
+    name: 'Paragraph',
+    exact: true,
+  });
   await paragraphs.first().click();
   await page.keyboard.press('Enter');
   await expect(paragraphs).toHaveCount(2);
@@ -33,7 +36,7 @@ test('Enter on the first line autosaves and keeps the blank line on reopen', asy
     .poll(async () => (await notes.read(note.id)).content)
     .toBe('<br />\n\n<br />');
 
-  await expect(body).toBeFocused();
+  await expect(paragraphs.last()).toBeFocused();
   await page.keyboard.type('Writing after the blank line.');
   await expect
     .poll(async () => (await notes.read(note.id)).content)
@@ -93,11 +96,11 @@ test('body edits preserve Mermaid payloads and title-only writes retain the ackn
       exact: true,
     })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('group', { name: 'Note content', exact: true });
   await expect(body).toContainText('Closing paragraph');
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   expect((await notes.read(note.id)).content).toBe(content);
-  await body.locator(':scope > p').last().click();
+  await body.locator('.folio-block > p').last().click();
   await page.keyboard.press('End');
   await page.keyboard.type(' Latest writing.');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
@@ -127,7 +130,10 @@ test('body edits preserve Mermaid payloads and title-only writes retain the ackn
     })
     .click();
   await expect(body).toContainText('Closing paragraph Latest writing.');
-  await body.focus();
+  await body
+    .getByRole('textbox', { name: 'Paragraph', exact: true })
+    .last()
+    .focus();
   await page.keyboard.press('Control+z');
   await expect(body).toContainText('Closing paragraph Latest writing.');
 });
@@ -147,7 +153,7 @@ test('failed and conflicting body saves retain local writing without replacing t
       exact: true,
     })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await expect(body).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   await page.route(`**/api/notes/${note.id}`, (route) =>

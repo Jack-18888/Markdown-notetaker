@@ -1,10 +1,12 @@
 import type { ParentId, ResourceId } from '@markdown-note-taker/contracts';
 import type { Selection, WorkspaceTree } from './tree.js';
+import type { NoteAppearance } from './folio-preferences.js';
 
 interface Props {
   tree: WorkspaceTree;
   selection: Selection;
   expanded: ReadonlySet<ResourceId>;
+  appearance?: Record<string, NoteAppearance>;
   onToggle(id: ResourceId): void;
   onSelect(selection: Selection): void;
 }
@@ -13,6 +15,7 @@ export default function FolderTree({
   tree,
   selection,
   expanded,
+  appearance,
   onToggle,
   onSelect,
 }: Props) {
@@ -74,7 +77,7 @@ export default function FolderTree({
               onClick={() => onSelect({ kind: 'note', id: note.id })}
             >
               <span className="item-symbol" aria-hidden="true">
-                ≡
+                {appearance?.[note.id]?.icon ?? '≡'}
               </span>
               <span>{note.title}</span>
             </button>

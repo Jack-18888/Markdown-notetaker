@@ -30,10 +30,7 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
     await page
       .getByRole('button', { name: 'Open note Autosave batching', exact: true })
       .click();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
+    const body = page.getByRole('group', { name: 'Note content', exact: true });
     await expect(body).toBeVisible({ timeout: 15_000 });
     // Keep editor startup on real time and control only the save debounce.
     await page.clock.install();
@@ -55,7 +52,7 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
     expect(writes).toEqual([
       {
         title: 'A batched title',
-        content: '# A batched body',
+        content: '# A batched body\r\n',
         expectedRevision: 1,
       },
     ]);
@@ -71,10 +68,12 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
     );
     expect(saved).toMatchObject({
       title: 'Only the title changes',
-      content: '# A batched body',
+      content: '# A batched body\r\n',
       revision: 3,
     });
-    await expect(body).toHaveText('A batched body');
+    await expect(body.getByRole('textbox', { name: 'Heading 1' })).toHaveText(
+      'A batched body',
+    );
   } finally {
     const saved = noteDetailSchema.parse(
       await (await request.get(`/api/notes/${note.id}`)).json(),
@@ -114,10 +113,7 @@ test('edits during autosave retain the current editor, serialize writes, and kee
     await page
       .getByRole('button', { name: 'Open note Autosave ordering', exact: true })
       .click();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
+    const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
     await expect(body).toBeVisible({ timeout: 15_000 });
     await page.clock.pauseAt(new Date(Date.now() + 1000));
     await page.route(`**/api/notes/${note.id}`, async (route) => {

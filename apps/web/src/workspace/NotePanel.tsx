@@ -27,11 +27,12 @@ import ExportMarkdown from './ExportMarkdown.js';
 import ResourceActions from './ResourceActions.js';
 import type { LifecycleAction } from './lifecycle.js';
 import type { NoteTransitionState } from './useNoteTransition.js';
+import { noteIcons, type NoteAppearance } from './folio-preferences.js';
 
 const NoteContent = lazy(() => import('./NoteContent.js'));
 
 class PreviewBoundary extends Component<
-  { source: string; children: ReactNode },
+  { session: SaveCoordinator; children: ReactNode },
   { failed: boolean }
 > {
   state = { failed: false };
@@ -40,13 +41,7 @@ class PreviewBoundary extends Component<
   }
   render() {
     return this.state.failed ? (
-      <SourceFallback
-        document={{
-          mode: 'source',
-          source: this.props.source,
-          reason: 'conversion-failed',
-        }}
-      />
+      <SourceFallback session={this.props.session} />
     ) : (
       this.props.children
     );
@@ -58,6 +53,8 @@ export default function NotePanel({
   tree,
   header,
   transitionState,
+  appearance,
+  onAppearance,
   onAction,
   onNavigate,
   onDirtyChange,
@@ -69,6 +66,8 @@ export default function NotePanel({
   tree: WorkspaceTree;
   header: HTMLDivElement | null;
   transitionState: NoteTransitionState;
+  appearance: NoteAppearance;
+  onAppearance(patch: NoteAppearance): void;
   onAction(action: LifecycleAction): void;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
@@ -126,6 +125,8 @@ export default function NotePanel({
       tree={tree}
       header={header}
       transitionState={transitionState}
+      appearance={appearance}
+      onAppearance={onAppearance}
       onAction={onAction}
       onNavigate={onNavigate}
       onDirtyChange={onDirtyChange}
@@ -148,6 +149,8 @@ function NoteArticle({
   tree,
   header,
   transitionState,
+  appearance,
+  onAppearance,
   onAction,
   onNavigate,
   onDirtyChange,
@@ -161,6 +164,8 @@ function NoteArticle({
   tree: WorkspaceTree;
   header: HTMLDivElement | null;
   transitionState: NoteTransitionState;
+  appearance: NoteAppearance;
+  onAppearance(patch: NoteAppearance): void;
   onAction(action: LifecycleAction): void;
   onNavigate(id: ParentId): void;
   onDirtyChange(dirty: boolean): void;
@@ -175,6 +180,7 @@ function NoteArticle({
     onDirtyChange,
   );
   const [exportMessage, setExportMessage] = useState('');
+  const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     onSession(session);
     return () => onSession(null);
@@ -191,6 +197,18 @@ function NoteArticle({
               onNavigate={onNavigate}
             />
             <div className="note-header-actions">
+              <div ref={setToolbar} />
+              <button
+                type="button"
+                className="quiet-button folio-favorite"
+                aria-label="Favorite note"
+                aria-pressed={Boolean(appearance.favorite)}
+                onClick={() => onAppearance({ favorite: !appearance.favorite })}
+              >
+                <span aria-hidden="true">
+                  {appearance.favorite ? '★' : '☆'}
+                </span>
+              </button>
               <SaveStatus
                 session={session}
                 state={state}
@@ -209,6 +227,18 @@ function NoteArticle({
                 target={{ kind: 'note', value: note }}
                 onAction={onAction}
               >
+                <button
+                  type="button"
+                  onClick={() =>
+                    onAppearance({
+                      font: appearance.font === 'serif' ? 'sans' : 'serif',
+                    })
+                  }
+                >
+                  {appearance.font === 'serif'
+                    ? 'Use sans-serif type'
+                    : 'Use serif type'}
+                </button>
                 <ExportMarkdown
                   session={session}
                   onMessage={setExportMessage}
@@ -218,7 +248,31 @@ function NoteArticle({
           </>,
           header,
         )}
-      <article className="note-surface">
+      <article className="note-surface" data-font={appearance.font ?? 'sans'}>
+        <details className="folio-icon-menu no-print">
+          <summary aria-label="Change note icon" title="Change note icon">
+            {appearance.icon ?? '◈'}
+          </summary>
+          <div>
+            {noteIcons.map((icon) => (
+              <button
+                type="button"
+                key={icon}
+                aria-label={'Set note icon ' + icon}
+                onClick={(event) => {
+                  onAppearance({ icon });
+                  const details = event.currentTarget.closest('details');
+                  if (details) {
+                    details.open = false;
+                    details.querySelector('summary')?.focus();
+                  }
+                }}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </details>
         <TitleEditor
           session={session}
           state={state}
@@ -230,7 +284,7 @@ function NoteArticle({
             path.
           </p>
         )}
-        <PreviewBoundary key={note.id} source={note.content}>
+        <PreviewBoundary key={note.id} session={session}>
           <Suspense
             fallback={
               <p role="status" className="note-feedback workspace-message">
@@ -238,7 +292,11 @@ function NoteArticle({
               </p>
             }
           >
-            <NoteContent source={initial.content} session={session} />
+            <NoteContent
+              source={initial.content}
+              session={session}
+              toolbar={toolbar}
+            />
           </Suspense>
         </PreviewBoundary>
       </article>

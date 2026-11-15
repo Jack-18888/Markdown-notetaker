@@ -37,7 +37,7 @@ test('export drains delayed saves and newer title/body edits before downloading'
       exact: true,
     })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await expect(body).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   let release = () => {};
@@ -92,7 +92,7 @@ test('a failed prerequisite save prevents download, retains writing, and can be 
   await page
     .getByRole('button', { name: 'Open note Export save failure', exact: true })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await expect(body).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   let downloads = 0;

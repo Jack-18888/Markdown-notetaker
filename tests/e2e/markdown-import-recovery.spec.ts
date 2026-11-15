@@ -74,7 +74,7 @@ test('import flush failures retain writing and confirmed imports retry opening w
       exact: true,
     })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await expect(body).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   await body.fill('Writing before import');

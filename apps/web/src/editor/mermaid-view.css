@@ -1,9 +1,9 @@
-.ProseMirror .mermaid-block {
+.mermaid-block {
   margin-block: 14px;
-  border: 1px solid var(--crepe-color-inline-area, #d8dae0);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--crepe-color-surface, #f8f9ff);
-  font-family: var(--crepe-font-default, sans-serif);
+  background: var(--surface-low);
+  font-family: var(--font-text);
 }
 .mermaid-block .mermaid-actions {
   display: flex;
@@ -11,7 +11,7 @@
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  border-bottom: 1px solid var(--crepe-color-inline-area, #d8dae0);
+  border-bottom: 1px solid var(--line);
 }
 .mermaid-actions .mermaid-label {
   margin-right: auto;
@@ -22,16 +22,16 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--crepe-color-primary, #37618e);
+  color: var(--accent);
   padding: 6px 10px;
   font-size: 0.75rem;
 }
 .mermaid-actions button:hover {
-  background: var(--crepe-color-hover, #eceef4);
+  background: var(--hover);
 }
 .mermaid-block .mermaid-source {
   padding: 16px;
-  border-bottom: 1px solid var(--crepe-color-inline-area, #d8dae0);
+  border-bottom: 1px solid var(--line);
 }
 .mermaid-source label {
   display: block;
@@ -43,22 +43,24 @@
   width: 100%;
   resize: vertical;
   padding: 12px;
-  border: 1px solid var(--crepe-color-outline, #73777f);
+  border: 1px solid var(--control-line);
   border-radius: 6px;
-  background: var(--crepe-color-background, #fdfcff);
-  color: var(--crepe-color-on-background, #1b1c1d);
-  font: 0.85rem / 1.6 var(--crepe-font-code, Consolas, monospace);
+  background: var(--canvas);
+  color: var(--ink);
+  font: 0.85rem / 1.6 var(--font-code);
 }
 .mermaid-source textarea:focus-visible {
-  outline: 2px solid var(--crepe-color-primary, #37618e);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .mermaid-block .mermaid-preview {
+  background: #fafafa;
+  color: #18181b;
   overflow: auto;
   padding: 10px 12px;
 }
 .mermaid-preview:focus-visible {
-  outline: 2px solid var(--crepe-color-primary, #37618e);
+  outline: 2px solid var(--accent);
   outline-offset: -3px;
 }
 .mermaid-preview svg {
@@ -67,7 +69,7 @@
   margin: auto;
 }
 .mermaid-block .mermaid-message {
-  font: 0.82rem / 1.6 var(--crepe-font-default, sans-serif);
+  font: 0.82rem / 1.6 var(--font-text);
   padding: 16px;
-  color: var(--crepe-color-on-surface-variant, #43474e);
+  color: var(--muted);
 }

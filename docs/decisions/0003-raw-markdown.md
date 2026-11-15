@@ -12,7 +12,7 @@ Markdown is already the note's portable representation. Keeping the original sou
 
 ## Consequences
 
-The frontend parses Markdown for rich editing and safe rendering, and serializes actual body edits back to Markdown. It retains the original source for untouched notes and must preserve unsupported constructs through a safe read-only fallback rather than a lossy save. Rendering remains responsible for inert HTML, safe URLs, and Mermaid isolation.
+The frontend parses Markdown for rich editing and safe rendering, and serializes actual body edits back to Markdown. It retains the original source for untouched notes, preserves unsupported constructs as literal blocks, and makes the full source editable in Markdown view. Rendering remains responsible for inert HTML, safe URLs, and Mermaid isolation.
 
 There is no per-note document schema version. Database migrations manage persisted format changes. The original migration remains unchanged; migration 2 converts the supported legacy paragraph/text format without dropping notes. A conversion failure rolls back the complete upgrade and preserves the previous database.
 

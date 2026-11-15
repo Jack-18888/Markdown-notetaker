@@ -1,16 +1,13 @@
-import type { Node } from '@milkdown/kit/prose/model';
 import {
   ApiErrorCode,
+  markdownSchema,
   nameSchema,
   type NoteDetail,
   type UpdateNoteRequest,
 } from '@markdown-note-taker/contracts';
 import { updateNote, WorkspaceRequestError } from './api.js';
 
-export interface BodySnapshot {
-  node: Node;
-  serialize(): string;
-}
+export type BodyDraft = string | { error: string };
 export interface SaveState {
   note: NoteDetail;
   title: string;
@@ -26,11 +23,10 @@ type Writer = (
 ) => Promise<NoteDetail>;
 export const saveDelay = 750;
 
-/** Owns one note/revision. Editor snapshots are immutable and serialized only when submitted. */
+/** Owns one note/revision and submits immutable Markdown snapshots. */
 export class SaveCoordinator {
   private state: SaveState;
-  private body: BodySnapshot | null = null;
-  private savedBody: BodySnapshot | null = null;
+  private body: BodyDraft | null = null;
   private uncertain = false;
   private disposed = false;
   private changedAt = 0;
@@ -64,7 +60,7 @@ export class SaveCoordinator {
     return (
       this.uncertain ||
       this.state.title !== this.state.note.title ||
-      !!(this.body && this.savedBody && !this.body.node.eq(this.savedBody.node))
+      (this.body !== null && this.body !== this.state.note.content)
     );
   }
   private publish(patch: Partial<SaveState> = {}) {
@@ -76,13 +72,12 @@ export class SaveCoordinator {
     };
     for (const listener of this.listeners) listener();
   }
-  attachBody(body: BodySnapshot) {
+  attachBody() {
     if (this.disposed) return;
-    if (!this.body || !this.state.dirty) this.savedBody = body;
-    this.body = body;
+    this.body ??= this.state.note.content;
     this.publish();
   }
-  setBody(body: BodySnapshot) {
+  setBody(body: BodyDraft) {
     if (!this.disposed) {
       this.body = body;
       this.edited();
@@ -134,11 +129,7 @@ export class SaveCoordinator {
       return Promise.resolve(false);
     const { note, title } = this.state;
     const body = this.body;
-    const bodyChanged = !!(
-      body &&
-      this.savedBody &&
-      !body.node.eq(this.savedBody.node)
-    );
+    const bodyChanged = body !== null && body !== note.content;
     if (!nameSchema.safeParse(title).success) {
       this.publish({
         status: 'error',
@@ -147,24 +138,29 @@ export class SaveCoordinator {
       });
       return Promise.resolve(false);
     }
-    let input: UpdateNoteRequest;
-    try {
-      input = {
-        expectedRevision: note.revision,
-        ...(title !== note.title ? { title } : {}),
-        ...(bodyChanged ? { content: body!.serialize() } : {}),
-      };
-      // An ambiguous failed write still needs a revision-checked acknowledgement.
-      if (this.uncertain && !bodyChanged && title === note.title)
-        input.title = title;
-    } catch {
+    if (body !== null && typeof body !== 'string') {
       this.publish({
         status: 'error',
-        message:
-          'This edit cannot be saved safely. Your writing is still here; undo the last change and try again.',
+        message: body.error,
       });
       return Promise.resolve(false);
     }
+    if (bodyChanged && !markdownSchema.safeParse(body).success) {
+      this.publish({
+        status: 'error',
+        message:
+          'Markdown must be valid Unicode and at most 1 MiB. Your draft is still here.',
+      });
+      return Promise.resolve(false);
+    }
+    const input: UpdateNoteRequest = {
+      expectedRevision: note.revision,
+      ...(title !== note.title ? { title } : {}),
+      ...(bodyChanged ? { content: body } : {}),
+    };
+    // An ambiguous failed write still needs a revision-checked acknowledgement.
+    if (this.uncertain && !bodyChanged && title === note.title)
+      input.title = title;
     const controller = new AbortController();
     this.request = controller;
     this.uncertain = true;
@@ -172,7 +168,6 @@ export class SaveCoordinator {
       try {
         const saved = await this.write(note.id, input, controller.signal);
         if (this.disposed || controller.signal.aborted) return false;
-        if (bodyChanged) this.savedBody = body;
         this.uncertain = false;
         this.state = { ...this.state, note: saved };
         this.publish({
@@ -222,11 +217,9 @@ export class SaveCoordinator {
     return this.flushing;
   };
   localContent() {
-    return this.body &&
-      this.savedBody &&
-      !this.body.node.eq(this.savedBody.node)
-      ? this.body.serialize()
-      : this.state.note.content;
+    if (this.body !== null && typeof this.body !== 'string')
+      throw new Error(this.body.error);
+    return this.body ?? this.state.note.content;
   }
   dispose() {
     this.disposed = true;

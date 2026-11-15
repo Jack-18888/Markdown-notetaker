@@ -25,10 +25,7 @@ test('reselecting the active note cancels a pending destination while its edits 
     await page
       .getByRole('button', { name: 'Open note Reselect active', exact: true })
       .click();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
+    const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
     await page.route(`**/api/notes/${active.id}`, async (route) => {
       if (route.request().method() !== 'PATCH') return route.continue();
       const response = await route.fetch();
@@ -99,10 +96,7 @@ test('navigation drains in-flight edits and honors the latest requested destinat
     await page
       .getByRole('button', { name: 'Open note Flush active', exact: true })
       .click();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
+    const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
     await page.route(`**/api/notes/${note.id}`, async (route) => {
       if (route.request().method() !== 'PATCH') return route.continue();
       writes++;
@@ -156,7 +150,7 @@ test('a failed flush keeps the note and supports retry before leaving', async ({
   await page
     .getByRole('button', { name: 'Open note Flush retry active', exact: true })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await page.route(`**/api/notes/${note.id}`, (route) =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
@@ -194,7 +188,7 @@ test('lifecycle dialogs use the revision acknowledged by their prerequisite flus
     .getByRole('button', { name: 'Open note Flush before rename', exact: true })
     .click();
   await page
-    .getByRole('textbox', { name: 'Note content', exact: true })
+    .getByRole('textbox', { name: 'Paragraph', exact: true })
     .fill('Saved before renaming');
   await openActionDisclosure(page, 'Note actions');
   await page.getByRole('button', { name: 'Rename note', exact: true }).click();

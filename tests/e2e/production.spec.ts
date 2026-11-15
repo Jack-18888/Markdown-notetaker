@@ -171,10 +171,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
         .getByRole('img', { name: 'Mermaid diagram preview', exact: true })
         .first(),
     ).toBeVisible();
-    const body = page.getByRole('textbox', {
-      name: 'Note content',
-      exact: true,
-    });
+    const body = page.getByRole('group', { name: 'Note content', exact: true });
     await expect(body.locator('.katex')).toBeVisible();
     await expect
       .poll(async () =>
@@ -187,7 +184,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
         }),
       )
       .toBe(true);
-    await body.locator(':scope > p').last().click();
+    await body.locator('.folio-block > p').last().click();
     await page.keyboard.press('End');
     await page.keyboard.type(' Saved from production.');
     const downloaded = page.waitForEvent('download');

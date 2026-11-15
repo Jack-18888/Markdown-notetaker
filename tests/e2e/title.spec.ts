@@ -89,7 +89,7 @@ test('failed and competing title saves retain the draft until retry or confirmed
   ).toBeVisible();
   await noteTitleButton(page, 'Retained local title').click();
   await input.fill('Competing title');
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await body.fill('Local body survives discarding the title');
   await request.patch(`/api/notes/${note.id}`, {
     data: { expectedRevision: 2, title: 'Other tab title' },

@@ -45,7 +45,7 @@ test('narrow navigation works by keyboard and keeps the reading surface reachabl
       .focus();
     await page.keyboard.press('Enter');
     await expect(
-      page.getByRole('textbox', { name: 'Note content', exact: true }),
+      page.getByRole('group', { name: 'Note content', exact: true }),
     ).toContainText('Readable on a narrow screen.');
     await expect(sidebar).toBeHidden();
     await expect(page.getByRole('main')).toBeFocused();
@@ -59,7 +59,7 @@ test('narrow navigation works by keyboard and keeps the reading surface reachabl
       fullPage: true,
     });
     await page
-      .getByRole('textbox', { name: 'Note content', exact: true })
+      .getByRole('group', { name: 'Note content', exact: true })
       .locator('p')
       .last()
       .scrollIntoViewIfNeeded();
@@ -207,10 +207,11 @@ test('rapid selection and failed note retry preserve the current note and safe s
       page.getByRole('heading', { level: 1, name: 'State beta', exact: true }),
     ).toBeVisible();
     release();
+    await page.getByRole('button', { name: 'Markdown', exact: true }).click();
     const fallback = page.getByRole('region', { name: 'Markdown source' });
-    expect(
-      await fallback.getByLabel('Read-only Markdown source').textContent(),
-    ).toBe(source);
+    await expect(fallback.getByLabel('Raw Markdown source')).toHaveValue(
+      source.replaceAll('\r\n', '\n'),
+    );
     await expect(fallback.locator('img, script, iframe, a')).toHaveCount(0);
     await expect(
       page.getByRole('heading', { level: 1, name: 'State beta', exact: true }),

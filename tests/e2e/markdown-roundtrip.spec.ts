@@ -17,18 +17,18 @@ const fixtures = [
   ...unsupportedFixtures.map(([label, source]) => ({
     label,
     source,
-    fallback: true,
+    fallback: false,
   })),
   ...unsafeLinkFixtures.map((source, index) => ({
     label: `unsafe link ${index}`,
     source,
-    fallback: true,
+    fallback: false,
   })),
   { label: 'empty', source: '', fallback: false },
   {
     label: 'BOM and mixed endings',
     source: '\ufeff# 雪 😀  \r\n\rLast\n',
-    fallback: true,
+    fallback: false,
   },
   { label: 'import limit', source: 'x'.repeat(256 * 1024), fallback: true },
 ];
@@ -76,11 +76,11 @@ for (const { label, source, fallback } of fixtures) {
         page.getByRole('region', { name: 'Markdown source', exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByRole('textbox', { name: 'Note content', exact: true }),
+        page.getByRole('group', { name: 'Note content', exact: true }),
       ).toHaveCount(0);
     } else {
       await expect(
-        page.getByRole('textbox', { name: 'Note content', exact: true }),
+        page.getByRole('group', { name: 'Note content', exact: true }),
       ).toBeVisible();
     }
     const downloaded = page.waitForEvent('download');
@@ -96,7 +96,7 @@ for (const { label, source, fallback } of fixtures) {
     expect(externalRequests).toBe(0);
     await expect(
       page.locator(
-        '.note-surface script, .note-surface iframe, .note-surface img:not(.ProseMirror-separator)',
+        '.note-surface script, .note-surface iframe, .note-surface img',
       ),
     ).toHaveCount(0);
   });
@@ -119,8 +119,8 @@ test('supported rich edits reimport with equivalent blocks and exact Mermaid pay
       exact: true,
     })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
-  await body.locator(':scope > p').last().click();
+  const body = page.getByRole('group', { name: 'Note content', exact: true });
+  await body.locator('.folio-block > p').last().click();
   await page.keyboard.press('End');
   await page.keyboard.type(' Edited before export.');
   const downloaded = page.waitForEvent('download');
@@ -163,9 +163,11 @@ test('supported rich edits reimport with equivalent blocks and exact Mermaid pay
     body.getByRole('heading', { name: 'Round trip', exact: true }),
   ).toBeVisible();
   await expect(body.locator('strong')).toHaveText('Bold');
-  await expect(body.locator('code')).toHaveText('literal <script>');
+  await expect(
+    body.getByText('literal <script>', { exact: true }),
+  ).toBeVisible();
   await expect(body.getByRole('checkbox')).toHaveCount(1);
-  await expect(body.locator(':scope > p').last()).toHaveText(
+  await expect(body.locator('.folio-block > p').last()).toHaveText(
     'Last paragraph. Edited before export.',
   );
   const saved = await notes.read(copy.id);

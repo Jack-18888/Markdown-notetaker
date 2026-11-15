@@ -20,13 +20,13 @@ test('two tabs preserve competing edits and retry opening a committed copy witho
       .getByRole('button', { name: 'Open note Two tab recovery', exact: true })
       .click();
     const localBody = local.getByRole('textbox', {
-      name: 'Note content',
+      name: 'Paragraph',
       exact: true,
     });
     await expect(localBody).toBeVisible();
     await local.clock.pauseAt(new Date(Date.now() + 1000));
     await page
-      .getByRole('textbox', { name: 'Note content', exact: true })
+      .getByRole('textbox', { name: 'Paragraph', exact: true })
       .fill('Other tab saved writing');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
@@ -122,7 +122,7 @@ test('reload requires confirmation, retains local edits on failure, and resets h
   await page
     .getByRole('button', { name: 'Open note Reload recovery', exact: true })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await request.patch(`/api/notes/${note.id}`, {
     data: {
       expectedRevision: 1,

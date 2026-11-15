@@ -1,4 +1,3 @@
-import { Schema } from '@milkdown/kit/prose/model';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   ApiErrorCode,
@@ -10,11 +9,6 @@ import { WorkspaceRequestError } from '../api.js';
 import { note } from './fixtures.js';
 
 afterEach(() => vi.useRealTimers());
-const schema = new Schema({ nodes: { doc: { content: 'text*' }, text: {} } });
-const body = (text: string, serialize = () => text) => ({
-  node: schema.node('doc', null, text ? schema.text(text) : undefined),
-  serialize,
-});
 function setup() {
   vi.useFakeTimers();
   let saved = note;
@@ -29,7 +23,7 @@ function setup() {
     return saved;
   });
   const coordinator = new SaveCoordinator(note, write);
-  coordinator.attachBody(body(note.content));
+  coordinator.attachBody();
   return { coordinator, write };
 }
 
@@ -42,9 +36,9 @@ it('waits for the quiet interval after an autosave response when newer typing is
         finish = resolve;
       }),
   );
-  coordinator.setBody(body('First'));
+  coordinator.setBody('First');
   await vi.advanceTimersByTimeAsync(saveDelay);
-  coordinator.setBody(body('Latest'));
+  coordinator.setBody('Latest');
   finish({ ...note, content: 'First', revision: 2 });
   await vi.advanceTimersByTimeAsync(saveDelay - 1);
   expect(write).toHaveBeenCalledOnce();
@@ -68,9 +62,9 @@ it('keeps an ambiguous failed write dirty even after undo, until a revision-chec
       'Could not reach the workspace.',
     ),
   );
-  coordinator.setBody(body('Unconfirmed'));
+  coordinator.setBody('Unconfirmed');
   await coordinator.flush();
-  coordinator.setBody(body(note.content));
+  coordinator.setBody(note.content);
   expect(coordinator.getSnapshot().dirty).toBe(true);
   await coordinator.flush();
   expect(write.mock.calls[1]?.[1]).toEqual({
@@ -81,16 +75,14 @@ it('keeps an ambiguous failed write dirty even after undo, until a revision-chec
   coordinator.dispose();
 });
 
-it('debounces both drafts, serializes only the submitted body, and omits untouched source', async () => {
+it('debounces both drafts, submits the latest body, and omits untouched source', async () => {
   const { coordinator, write } = setup();
-  const serialize = vi.fn(() => 'Body draft');
   coordinator.setTitle('First title');
   await vi.advanceTimersByTimeAsync(500);
   coordinator.setTitle('Latest title');
-  coordinator.setBody(body('Body draft', serialize));
+  coordinator.setBody('Body draft');
   await vi.advanceTimersByTimeAsync(saveDelay - 1);
   expect(write).not.toHaveBeenCalled();
-  expect(serialize).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(1);
   expect(write).toHaveBeenCalledOnce();
   expect(write.mock.calls[0]?.[1]).toEqual({
@@ -117,11 +109,11 @@ it('shares a flush and drains edits made during a write using its acknowledged r
         finish = resolve;
       }),
   );
-  coordinator.setBody(body('First'));
+  coordinator.setBody('First');
   const flushed = coordinator.flush();
   expect(coordinator.flush()).toBe(flushed);
   await vi.advanceTimersByTimeAsync(0);
-  coordinator.setBody(body('Newest'));
+  coordinator.setBody('Newest');
   coordinator.setTitle('New title');
   await vi.advanceTimersByTimeAsync(2000);
   expect(write).toHaveBeenCalledOnce();
@@ -142,7 +134,7 @@ it('shares a flush and drains edits made during a write using its acknowledged r
 it('retains failed snapshots, stops automatic retries, and retries explicitly', async () => {
   const { coordinator, write } = setup();
   write.mockRejectedValueOnce(new Error('private diagnostic'));
-  coordinator.setBody(body('Retained'));
+  coordinator.setBody('Retained');
   await vi.advanceTimersByTimeAsync(saveDelay);
   expect(coordinator.getSnapshot()).toMatchObject({
     status: 'error',
@@ -163,9 +155,9 @@ it.each([ApiErrorCode.REVISION_CONFLICT, ApiErrorCode.NOT_FOUND])(
     write.mockRejectedValueOnce(
       new WorkspaceRequestError(code, 'The note changed.'),
     );
-    coordinator.setBody(body('Local copy'));
+    coordinator.setBody('Local copy');
     expect(await coordinator.flush()).toBeNull();
-    coordinator.setBody(body('More local changes'));
+    coordinator.setBody('More local changes');
     await vi.advanceTimersByTimeAsync(5000);
     expect(await coordinator.flush()).toBeNull();
     expect(write).toHaveBeenCalledOnce();
@@ -179,14 +171,10 @@ it('blocks invalid names and conversion before sending a request and recovers af
   coordinator.setTitle(' padded ');
   expect(await coordinator.flush()).toBeNull();
   coordinator.setTitle(note.title);
-  coordinator.setBody(
-    body('Unsafe conversion', () => {
-      throw new Error('private source');
-    }),
-  );
+  coordinator.setBody({ error: 'Unsafe conversion' });
   expect(await coordinator.flush()).toBeNull();
   expect(write).not.toHaveBeenCalled();
-  coordinator.setBody(body(note.content));
+  coordinator.setBody(note.content);
   expect(coordinator.getSnapshot().dirty).toBe(false);
   coordinator.dispose();
 });

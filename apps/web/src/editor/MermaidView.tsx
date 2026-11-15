@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { renderDiagram, type DiagramResult } from './diagram-renderer.js';
+import { normalizedSource, reconcileSource } from './source-text.js';
 import './mermaid-view.css';
 
 export default function MermaidView({
@@ -58,10 +59,12 @@ export default function MermaidView({
           <textarea
             ref={input}
             id={`${id}-input`}
-            value={source}
+            value={normalizedSource(source)}
             rows={6}
             spellCheck={false}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) =>
+              onChange(reconcileSource(source, event.currentTarget.value))
+            }
             onKeyDown={(event) => {
               if (
                 (event.ctrlKey || event.metaKey) &&

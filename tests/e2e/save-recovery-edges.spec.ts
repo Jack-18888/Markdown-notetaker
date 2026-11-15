@@ -12,7 +12,7 @@ test('a real dirty-tab navigation prompts before leaving and a clean tab does no
   await page
     .getByRole('button', { name: 'Open note Tab warning', exact: true })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await expect(body).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   await body.click();
@@ -50,7 +50,7 @@ test('a failed title request on source fallback can be retried after discarding 
   await page
     .getByRole('button', { name: 'Open note Fallback save retry', exact: true })
     .click();
-  await expect(page.getByLabel('Read-only Markdown source')).toBeVisible();
+  await expect(page.getByLabel('Literal Markdown')).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   await page.route(`**/api/notes/${note.id}`, (route) =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
@@ -70,9 +70,9 @@ test('a failed title request on source fallback can be retried after discarding 
     content,
     revision: 2,
   });
-  await expect(
-    page.getByRole('textbox', { name: 'Note content', exact: true }),
-  ).toHaveCount(0);
+  await expect(page.getByLabel('Literal Markdown')).toContainText(
+    'title: Keep source',
+  );
 });
 
 test('a note deleted by another client retains local writing for recovery as a new note', async ({
@@ -88,7 +88,7 @@ test('a note deleted by another client retains local writing for recovery as a n
       exact: true,
     })
     .click();
-  const body = page.getByRole('textbox', { name: 'Note content', exact: true });
+  const body = page.getByRole('textbox', { name: 'Paragraph', exact: true });
   await expect(body).toBeVisible();
   await request.delete(`/api/notes/${note.id}`, {
     data: { expectedRevision: 1 },

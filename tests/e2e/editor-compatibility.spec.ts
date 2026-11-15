@@ -1,140 +1,39 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './note-fixtures.js';
 
-test('real editor edits retain Mermaid through the API and a browser reload', async ({
+test('large Markdown uses a keyboard-accessible source editor and keeps literal markup', async ({
   page,
-}) => {
-  await page.goto('/');
-  const source =
-    '# Browser\r\n\r\n```mermaid\r\nflowchart LR\r\n A --> B  \r\n```\r\n';
-  const result = await page.evaluate(async (content) => {
-    const path = '/src/editor/__test__/browser-fixture.ts';
-    const { openEditor, noteDetailSchema } = await import(
-      /* @vite-ignore */ path
-    );
-    const created = await fetch('/api/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Editor fixture',
-        folderId: null,
-        content,
-      }),
-    });
-    if (created.status !== 201) throw new Error('Fixture creation failed.');
-    const note = noteDetailSchema.parse(await created.json());
-    const host = document.createElement('div');
-    document.body.append(host);
-    const editor = openEditor({ root: host, source: note.content });
-    try {
-      const result = await editor.ready;
-      if (!result || !('view' in result))
-        throw new Error('Fixture is not editable.');
-      const { loaded, view } = result;
-      const { doc, schema } = view.state;
-      const original = loaded.serialize(doc);
-      view.dispatch(
-        view.state.tr.insert(
-          doc.content.size,
-          schema.node(
-            'paragraph',
-            null,
-            schema.text('Edited in the real browser'),
-          ),
-        ),
-      );
-      const saved = loaded.serialize(view.state.doc);
-      const updated = await fetch(`/api/notes/${note.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expectedRevision: 1, content: saved }),
-      });
-      return { id: note.id as string, original, saved, status: updated.status };
-    } finally {
-      editor.close();
-      host.remove();
-    }
-  }, source);
-  expect(result.original).toBe(source);
-  expect(result.status).toBe(200);
-  await page.reload();
-  const reopened = await page.evaluate(async (id) => {
-    const path = '/src/editor/__test__/browser-fixture.ts';
-    const { openEditor, noteDetailSchema } = await import(
-      /* @vite-ignore */ path
-    );
-    const response = await fetch(`/api/notes/${id}`);
-    const note = noteDetailSchema.parse(await response.json());
-    const editor = openEditor({
-      root: document.createElement('div'),
-      source: note.content,
-    });
-    try {
-      const result = await editor.ready;
-      if (!result || !('view' in result))
-        throw new Error('Saved source is not editable.');
-      return {
-        content: note.content,
-        document: result.loaded.document.toJSON(),
-        revision: note.revision,
-      };
-    } finally {
-      editor.close();
-    }
-  }, result.id);
-  expect(reopened.content).toBe(result.saved);
-  expect(reopened.revision).toBe(2);
-  expect(reopened.document.content).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        type: 'mermaid',
-        attrs: { source: 'flowchart LR\r\n A --> B  ' },
-      }),
-    ]),
-  );
-});
-
-test('source fallback is literal, keyboard reachable, and contained on narrow screens', async ({
-  page,
+  notes,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/');
   const source =
-    '---\r\ntitle: Keep source\r\n---\r\n<img src=x onerror=alert(1)>\r\n[unsafe](javascript:alert(1))\r\n' +
-    'unbroken-source-'.repeat(30);
-  await page.evaluate(async (source) => {
-    const path = '/src/editor/__test__/browser-fixture.ts';
-    const { createElement, createRoot, SourceFallback, openEditor } =
-      await import(/* @vite-ignore */ path);
-    const editor = openEditor({ root: document.createElement('div'), source });
-    const result = await editor.ready;
-    editor.close();
-    if (!result || result.loaded.mode !== 'source')
-      throw new Error('Expected source fallback.');
-    const host = document.createElement('div');
-    host.style.padding = '24px';
-    document.body.append(host);
-    createRoot(host).render(
-      createElement(SourceFallback, { document: result.loaded }),
-    );
-  }, source);
-  const region = page.getByRole('region', { name: 'Markdown source' });
-  await expect(region).toBeVisible();
-  const view = region.getByLabel('Read-only Markdown source');
-  expect(await view.textContent()).toBe(source);
-  await expect(
-    region.locator('img, script, iframe, a, textarea, [contenteditable]'),
-  ).toHaveCount(0);
-  await view.focus();
+    '<img src=x onerror=alert(1)>\r\n[unsafe](javascript:alert%281%29)\r\n' +
+    'unbroken-source-'.repeat(8_500);
+  const note = await notes.create('Large Folio source', source);
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: 'Open note Large Folio source', exact: true })
+    .click();
+  const region = page.getByRole('region', {
+    name: 'Markdown source',
+    exact: true,
+  });
+  const input = region.getByRole('textbox', { name: 'Raw Markdown source' });
+  await expect(input).toHaveValue(source.replaceAll('\r\n', '\n'));
+  await expect(region.locator('img, script, iframe, a')).toHaveCount(0);
+  await input.focus();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
-  await expect(view).toBeFocused();
-  expect(
-    await view.evaluate((node) => getComputedStyle(node).outlineStyle),
-  ).toBe('solid');
+  await expect(input).toBeFocused();
+  await expect(input).toHaveCSS('outline-style', 'solid');
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await region.screenshot({ path: 'test-results/source-fallback.png' });
+  await input.press('Control+End');
+  await page.keyboard.insertText('\nEdited in source mode.');
+  await page.getByRole('button', { name: 'Save note' }).click();
+  await expect
+    .poll(async () => (await notes.read(note.id)).content)
+    .toBe(source + '\r\nEdited in source mode.');
 });

@@ -234,10 +234,10 @@ test('long titles, deep breadcrumbs, literal code, and wide diagrams stay contai
       ),
     ).toBe(true);
     const codeBlock = page
-      .getByRole('textbox', { name: 'Note content', exact: true })
-      .locator('.milkdown-code-block');
+      .getByRole('group', { name: 'Note content', exact: true })
+      .locator('.folio-code');
     await codeBlock.scrollIntoViewIfNeeded();
-    await expect(codeBlock.locator('.cm-content')).toHaveText(
+    await expect(codeBlock.locator('pre code')).toHaveText(
       'literal_code_'.repeat(100),
     );
     expect(

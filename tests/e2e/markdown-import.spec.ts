@@ -53,9 +53,10 @@ test('imports exact UTF-8 source into the selected folder and opens only after c
     await expect(
       page.getByRole('heading', { name: 'Original', exact: true }),
     ).toBeVisible();
+    await page.getByRole('button', { name: 'Markdown', exact: true }).click();
     await expect(
-      page.getByRole('region', { name: 'Markdown source', exact: true }),
-    ).toBeVisible();
+      page.getByRole('textbox', { name: 'Raw Markdown source' }),
+    ).toHaveValue(source.replaceAll('\r\n', '\n'));
     expect(await notes.read(note.id)).toMatchObject({
       content: source,
       folderId: folder.id,
