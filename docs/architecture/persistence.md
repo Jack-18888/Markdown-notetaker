@@ -32,6 +32,7 @@ The [initial migration](../../apps/server/src/database/migrations/001-workspace.
 | ----------------- | --------------------------------------------------------------- |
 | folders           | id, name, parent_id, created_at, updated_at                     |
 | notes             | id, title, folder_id, content, revision, created_at, updated_at |
+| images            | id, mime, byte_length, sha256, data, created_at                 |
 | schema_migrations | version, name, checksum, applied_at                             |
 
 The content column is non-null SQLite TEXT containing raw Markdown. Database checks require safe positive note revisions and basic name lengths. Folder references have foreign keys with cascade deletion; parent_id and folder_id are indexed. A direct self-parent is rejected by a check constraint. Application validation and mutation rules are documented in the [workspace README](../../apps/server/src/workspace/README.md).

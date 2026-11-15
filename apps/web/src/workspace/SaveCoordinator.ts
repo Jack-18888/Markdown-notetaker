@@ -11,6 +11,9 @@ export interface BodySnapshot {
   node: Node;
   serialize(): string;
 }
+export interface PendingBodyWork {
+  wait(): Promise<boolean>;
+}
 export interface SaveState {
   note: NoteDetail;
   title: string;
@@ -30,6 +33,7 @@ export const saveDelay = 750;
 export class SaveCoordinator {
   private state: SaveState;
   private body: BodySnapshot | null = null;
+  private bodyWork: PendingBodyWork | null = null;
   private savedBody: BodySnapshot | null = null;
   private uncertain = false;
   private disposed = false;
@@ -63,6 +67,7 @@ export class SaveCoordinator {
   private dirty() {
     return (
       this.uncertain ||
+      this.bodyWork !== null ||
       this.state.title !== this.state.note.title ||
       !!(this.body && this.savedBody && !this.body.node.eq(this.savedBody.node))
     );
@@ -87,6 +92,11 @@ export class SaveCoordinator {
       this.body = body;
       this.edited();
     }
+  }
+  setBodyWork(work: PendingBodyWork | null) {
+    if (this.disposed) return;
+    this.bodyWork = work;
+    this.edited();
   }
   setTitle(title: string) {
     if (!this.disposed) {
@@ -132,6 +142,19 @@ export class SaveCoordinator {
     if (this.inFlight) return this.inFlight;
     if (this.disposed || this.state.status === 'conflict')
       return Promise.resolve(false);
+    if (this.bodyWork) {
+      return this.bodyWork.wait().then((ok) => {
+        if (this.disposed) return false;
+        if (ok) return this.saveOnce();
+        this.publish({
+          status: 'error',
+          message:
+            'An image could not be uploaded. Retry or remove it before saving.',
+        });
+        return false;
+      });
+    }
+    if (!this.dirty()) return Promise.resolve(true);
     const { note, title } = this.state;
     const body = this.body;
     const bodyChanged = !!(

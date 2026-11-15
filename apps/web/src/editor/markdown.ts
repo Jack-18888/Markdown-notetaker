@@ -41,6 +41,7 @@ function checkDocument(document: Node) {
     if (
       (node.type.name === 'mermaid' && depth !== 1) ||
       (node.type.name === 'image' && !isLocalImageUrl(node.attrs.src)) ||
+      node.type.name === 'image_upload' ||
       node.type.name.startsWith('footnote') ||
       node.type.name.includes('html')
     )

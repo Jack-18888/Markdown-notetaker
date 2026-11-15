@@ -5,10 +5,12 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { pngImage } from '../../apps/server/src/__test__/image-fixture.js';
 import {
   folderSchema,
   noteDetailSchema,
   treeResponseSchema,
+  imageUploadResponseSchema,
 } from '@markdown-note-taker/contracts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
@@ -144,10 +146,17 @@ test('built assets support writing, diagrams, files, protected API, and restart 
       exact: true,
     });
     const payload = 'flowchart LR\r\n  A --> B  ';
+    const imageUpload = await request.post(`${runtime.origin}/api/images`, {
+      headers: { 'Content-Type': 'image/png' },
+      data: pngImage,
+    });
+    expect(imageUpload.status()).toBe(201);
+    const image = imageUploadResponseSchema.parse(await imageUpload.json());
     const source =
       '# Production note\r\n\r\n```mermaid\r\n' +
       payload +
-      '\r\n```\r\n\r\n```mermaid\nsequenceDiagram\n Alice->>Bob: Local\n```\n\nArea is $\\pi r^2$.\n\nFinal paragraph.';
+      '\r\n```\r\n\r\n```mermaid\nsequenceDiagram\n Alice->>Bob: Local\n```\n\nArea is $\\pi r^2$.\n\nFinal paragraph.' +
+      `\n\n![Production image](${image.url})`;
     await dialog.getByLabel('Markdown file', { exact: true }).setInputFiles({
       name: 'Production import.md',
       mimeType: 'text/markdown',
@@ -176,6 +185,9 @@ test('built assets support writing, diagrams, files, protected API, and restart 
       exact: true,
     });
     await expect(body.locator('.katex')).toBeVisible();
+    await expect(
+      body.getByRole('img', { name: 'Production image', exact: true }),
+    ).toBeVisible();
     await expect
       .poll(async () =>
         page.evaluate(async () => {
@@ -224,6 +236,9 @@ test('built assets support writing, diagrams, files, protected API, and restart 
     await runtime.stop();
     runtime = await launch();
     expect(
+      await (await request.get(`${runtime.origin}${image.url}`)).body(),
+    ).toEqual(pngImage);
+    expect(
       treeResponseSchema.parse(
         await (await request.get(`${runtime.origin}/api/tree`)).json(),
       ),
@@ -241,6 +256,9 @@ test('built assets support writing, diagrams, files, protected API, and restart 
       .getByRole('button', { name: 'Open note Production import', exact: true })
       .click();
     await expect(body).toContainText('Saved from production.');
+    await expect(
+      body.getByRole('img', { name: 'Production image', exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole('img', { name: 'Mermaid diagram preview', exact: true }),
     ).toHaveCount(2);
@@ -290,6 +308,14 @@ test('a stopped-server directory backup restores hierarchy and exact source in a
   const restored = join(temporaryDirectory, 'backup-restored');
   let runtime = await launch(original);
   try {
+    const image = imageUploadResponseSchema.parse(
+      await (
+        await request.post(`${runtime.origin}/api/images`, {
+          headers: { 'Content-Type': 'image/png' },
+          data: pngImage,
+        })
+      ).json(),
+    );
     const folder = folderSchema.parse(
       await (
         await request.post(`${runtime.origin}/api/folders`, {
@@ -298,7 +324,8 @@ test('a stopped-server directory backup restores hierarchy and exact source in a
       ).json(),
     );
     const source =
-      '\ufeff# Backup 雪 😀\r\n\r\n```mermaid\r\nflowchart LR\r\n A --> B  \r\n```\r\n';
+      '\ufeff# Backup 雪 😀\r\n\r\n```mermaid\r\nflowchart LR\r\n A --> B  \r\n```\r\n' +
+      `\n![Backup image](${image.url})`;
     const note = noteDetailSchema.parse(
       await (
         await request.post(`${runtime.origin}/api/notes`, {
@@ -321,6 +348,9 @@ test('a stopped-server directory backup restores hierarchy and exact source in a
       force: false,
     });
     runtime = await launch(restored);
+    expect(
+      await (await request.get(`${runtime.origin}${image.url}`)).body(),
+    ).toEqual(pngImage);
     expect(
       treeResponseSchema.parse(
         await (await request.get(`${runtime.origin}/api/tree`)).json(),

@@ -33,6 +33,42 @@ function setup() {
   return { coordinator, write };
 }
 
+it('waits for image uploads and saves the latest body, never the placeholder snapshot', async () => {
+  const { coordinator, write } = setup();
+  let finish!: (ok: boolean) => void;
+  coordinator.setBodyWork({
+    wait: () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  });
+  coordinator.setBody(
+    body('placeholder', () => {
+      throw new Error('Pending image');
+    }),
+  );
+  const flushed = coordinator.flush();
+  expect(write).not.toHaveBeenCalled();
+  coordinator.setBodyWork(null);
+  coordinator.setBody(body('image and latest typing'));
+  finish(true);
+  expect(await flushed).toMatchObject({ content: 'image and latest typing' });
+  expect(write).toHaveBeenCalledOnce();
+  coordinator.dispose();
+});
+
+it('blocks save after upload failure and recovers when the image is removed', async () => {
+  const { coordinator, write } = setup();
+  coordinator.setBodyWork({ wait: async () => false });
+  expect(coordinator.getSnapshot().dirty).toBe(true);
+  expect(await coordinator.flush()).toBeNull();
+  expect(write).not.toHaveBeenCalled();
+  coordinator.setBodyWork(null);
+  expect(await coordinator.flush()).toMatchObject({ content: note.content });
+  expect(write).not.toHaveBeenCalled();
+  coordinator.dispose();
+});
+
 it('waits for the quiet interval after an autosave response when newer typing is still recent', async () => {
   const { coordinator, write } = setup();
   let finish!: (note: NoteDetail) => void;

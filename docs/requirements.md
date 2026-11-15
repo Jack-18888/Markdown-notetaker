@@ -15,6 +15,7 @@ Local personal use is the current product boundary. Shared workspaces and a host
 - **Organization:** Arrange notes in a folder hierarchy so related information is easy to find and maintain.
 - **Writing:** Provide a readable, Notion-like rich editing experience with Markdown-compatible content.
 - **Diagrams:** Keep editable Mermaid diagrams alongside the text they explain.
+- **Images:** Paste screenshots and copied images into notes and keep their image data locally with the workspace.
 - **Portability:** Import and export Markdown so content can move into and out of the workspace.
 - **Persistence:** Retain saved notes locally and make save outcomes clear.
 
