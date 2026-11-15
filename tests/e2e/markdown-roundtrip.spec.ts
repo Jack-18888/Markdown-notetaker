@@ -1,3 +1,4 @@
+import { openActionDisclosure } from './workspace-controls.js';
 import { readFile } from 'node:fs/promises';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 import {
@@ -33,7 +34,7 @@ const fixtures = [
 ];
 
 for (const { label, source, fallback } of fixtures) {
-  test(`file round trip retains ${label}`, async ({ page, notes }) => {
+  test(`file round trip retains ${label}`, async ({ page, notes, baseURL }) => {
     let dialogs = 0,
       externalRequests = 0;
     page.on('dialog', async (dialog) => {
@@ -41,10 +42,10 @@ for (const { label, source, fallback } of fixtures) {
       await dialog.dismiss();
     });
     page.on('request', (request) => {
-      if (!request.url().startsWith('http://127.0.0.1:5173/'))
-        externalRequests++;
+      if (!request.url().startsWith(`${baseURL}/`)) externalRequests++;
     });
     await page.goto('/');
+    await openActionDisclosure(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Import Markdown', exact: true })
       .click();
@@ -83,6 +84,7 @@ for (const { label, source, fallback } of fixtures) {
       ).toBeVisible();
     }
     const downloaded = page.waitForEvent('download');
+    await openActionDisclosure(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .click();
@@ -122,6 +124,7 @@ test('supported rich edits reimport with equivalent blocks and exact Mermaid pay
   await page.keyboard.press('End');
   await page.keyboard.type(' Edited before export.');
   const downloaded = page.waitForEvent('download');
+  await openActionDisclosure(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();
@@ -130,6 +133,7 @@ test('supported rich edits reimport with equivalent blocks and exact Mermaid pay
   expect(bytes.toString('utf8')).toContain(
     'Last paragraph. Edited before export.',
   );
+  await openActionDisclosure(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Import Markdown', exact: true })
     .click();

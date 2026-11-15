@@ -39,7 +39,7 @@ export default function MermaidView({
   return (
     <section className="mermaid-block" aria-label="Mermaid diagram">
       <div className="mermaid-actions">
-        <span className="workspace-eyebrow">Diagram</span>
+        <span className="mermaid-label">Diagram</span>
         <button
           type="button"
           aria-expanded={editing}

@@ -1,3 +1,4 @@
+import { noteTitleButton } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -278,11 +279,11 @@ test('unsupported and hostile saved Markdown exposes only literal source and pre
       page.getByRole('button', { name: 'Save note', exact: true }),
     ).toHaveCount(0);
     await expect(source.locator('img, a, script, iframe')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+    await noteTitleButton(page, 'Source-only writing').click();
     await page
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Preserved source title');
-    await page.getByRole('button', { name: 'Save title', exact: true }).click();
+    await page.keyboard.press('Enter');
     await expect(
       page.getByRole('heading', {
         name: 'Preserved source title',

@@ -1,3 +1,4 @@
+import { noteTitleButton } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 
@@ -41,7 +42,7 @@ test('idle edits batch title and body, while title-only saves omit untouched Mar
     await page.keyboard.press('Home');
     await page.keyboard.press('Shift+End');
     await page.keyboard.type('A batched body');
-    await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+    await noteTitleButton(page, 'Autosave batching').click();
     const title = page.getByRole('textbox', {
       name: 'Note title',
       exact: true,
@@ -147,7 +148,7 @@ test('edits during autosave retain the current editor, serialize writes, and kee
     await page.clock.runFor(750);
     await expect.poll(() => started).toBe(true);
     await body.fill('Newer snapshot');
-    await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+    await noteTitleButton(page, 'Autosave ordering').click();
     await page
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Newer title');

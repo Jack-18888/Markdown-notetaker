@@ -1,33 +1,85 @@
-.body-save-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 28px;
-  border-top: 1px solid #d8d8ca;
-  padding-top: 20px;
+.note-save-controls {
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
-.body-save-row p {
-  flex: 1 1 200px;
-  font-size: 0.8rem;
-  color: #5c6254;
-  line-height: 1.6;
+
+.note-save-indicator {
+  min-inline-size: 6.25rem;
 }
-.body-save-row [role='alert'] {
-  color: #8a3e1b;
+
+.note-save-indicator > p {
+  color: var(--muted);
+  margin: 0;
 }
-.body-save-row button:disabled {
-  opacity: 0.5;
-  cursor: default;
+
+.note-save-button[data-hidden='true'] {
+  visibility: hidden;
 }
-.conflict-recovery {
-  max-width: 72ch;
-  border-left: 3px solid #8b4c1e;
-  padding: 4px 16px 16px;
-  margin-top: 20px;
-  background: #eeebe3;
+
+.note-save-button:not(:disabled) {
+  color: var(--accent);
+  background: var(--selected);
 }
-.conflict-recovery p {
-  font-size: 0.85rem;
-  line-height: 1.7;
+
+.note-save-button:not(:disabled):hover {
+  background: var(--hover);
+}
+
+.note-save-indicator .save-issue {
+  margin-inline-start: -8px;
+  color: var(--error);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.save-feedback {
+  position: fixed;
+  inset: auto 12px 12px auto;
+  z-index: 2;
+  width: min(380px, calc(100vw - 24px));
+  max-height: 50dvh;
+  overflow: auto;
+  padding: 14px 42px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--popup-shadow);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.save-feedback > p {
+  margin: 0;
+  color: var(--error);
+}
+
+.save-feedback > p + p {
+  margin-top: 8px;
+}
+
+.save-feedback-dismiss {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.note-feedback {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.conflict-recovery > p {
+  margin: 10px 0 0;
+}
+
+@media (max-width: 760px) {
+  .workspace-context .note-header-actions,
+  .workspace-context .note-save-controls {
+    gap: 6px;
+  }
 }

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NoteDetail } from '@markdown-note-taker/contracts';
 import type { SaveCoordinator } from './SaveCoordinator.js';
 
+export type NoteTransitionState = 'idle' | 'saving' | 'error';
+
 /** The most recent requested destination wins while a shared flush drains the active note. */
 export function useNoteTransition() {
   const active = useRef<SaveCoordinator | null>(null);
   const version = useRef(0);
-  const [state, setState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [state, setState] = useState<NoteTransitionState>('idle');
   useEffect(
     () => () => {
       version.current++;

@@ -30,7 +30,6 @@ export default function Modal({
         if (!pending) onDismiss();
       }}
     >
-      <p className="workspace-eyebrow">Your workspace</p>
       <h2 id={titleId}>{title}</h2>
       {children}
     </dialog>

@@ -1,3 +1,4 @@
+import { openActionDisclosure } from './workspace-controls.js';
 import { spawn, spawnSync } from 'node:child_process';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
@@ -107,6 +108,9 @@ test('built assets support writing, diagrams, files, protected API, and restart 
   page.on('request', (request) => {
     if (!request.url().startsWith(runtime.origin + '/')) externalRequests++;
   });
+  await page.route(/^https?:\/\/(?!127\.0\.0\.1:\d+\/)/, (route) =>
+    route.abort(),
+  );
   try {
     let parentId: string | null = null;
     for (let index = 1; index <= 3; index++) {
@@ -131,6 +135,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
     await page.goto(runtime.origin + '/workspace/production');
     expect(await page.content()).not.toContain('/@vite/client');
     await openFolder();
+    await openActionDisclosure(page, 'Workspace actions');
     await page
       .getByRole('button', { name: 'Import Markdown', exact: true })
       .click();
@@ -142,7 +147,7 @@ test('built assets support writing, diagrams, files, protected API, and restart 
     const source =
       '# Production note\r\n\r\n```mermaid\r\n' +
       payload +
-      '\r\n```\r\n\r\n```mermaid\nsequenceDiagram\n Alice->>Bob: Local\n```\n\nFinal paragraph.';
+      '\r\n```\r\n\r\n```mermaid\nsequenceDiagram\n Alice->>Bob: Local\n```\n\nArea is $\\pi r^2$.\n\nFinal paragraph.';
     await dialog.getByLabel('Markdown file', { exact: true }).setInputFiles({
       name: 'Production import.md',
       mimeType: 'text/markdown',
@@ -170,10 +175,23 @@ test('built assets support writing, diagrams, files, protected API, and restart 
       name: 'Note content',
       exact: true,
     });
+    await expect(body.locator('.katex')).toBeVisible();
+    await expect
+      .poll(async () =>
+        page.evaluate(async () => {
+          await document.fonts.ready;
+          return Array.from(document.fonts).some(
+            (font) =>
+              font.family.startsWith('KaTeX') && font.status === 'loaded',
+          );
+        }),
+      )
+      .toBe(true);
     await body.locator(':scope > p').last().click();
     await page.keyboard.press('End');
     await page.keyboard.type(' Saved from production.');
     const downloaded = page.waitForEvent('download');
+    await openActionDisclosure(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .click();

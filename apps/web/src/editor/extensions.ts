@@ -93,7 +93,7 @@ export function openEditor({
     },
     featureConfigs: {
       [CrepeFeature.Placeholder]: {
-        text: 'Please enter...',
+        text: 'Start writing, or type / for blocks',
         mode: 'doc',
       },
       [CrepeFeature.BlockEdit]: {

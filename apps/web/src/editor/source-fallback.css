@@ -1,54 +1,43 @@
 .source-fallback {
-  width: 100%;
   min-width: 0;
-  max-width: 760px;
-  padding: 24px 0;
+  padding-block: 8px 24px;
 }
 
 .source-fallback-label {
-  margin: 0 0 12px;
-  color: #40532e;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 
 .source-fallback h2 {
-  margin: 0 0 12px;
-  font:
-    normal clamp(1.7rem, 4vw, 2.2rem) / 1.2 'Palatino Linotype',
-    'Book Antiqua',
-    Palatino,
-    serif;
-  letter-spacing: -0.025em;
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .source-fallback-description {
-  max-width: 52ch;
-  margin: 0 0 24px;
-  color: #5c6254;
-  line-height: 1.6;
+  max-width: 56ch;
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .source-fallback pre {
-  max-height: 65vh;
+  max-height: 60vh;
   overflow: auto;
   margin: 0;
-  border: 1px solid #d8d8ca;
-  border-left: 3px solid #596b42;
-  padding: 20px;
-  background: #eeebe3;
-  color: #292d27;
-  font:
-    0.875rem / 1.7 Consolas,
-    'Liberation Mono',
-    monospace;
+  border: 1px solid var(--line);
+  padding: 12px;
+  background: var(--surface-low);
+  color: var(--ink);
+  font: 0.875rem / 1.6 var(--font-code);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   tab-size: 2;
 }
 
 .source-fallback pre:focus-visible {
-  outline: 3px solid #8b4c1e;
-  outline-offset: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

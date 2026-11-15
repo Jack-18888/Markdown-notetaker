@@ -32,6 +32,15 @@ export function sanitizeDiagram(svg: string): string {
     // The node view provides the accessible image name for the entire preview.
     element.setAttribute('aria-hidden', 'true');
     element.setAttribute('focusable', 'false');
+    // Keep wide diagrams readable by letting the preview region scroll.
+    const width = Number(
+      element
+        .getAttribute('viewBox')
+        ?.trim()
+        .split(/[\s,]+/)[2],
+    );
+    if (Number.isFinite(width) && width > 0)
+      element.setAttribute('width', String(width));
   }
   return template.innerHTML;
 }

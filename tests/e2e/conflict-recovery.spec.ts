@@ -1,3 +1,4 @@
+import { noteTitleButton, openActionDisclosure } from './workspace-controls.js';
 import { noteDetailSchema } from '@markdown-note-taker/contracts';
 import { expect, test } from './note-fixtures.js';
 
@@ -30,9 +31,7 @@ test('two tabs preserve competing edits and retry opening a committed copy witho
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
     await localBody.fill('Local writing to recover');
-    await local
-      .getByRole('button', { name: 'Edit title', exact: true })
-      .click();
+    await noteTitleButton(local, note.title).click();
     await local
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Local recovery title');
@@ -163,9 +162,7 @@ test('reload requires confirmation, retains local edits on failure, and resets h
   ).toBeVisible();
   await expect(body).toHaveText('Saved remote writing');
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Edit title', exact: true }),
-  ).toBeFocused();
+  await expect(noteTitleButton(page, 'Server version')).toBeFocused();
   await body.focus();
   await page.keyboard.press('Control+z');
   await expect(body).toHaveText('Saved remote writing');
@@ -186,14 +183,14 @@ test('confirmed reload restores focus for a note with read-only source', async (
       exact: true,
     })
     .click();
-  await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+  await noteTitleButton(page, note.title).click();
   await request.patch(`/api/notes/${note.id}`, {
     data: { expectedRevision: 1, title: 'Remote fallback title' },
   });
   await page
     .getByRole('textbox', { name: 'Note title', exact: true })
     .fill('Conflicting local title');
-  await page.getByRole('button', { name: 'Save title', exact: true }).click();
+  await page.keyboard.press('Enter');
   const reload = page.getByRole('button', {
     name: 'Reload saved note',
     exact: true,
@@ -208,10 +205,9 @@ test('confirmed reload restores focus for a note with read-only source', async (
   await expect(
     page.getByRole('heading', { name: 'Remote fallback title', exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Edit title', exact: true }),
-  ).toBeFocused();
+  await expect(noteTitleButton(page, 'Remote fallback title')).toBeFocused();
   expect((await notes.read(note.id)).content).toBe(content);
+  await openActionDisclosure(page, 'Workspace actions');
   await page
     .getByRole('button', { name: 'Refresh workspace', exact: true })
     .click();

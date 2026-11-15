@@ -5,7 +5,6 @@ import { openEditor } from './extensions.js';
 import SourceFallback from './SourceFallback.js';
 import type { FallbackReason } from './source-policy.js';
 import '@milkdown/crepe/theme/common/style.css';
-import '@milkdown/crepe/theme/nord.css';
 import './note-editor.css';
 
 export default function NoteEditor({
@@ -71,7 +70,9 @@ export default function NoteEditor({
           automatically.
         </p>
       ) : (
-        <p role="status">Preparing note…</p>
+        <p role="status" className="note-feedback workspace-message">
+          Preparing note…
+        </p>
       )}
       <div className="note-body note-editor" ref={host} hidden={!view} />
     </section>

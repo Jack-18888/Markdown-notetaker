@@ -1,3 +1,4 @@
+import { noteTitleButton, openActionDisclosure } from './workspace-controls.js';
 import { expect, test } from '@playwright/test';
 import {
   ApiErrorCode,
@@ -13,6 +14,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
   let rootId: string | undefined;
   try {
     await page.goto('/');
+    await openActionDisclosure(page, 'Workspace actions');
     await page.getByRole('button', { name: 'New folder', exact: true }).click();
     let dialog = page.getByRole('dialog', { name: 'New folder', exact: true });
     const name = dialog.getByRole('textbox', {
@@ -47,6 +49,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
     rootId = initial.folders.find(
       (folder) => folder.name === 'Lifecycle root',
     )!.id;
+    await openActionDisclosure(page, 'Workspace actions');
     await page.getByRole('button', { name: 'New folder', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'New folder', exact: true });
     await expect(dialog).toContainText('Workspace / Lifecycle root');
@@ -74,6 +77,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
         exact: true,
       }),
     ).toBeVisible();
+    await openActionDisclosure(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Rename note', exact: true })
       .click();
@@ -100,10 +104,11 @@ test('creates nested items and renames by keyboard without dropping pending titl
     );
     expect(saved.content).toBe('');
     expect(saved.revision).toBe(2);
-    await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+    await noteTitleButton(page, saved.title).click();
     await page
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Protected draft');
+    await openActionDisclosure(page, 'Workspace actions');
     await page.getByRole('button', { name: 'New folder', exact: true }).click();
     await expect(
       page.getByRole('dialog', { name: 'New folder', exact: true }),
@@ -121,6 +126,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
       .getByRole('navigation', { name: 'Breadcrumb' })
       .getByRole('button', { name: 'Lifecycle child', exact: true })
       .click();
+    await openActionDisclosure(page, 'Folder actions');
     await page
       .getByRole('button', { name: 'Rename folder', exact: true })
       .click();
@@ -136,6 +142,7 @@ test('creates nested items and renames by keyboard without dropping pending titl
         exact: true,
       }),
     ).toBeVisible();
+    await openActionDisclosure(page, 'Workspace actions');
     await page.getByRole('button', { name: 'New folder', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'New folder', exact: true });
     await dialog

@@ -57,7 +57,7 @@ export function assessSource(source: string): FallbackReason | null {
       // Milkdown uses an attribute-free, standalone <br /> for empty blocks.
       if (
         token.type === 'html' &&
-        depth === 0 &&
+        token.block &&
         /^<br \/>\s*$/.test(token.raw)
       )
         continue;

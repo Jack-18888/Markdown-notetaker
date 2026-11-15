@@ -1,3 +1,4 @@
+import { noteTitleButton, openActionDisclosure } from './workspace-controls.js';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './note-fixtures.js';
 
@@ -13,6 +14,7 @@ test('exports untouched source bytes with a safe filename, including BOM and mix
     .getByRole('button', { name: 'Open note CON', exact: true })
     .click();
   const downloaded = page.waitForEvent('download');
+  await openActionDisclosure(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();
@@ -53,12 +55,13 @@ test('export drains delayed saves and newer title/body edits before downloading'
   try {
     await body.fill('First pending version');
     const downloaded = page.waitForEvent('download');
+    await openActionDisclosure(page, 'Note actions');
     await page
       .getByRole('button', { name: 'Export Markdown', exact: true })
       .click();
     await expect.poll(() => requests).toBe(1);
     await body.fill('Latest pending version');
-    await page.getByRole('button', { name: 'Edit title', exact: true }).click();
+    await noteTitleButton(page, note.title).click();
     await page
       .getByRole('textbox', { name: 'Note title', exact: true })
       .fill('Latest export title');
@@ -100,6 +103,7 @@ test('a failed prerequisite save prevents download, retains writing, and can be 
   await page.route(`**/api/notes/${note.id}`, (route) =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
+  await openActionDisclosure(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();
@@ -111,6 +115,7 @@ test('a failed prerequisite save prevents download, retains writing, and can be 
   await expect(body).toHaveText('Retain this draft');
   await page.unrouteAll({ behavior: 'wait' });
   const downloaded = page.waitForEvent('download');
+  await openActionDisclosure(page, 'Note actions');
   await page
     .getByRole('button', { name: 'Export Markdown', exact: true })
     .click();

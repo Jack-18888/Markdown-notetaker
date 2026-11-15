@@ -1,3 +1,4 @@
+import { openActionDisclosure } from './workspace-controls.js';
 import { expect, test } from './note-fixtures.js';
 
 test('reselecting the active note cancels a pending destination while its edits still save', async ({
@@ -195,6 +196,7 @@ test('lifecycle dialogs use the revision acknowledged by their prerequisite flus
   await page
     .getByRole('textbox', { name: 'Note content', exact: true })
     .fill('Saved before renaming');
+  await openActionDisclosure(page, 'Note actions');
   await page.getByRole('button', { name: 'Rename note', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Rename note' });
   await dialog
