@@ -48,7 +48,7 @@ export const errorDefinitions = {
   },
   [ApiErrorCode.UNSUPPORTED_MEDIA_TYPE]: {
     status: 415,
-    message: 'A JSON request body is required.',
+    message: 'The request content type or encoding is not supported.',
   },
   [ApiErrorCode.ORIGIN_FORBIDDEN]: {
     status: 403,

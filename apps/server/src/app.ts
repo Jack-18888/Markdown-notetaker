@@ -14,6 +14,7 @@ import { protectApi } from './http/protection.js';
 import { workspaceRouter } from './http/workspace.js';
 import type { WorkspaceService } from './workspace/types.js';
 import { frontendDirectory } from './config.js';
+import { imageRouter } from './http/images.js';
 
 interface AppOptions {
   workspace: WorkspaceService;
@@ -41,6 +42,7 @@ export function createApp({
   });
 
   app.use(workspaceRouter(workspace));
+  app.use(imageRouter(workspace));
 
   app.use('/api', (_request, response) => {
     response.status(errorDefinitions[ApiErrorCode.NOT_FOUND].status).json(

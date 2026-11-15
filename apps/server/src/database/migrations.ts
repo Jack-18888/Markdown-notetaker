@@ -7,6 +7,7 @@ import {
 } from './errors.js';
 import { initialWorkspaceMigration } from './migrations/001-workspace.js';
 import { markdownMigration } from './migrations/002-markdown.js';
+import { imagesMigration } from './migrations/003-images.js';
 
 /** Code-owned SQL; the runner owns the transaction and version bookkeeping. */
 export interface Migration {
@@ -20,6 +21,7 @@ export interface Migration {
 export const workspaceMigrations: readonly Migration[] = [
   initialWorkspaceMigration,
   markdownMigration,
+  imagesMigration,
 ];
 
 interface AppliedMigration {

@@ -19,6 +19,13 @@ The current single-user workspace has a virtual root, represented by null parent
 
 ## Implemented storage schema
 
+Migration 3 adds `images` with UUID `id`, validated `mime`, `byte_length`, unique
+SHA-256 digest `sha256`, image BLOB `data`, and `created_at`. PNG, JPEG, and WebP
+uploads are bounded to 5 MiB and deduplicated transactionally. Images are
+independent of notes so copied Markdown references survive note deletion and
+conflict recovery. Unused images remain stored; garbage collection is deferred.
+The existing stopped-server database backup includes image bytes.
+
 The [initial migration](../../apps/server/src/database/migrations/001-workspace.ts) is retained unchanged. [Migration 2](../../apps/server/src/database/migrations/002-markdown.ts) defines the current note storage:
 
 | Table             | Columns                                                         |

@@ -25,6 +25,7 @@ import { guarded, WorkspaceError } from './errors.js';
 import { createWorkspaceRepository } from './repository.js';
 import type { WorkspaceService } from './types.js';
 import { validate } from './validation.js';
+import { createImageService } from '../database/images.js';
 
 /** Transactional folder/note operations over an initialized workspace database. */
 export function createWorkspaceService(
@@ -80,6 +81,7 @@ export function createWorkspaceService(
   }
 
   return {
+    ...createImageService(database),
     /** Consistent metadata snapshot, also usable for subtree-delete confirmation. */
     listTree(): TreeResponse {
       return guarded(() =>

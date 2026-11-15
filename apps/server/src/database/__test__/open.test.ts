@@ -32,12 +32,13 @@ describe('workspace database initialization', () => {
     expect(database.pragma('journal_mode', { simple: true })).toBe('wal');
     expect(database.pragma('busy_timeout', { simple: true })).toBe(5000);
     expect(database.pragma('synchronous', { simple: true })).toBe(2);
-    expect(database.pragma('user_version', { simple: true })).toBe(2);
+    expect(database.pragma('user_version', { simple: true })).toBe(3);
     expect(
       database.prepare('SELECT version, name FROM schema_migrations').all(),
     ).toEqual([
       { version: 1, name: 'initial_workspace' },
       { version: 2, name: 'raw_markdown_content' },
+      { version: 3, name: 'clipboard_images' },
     ]);
   });
 
