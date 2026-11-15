@@ -1,4 +1,12 @@
 export const supportedFixtures = [
+  [
+    'local image',
+    '![Pasted image](/api/images/123e4567-e89b-42d3-a456-426614174000)',
+  ],
+  [
+    'nested local image',
+    '> - ![alt](/api/images/123e4567-e89b-42d3-a456-426614174000 "Title")',
+  ],
   ['paragraphs', 'First paragraph.\n\nSecond paragraph.'],
   ['blank paragraphs', '<br />\n\nFirst paragraph.\n\n<br />\n\n<br />'],
   ['blank paragraphs in quotes', '> One\n>\n> <br />\n>\n> Two'],

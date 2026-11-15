@@ -46,6 +46,13 @@ The [transition guard](../../apps/web/src/workspace/useNoteTransition.ts) flushe
 
 ## Markdown and diagrams
 
+Canonical local images (`/api/images/{lowercase UUID v4}`) are supported as
+inline image nodes, including in supported containers. Alt text and optional
+titles survive rich conversion. The source policy, DOM parser, renderer, and
+serializer each reject other image sources; web URLs, arbitrary relative paths,
+data/blob URLs, and raw HTML remain outside the supported image subset. Image
+load failure displays a readable placeholder without changing saved Markdown.
+
 Import stores the selected Markdown source verbatim within the input limits. Export flushes pending edits and downloads the latest saved Markdown without another parse/serialize cycle. Rich editor conversion runs in the frontend when loading or editing, and must preserve content outside the supported rich subset.
 
 The [import dialog](../../apps/web/src/workspace/ImportDialog.tsx) opens through the transition guard, after saving pending writing. The destination is the selected folder or the active note's folder. Its editable title comes from the filename without `.md`, trimmed at the edges, with `Untitled` for an empty stem; invalid or long names require correction under the shared name rules. [File validation](../../apps/web/src/workspace/markdown-files.ts) checks the `.md` extension and shared 256 KiB import cap before reading, then decodes UTF-8 strictly with BOM retention and validates the complete source. The existing create API stores the source in one operation. Failed reads/requests retain the chosen file and title. An acknowledged creation retries only refresh/open, using the same operation lifecycle as other creates; unacknowledged creates retain the existing idempotency limitation.
