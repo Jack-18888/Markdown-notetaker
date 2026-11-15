@@ -17,6 +17,7 @@ export default function NoteEditor({
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EditorView>();
   const [reason, setReason] = useState<FallbackReason>();
+  const [imageMessage, setImageMessage] = useState('');
   useEffect(() => {
     let active = true;
     let capture:
@@ -28,6 +29,12 @@ export default function NoteEditor({
       root: host.current!,
       source,
       interactive: true,
+      onBodyWork(work) {
+        if (active) session.setBodyWork(work);
+      },
+      onMessage(message) {
+        if (active) setImageMessage(message);
+      },
       onTransaction(view, previous) {
         if (!active) return;
         if (capture && !previous.doc.eq(view.state.doc))
@@ -75,6 +82,11 @@ export default function NoteEditor({
         </p>
       )}
       <div className="note-body note-editor" ref={host} hidden={!view} />
+      {imageMessage && (
+        <p role="status" className="note-feedback workspace-message">
+          {imageMessage}
+        </p>
+      )}
     </section>
   );
 }

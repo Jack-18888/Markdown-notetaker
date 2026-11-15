@@ -28,6 +28,10 @@ import { loadMarkdown, type LoadedMarkdown } from './markdown.js';
 import { mermaidView } from './mermaid-node-view.js';
 import { assessSource } from './source-policy.js';
 import { localImage, localImageView } from './images.js';
+import {
+  clipboardImages,
+  type ClipboardImageOptions,
+} from './clipboard-images.js';
 
 const safeLink = linkSchema.extendSchema((base) => (ctx) => {
   const spec = base(ctx);
@@ -56,12 +60,14 @@ export function openEditor({
   source,
   interactive = false,
   onTransaction,
+  onBodyWork,
+  onMessage,
 }: {
   root: HTMLElement;
   source: string;
   interactive?: boolean;
   onTransaction?: (view: EditorView, previous: EditorView['state']) => void;
-}) {
+} & Pick<ClipboardImageOptions, 'onBodyWork' | 'onMessage'>) {
   const reason = assessSource(source);
   if (reason) {
     const loaded = { mode: 'source', source, reason } as const;
@@ -113,6 +119,7 @@ export function openEditor({
     loaded: { mode: 'source', source, reason: 'conversion-failed' },
   };
   if (interactive) editor.use(mermaidView);
+  if (interactive) editor.use(clipboardImages({ onBodyWork, onMessage }));
   editor
     .use([
       mermaidSchema,
@@ -161,6 +168,7 @@ export function openEditor({
           if (view.state.selection.$from.parent.type.spec.code) return false;
           const clipboard = event.clipboardData;
           if (!clipboard) return false;
+          if (clipboard.files.length) return false;
           const markdown = clipboard.getData('text/markdown');
           const text = markdown || clipboard.getData('text/plain');
           if (!text || (!markdown && clipboard.getData('text/html')))

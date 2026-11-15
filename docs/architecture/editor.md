@@ -14,7 +14,7 @@ Writing enables an optional [Mermaid node view](../../apps/web/src/editor/mermai
 
 The [per-note save coordinator](../../apps/web/src/workspace/SaveCoordinator.ts) replaces T09's separate explicit writes. It debounces title/body edits together, serializes immutable body snapshots only when submitting them, and sends one revision-checked request at a time. Only that snapshot becomes acknowledged; newer typing and undo history stay in the current editor. Title-only requests omit content. Failed serialization sends no write, and request failures retain the drafts. Ambiguous failed writes stay dirty even after undo until a revision-checked retry acknowledges the result.
 
-The [source policy](../../apps/web/src/editor/source-policy.ts) checks Marked tokens before rich conversion. GFM tables support keyboard cell navigation and row or column controls, and `$...$` / `$$...$$` math formulas render offline via KaTeX with `trust: false`. Images, raw HTML and comments, YAML/TOML frontmatter, reference definitions, footnotes, extra fence metadata, NUL/BOM, mixed task/plain lists, and nested diagrams use source fallback. A standalone, attribute-free `<br />` represents an empty paragraph, including within supported lists and quotes. The save serializer preserves user-entered blank paragraphs at the beginning, middle, and end of a note. A single empty typing paragraph still represents an empty document. Unsafe links also use fallback. Ordinary fenced and inline code stay literal. Rich conversion is limited to 128 KiB of UTF-8 source, 10,000 tokens, and nesting depth 32. Larger valid API notes remain available as raw source.
+The [source policy](../../apps/web/src/editor/source-policy.ts) checks Marked tokens before rich conversion. GFM tables support keyboard cell navigation and row or column controls, and `$...$` / `$$...$$` math formulas render offline via KaTeX with `trust: false`. Nonlocal images, raw HTML and comments, YAML/TOML frontmatter, reference definitions, footnotes, extra fence metadata, NUL/BOM, mixed task/plain lists, and nested diagrams use source fallback. A standalone, attribute-free `<br />` represents an empty paragraph, including within supported lists and quotes. The save serializer preserves user-entered blank paragraphs at the beginning, middle, and end of a note. A single empty typing paragraph still represents an empty document. Unsafe links also use fallback. Ordinary fenced and inline code stay literal. Rich conversion is limited to 128 KiB of UTF-8 source, 10,000 tokens, and nesting depth 32. Larger valid API notes remain available as raw source.
 
 The [source fallback view](../../apps/web/src/editor/SourceFallback.tsx) explains that the original Markdown is preserved and displays selectable source in a labelled, keyboard-focusable, scrollable block. React escapes the text; the view creates no links, HTML preview, or editable body. The [selected-note content view](../../apps/web/src/workspace/NoteContent.tsx) uses it for unsupported source and exposes no body-writing controls. [Fallback view tests](../../apps/web/src/editor/__test__/source-fallback.test.ts) verify literal hostile markup and accessible control names.
 
@@ -43,6 +43,26 @@ The [session hook](../../apps/web/src/workspace/useNoteSession.ts) connects ackn
 The [transition guard](../../apps/web/src/workspace/useNoteTransition.ts) flushes before note selection, workspace refresh, and lifecycle dialogs. It waits for an in-flight request and drains newer edits; a failed flush keeps the current note open. The latest requested destination wins while waiting. Lifecycle actions use the revision returned by the flush so an earlier save cannot race a rename, move, or deletion.
 
 [Conflict recovery](../../apps/web/src/workspace/ConflictRecovery.tsx) offers a confirmed reload or saving local title/body as a new root note. Reload replaces the editor and its history only after a successful read. A native dialog warns before discarding local edits; cancel/failure keeps them. Copy creation keeps the original note unchanged and preserves the current source through the conversion boundary. An acknowledged copy is opened through refresh-only retry, avoiding duplicate creation after a failed metadata refresh. As with other create operations, an unacknowledged server commit cannot be deduplicated without API idempotency keys; retrying such a failed create may create another copy.
+
+## Clipboard images
+
+The rich editor accepts one clipboard PNG, JPEG, or WebP of at most 5 MiB. A
+temporary inline upload node tracks its position through edits. Image upload
+completion replaces it with a canonical local image without adding an undo step;
+undo/removal aborts the request and ignores late results. Failed uploads retain
+clipboard bytes in memory and expose keyboard-accessible Retry/Remove buttons.
+Redo of a removed pending upload restores a retryable placeholder. Clipboard
+bytes are retained only for the mounted editor lifetime, not across reloads.
+
+The save coordinator waits for pending image work before capturing the body to
+save. Failed uploads block saving, navigation, and export until retried or removed.
+Pending image work counts as dirty for the existing close warning. Text paste and
+code-block paste retain their existing behavior. Unsupported/multiple/oversized
+clipboard files leave the note unchanged with a status message.
+
+Export remains a `.md` file with local image links. It does not embed image bytes;
+links resolve in this workspace. Use a full database backup to carry the images.
+File pickers, drag-and-drop, web URL images, and portable bundles are deferred.
 
 ## Markdown and diagrams
 

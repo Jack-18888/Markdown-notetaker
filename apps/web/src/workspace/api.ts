@@ -10,6 +10,8 @@ import {
   createNoteRequestSchema,
   updateFolderRequestSchema,
   deleteNoteRequestSchema,
+  imageRoutes,
+  imageUploadResponseSchema,
   type ParentId,
   type UpdateFolderRequest,
   type UpdateNoteRequest,
@@ -73,6 +75,23 @@ async function requestJson(
   }
   if (response.status !== status) return invalidResponse();
   return body;
+}
+
+export async function uploadImage(file: File, signal: AbortSignal) {
+  return parseContract(
+    imageUploadResponseSchema,
+    await requestJson(
+      imageRoutes.upload,
+      signal,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      },
+      201,
+    ),
+    invalidResponse,
+  );
 }
 
 export async function getTree(signal: AbortSignal) {
