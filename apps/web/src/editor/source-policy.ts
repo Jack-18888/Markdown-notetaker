@@ -66,6 +66,12 @@ export function assessSource(source: string): FallbackReason | null {
       )
         continue;
       if (!supportedTokens.has(token.type)) return 'unsupported';
+      // Multi-word footnote definitions bypass Marked's link map; reject them explicitly.
+      if (
+        (token.type === 'paragraph' || token.type === 'text') &&
+        /^[ \t]{0,3}\[\^[^\]\s]+\]:/m.test(token.raw)
+      )
+        return 'unsupported';
       if (token.type === 'image' && !isLocalImageUrl(token.href))
         return 'unsupported';
       if (token.type === 'link' && !isSafeLink(token.href))

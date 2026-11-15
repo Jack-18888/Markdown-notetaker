@@ -15,7 +15,6 @@ import {
   linkSchema,
   syncHeadingIdPlugin,
 } from '@milkdown/kit/preset/commonmark';
-import { Slice } from '@milkdown/kit/prose/model';
 import type { EditorView } from '@milkdown/kit/prose/view';
 import { literalCodeBlock, mermaidSchema } from './code-blocks.js';
 import {
@@ -25,6 +24,10 @@ import {
 } from './crepe-bridge.js';
 import { isSafeLink } from './links.js';
 import { loadMarkdown, type LoadedMarkdown } from './markdown.js';
+import {
+  parseMarkdownPaste,
+  shouldParseClipboardAsMarkdown,
+} from './markdown-paste.js';
 import { mermaidView } from './mermaid-node-view.js';
 import { assessSource } from './source-policy.js';
 import { localImage, localImageView } from './images.js';
@@ -168,19 +171,12 @@ export function openEditor({
           if (view.state.selection.$from.parent.type.spec.code) return false;
           const clipboard = event.clipboardData;
           if (!clipboard) return false;
-          if (clipboard.files.length) return false;
-          const markdown = clipboard.getData('text/markdown');
-          const text = markdown || clipboard.getData('text/plain');
-          if (!text || (!markdown && clipboard.getData('text/html')))
-            return false;
-          const loaded = loadMarkdown(text, ctx);
-          if (loaded.mode === 'source') return false;
-          const content = loaded.document.content;
-          const only = loaded.document.firstChild;
-          const slice =
-            loaded.document.childCount === 1 && only?.type.name === 'paragraph'
-              ? new Slice(only.content, 0, 0)
-              : new Slice(content, 0, 0);
+          const text = shouldParseClipboardAsMarkdown(clipboard);
+          if (!text) return false;
+          const slice = parseMarkdownPaste(text, ctx, {
+            allowTopLevelMermaid: view.state.selection.$from.depth <= 1,
+          });
+          if (!slice) return false;
           view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
           return true;
         },
