@@ -1,5 +1,5 @@
 import type { Ctx } from '@milkdown/kit/ctx';
-import { remarkCtx, schemaCtx } from '@milkdown/kit/core';
+import { remarkCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core';
 import { type Node, Slice } from '@milkdown/kit/prose/model';
 import { type MarkdownNode, ParserState } from '@milkdown/kit/transformer';
 import {
@@ -9,7 +9,7 @@ import {
 import { normalizeCodeBlockLanguage } from './crepe-bridge.js';
 import { isSafeLink } from './links.js';
 import { roundTripDocument } from './markdown.js';
-import { editorLimits } from './source-policy.js';
+import { assessSource, editorLimits } from './source-policy.js';
 
 export interface PasteParseOptions {
   allowTopLevelMermaid?: boolean;
@@ -166,25 +166,22 @@ function extractTopLevelMermaidPayload(
   return payload;
 }
 
-function createTextOrBreakNodes(
-  value: string,
-  allowBreaks: boolean,
-): MarkdownNode[] {
+function splitInlineText(value: string, allowBreaks: boolean): MarkdownNode[] {
   if (!value) return [];
   if (!allowBreaks) {
     const collapsed = value.replace(/\r?\n+/g, ' ');
     return collapsed ? [{ type: 'text', value: collapsed }] : [];
   }
 
-  const normalized = value.replace(/^\n+|\n+$/g, '');
-  if (!normalized) return [];
-
-  const lines = normalized.split('\n');
+  // Keep boundary newlines as soft breaks until enclosing inline siblings are assembled.
+  const parts = value.split(/\r?\n/);
   const out: MarkdownNode[] = [];
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    if (out.length) out.push({ type: 'break' });
-    out.push({ type: 'text', value: line });
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (part) out.push({ type: 'text', value: part });
+    if (i < parts.length - 1) {
+      out.push({ type: 'break', data: { isInline: true } });
+    }
   }
   return out;
 }
@@ -201,7 +198,12 @@ function htmlToBlockParagraphs(rawHtml: string): MarkdownNode[] {
   const chunks = trimmed.split(/\n[ \t]*\n+/);
   const paragraphs: MarkdownNode[] = [];
   for (const chunk of chunks) {
-    const children = createTextOrBreakNodes(chunk, true);
+    const children: MarkdownNode[] = [];
+    for (const line of chunk.split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      if (children.length) children.push({ type: 'break' });
+      children.push({ type: 'text', value: line });
+    }
     if (children.length) {
       paragraphs.push({ type: 'paragraph', children });
     }
@@ -209,12 +211,25 @@ function htmlToBlockParagraphs(rawHtml: string): MarkdownNode[] {
   return paragraphs;
 }
 
+function isInlineSoftBreak(node: MarkdownNode | undefined): boolean {
+  return Boolean(
+    node?.type === 'break' &&
+    (node.data as { isInline?: boolean } | undefined)?.isInline,
+  );
+}
+
 function normalizeParagraphChildren(nodes: MarkdownNode[]): MarkdownNode[] {
   const cleaned: MarkdownNode[] = [];
   for (const node of nodes) {
     if (node.type === 'break') {
-      if (!cleaned.length || cleaned[cleaned.length - 1]?.type === 'break')
+      const previous = cleaned[cleaned.length - 1];
+      if (!previous) continue;
+      if (previous.type === 'break') {
+        if (isInlineSoftBreak(previous) && !isInlineSoftBreak(node)) {
+          cleaned[cleaned.length - 1] = node;
+        }
         continue;
+      }
       cleaned.push(node);
       continue;
     }
@@ -235,6 +250,12 @@ function formatBlockedImageText(alt: unknown, url: unknown): string {
 }
 
 function extractFallbackText(node: MarkdownNode): string {
+  if (node.type === 'inlineMath' && typeof node.value === 'string') {
+    return `$${node.value}$`;
+  }
+  if (node.type === 'math' && typeof node.value === 'string') {
+    return `$$\n${node.value}\n$$`;
+  }
   if (typeof node.value === 'string') return node.value;
   if (Array.isArray(node.children)) {
     return node.children
@@ -266,7 +287,13 @@ function sanitizeCodeNode(
     }
   }
 
-  let lang = rawLang ? normalizeCodeBlockLanguage(rawLang) : '';
+  // Crepe's blockLatexSchema serializes any latex fence as $$...$$ which re-parses as LaTeX.
+  let lang =
+    rawLang.toLowerCase() === 'latex'
+      ? 'LaTeX'
+      : rawLang
+        ? normalizeCodeBlockLanguage(rawLang)
+        : '';
   if (lang === 'mermaid') lang = 'text';
   if (lang && !/^[a-z\d_+#.-]+$/i.test(lang)) {
     lang = lang.replace(/[^a-z\d_+#.-]/gi, '') || 'text';
@@ -389,10 +416,19 @@ function sanitizeInlineNode(
   switch (node.type) {
     case 'text': {
       const value = typeof node.value === 'string' ? node.value : '';
-      return createTextOrBreakNodes(value, allowBreaks);
+      return splitInlineText(value, allowBreaks);
     }
-    case 'break':
-      return allowBreaks ? [{ type: 'break' }] : [{ type: 'text', value: ' ' }];
+    case 'break': {
+      if (!allowBreaks) return [{ type: 'text', value: ' ' }];
+      const isInline = Boolean(
+        (node.data as { isInline?: boolean } | undefined)?.isInline,
+      );
+      return [
+        isInline
+          ? { type: 'break', data: { isInline: true } }
+          : { type: 'break' },
+      ];
+    }
     case 'inlineCode':
       return [
         {
@@ -403,6 +439,16 @@ function sanitizeInlineNode(
               : '',
         },
       ];
+    case 'inlineMath': {
+      const value = typeof node.value === 'string' ? node.value : '';
+      if (!value) return [];
+      const normalizedValue = context.inSingleLine
+        ? value.replace(/\r?\n+/g, ' ')
+        : value;
+      return normalizedValue
+        ? [{ type: 'inlineMath', value: normalizedValue }]
+        : [];
+    }
     case 'html': {
       const raw = typeof node.value === 'string' ? node.value : '';
       if (/^<br\s*\/?>$/i.test(raw.trim())) {
@@ -413,7 +459,7 @@ function sanitizeInlineNode(
       if (autolinkPattern.test(raw)) {
         return [{ type: 'inlineCode', value: raw.replace(/\r?\n+/g, ' ') }];
       }
-      return createTextOrBreakNodes(raw, allowBreaks);
+      return splitInlineText(raw, allowBreaks);
     }
     case 'strong':
     case 'emphasis':
@@ -501,7 +547,7 @@ function sanitizeInlineNode(
     }
     default: {
       const fallback = extractFallbackText(node);
-      return createTextOrBreakNodes(fallback, allowBreaks);
+      return splitInlineText(fallback, allowBreaks);
     }
   }
 }
@@ -641,6 +687,18 @@ function sanitizeBlockNode(
     case 'code':
     case 'mermaid':
       return [sanitizeCodeNode(node, context)];
+    case 'math':
+      return [
+        sanitizeCodeNode(
+          {
+            ...node,
+            type: 'code',
+            lang: 'LaTeX',
+            value: typeof node.value === 'string' ? node.value : '',
+          },
+          context,
+        ),
+      ];
     case 'table':
       return sanitizeTableNode(node, context);
     case 'html': {
@@ -720,6 +778,47 @@ function canRoundTrip(document: Node | null, ctx: Ctx): document is Node {
   }
 }
 
+function countDocumentNodes(document: Node, limit: number): number {
+  let count = 1;
+  if (count > limit) return count;
+  document.descendants(() => {
+    if (count > limit) return false;
+    count++;
+    return count <= limit;
+  });
+  return count;
+}
+
+function trySerializeForPolicy(document: Node, ctx: Ctx): string | null {
+  try {
+    const serialize = ctx.get(serializerCtx);
+    const last = document.lastChild;
+    const snapshot =
+      document.childCount > 1 &&
+      last?.type.name === 'paragraph' &&
+      !last.content.size
+        ? document.copy(document.content.addToEnd(last))
+        : document;
+    const serialized = serialize(snapshot);
+    return serialized.endsWith('\n') ? serialized.slice(0, -1) : serialized;
+  } catch {
+    return null;
+  }
+}
+
+function isAggregateLimitFailure(document: Node | null, ctx: Ctx): boolean {
+  if (!document) return false;
+  if (countDocumentNodes(document, editorLimits.tokens) > editorLimits.tokens) {
+    return true;
+  }
+  const next = trySerializeForPolicy(document, ctx);
+  if (next === null) return false;
+  return (
+    utf8ByteLength(next) > editorLimits.sourceBytes ||
+    assessSource(next) === 'conversion-limit'
+  );
+}
+
 function isolateFailingBlocks(blocks: MarkdownNode[], ctx: Ctx): Node | null {
   const recovered: MarkdownNode[] = [];
   for (const block of blocks) {
@@ -740,24 +839,30 @@ function isolateFailingBlocks(blocks: MarkdownNode[], ctx: Ctx): Node | null {
 
   const combined = parseAstToDoc(recovered, ctx);
   if (canRoundTrip(combined, ctx)) return combined;
+  if (!combined || isAggregateLimitFailure(combined, ctx)) return null;
 
   // Guard against multi-block interaction edge cases by testing incrementally.
   const safeBlocks: MarkdownNode[] = [];
   for (const block of recovered) {
     const nextBlocks = [...safeBlocks, block];
-    if (canRoundTrip(parseAstToDoc(nextBlocks, ctx), ctx)) {
+    const nextDoc = parseAstToDoc(nextBlocks, ctx);
+    if (isAggregateLimitFailure(nextDoc, ctx)) return null;
+    if (canRoundTrip(nextDoc, ctx)) {
       safeBlocks.push(block);
       continue;
     }
     const literals = blockToLiteralParagraphs(block);
     for (const literal of literals) {
-      if (canRoundTrip(parseAstToDoc([...safeBlocks, literal], ctx), ctx)) {
+      const literalDoc = parseAstToDoc([...safeBlocks, literal], ctx);
+      if (isAggregateLimitFailure(literalDoc, ctx)) return null;
+      if (canRoundTrip(literalDoc, ctx)) {
         safeBlocks.push(literal);
       }
     }
   }
 
   const finalDoc = parseAstToDoc(safeBlocks, ctx);
+  if (isAggregateLimitFailure(finalDoc, ctx)) return null;
   return canRoundTrip(finalDoc, ctx) ? finalDoc : null;
 }
 
@@ -818,6 +923,7 @@ export function parseMarkdownPaste(
 
   let document = parseAstToDoc(sanitizedBlocks, ctx);
   if (!canRoundTrip(document, ctx)) {
+    if (isAggregateLimitFailure(document, ctx)) return null;
     document = isolateFailingBlocks(sanitizedBlocks, ctx);
   }
   if (!document || !document.childCount) return null;

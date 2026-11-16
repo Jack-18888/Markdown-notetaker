@@ -669,12 +669,14 @@ describe('markdown paste resilience & feature compatibility', () => {
       '',
       'Math inline $E = mc^2$ and currency $10 and $20.',
       '',
+      '$$\nx = y\n$$',
+      '',
       '```latex',
       '\\frac{1}{2}',
       '```',
     ].join('\n');
 
-    const { editor } = await openAndPaste(markdown);
+    const { editor, serialized } = await openAndPaste(markdown);
     closers.push(editor.close);
 
     const dom = editor.view.dom;
@@ -687,8 +689,126 @@ describe('markdown paste resilience & feature compatibility', () => {
     expect(dom.textContent).toContain('[!NOTE]');
     expect(dom.textContent).toContain('[!WARNING]');
     expect(dom.textContent).toContain('$10 and $20');
-    expect(dom.textContent).toContain('\\frac{1}{2}');
+    const inlineMath = dom.querySelector('span[data-type="math_inline"]');
+    expect(inlineMath?.getAttribute('data-value')).toBe('E = mc^2');
+    expect(serialized).toContain('$E = mc^2$');
+    expect(serialized).toContain('```LaTeX\nx = y\n```');
+    expect(serialized).toContain('```LaTeX\n\\frac{1}{2}\n```');
+    const latexBlocks = editor.view.state.doc.content.content.filter(
+      (node) =>
+        node.type.name === 'code_block' && node.attrs.language === 'LaTeX',
+    );
+    expect(latexBlocks).toHaveLength(2);
+    expect(latexBlocks.map((node) => node.textContent)).toEqual([
+      'x = y',
+      '\\frac{1}{2}',
+    ]);
   });
+
+  it('preserves supported inline and block math when pasted alongside unsupported HTML', async () => {
+    const mixed = [
+      '# Formula $E = mc^2$',
+      '',
+      'Energy $E = mc^2$ before HTML.',
+      '',
+      '| Item | Math |',
+      '| --- | --- |',
+      '| Sum | $a + b$ |',
+      '',
+      '<details>',
+      '<summary>Hidden note</summary>',
+      '</details>',
+      '',
+      '$$',
+      'a^2 + b^2 = c^2',
+      '$$',
+    ].join('\n');
+
+    const { editor, serialized } = await openAndPaste(mixed);
+    closers.push(editor.close);
+
+    const inlineMaths = Array.from(
+      editor.view.dom.querySelectorAll('span[data-type="math_inline"]'),
+    ).map((el) => el.getAttribute('data-value'));
+    expect(inlineMaths).toEqual(['E = mc^2', 'E = mc^2', 'a + b']);
+    expect(editor.view.dom.querySelector('details')).toBeNull();
+    expect(editor.view.dom.textContent).toContain('<details>');
+    expect(serialized).toContain('# Formula $E = mc^2$');
+    expect(serialized).toContain('$E = mc^2$');
+    expect(serialized).toContain('$a + b$');
+    expect(serialized).toContain('```LaTeX\na^2 + b^2 = c^2\n```');
+    expect(
+      editor.view.state.doc.content.content.some(
+        (node) =>
+          node.type.name === 'code_block' &&
+          node.attrs.language === 'LaTeX' &&
+          node.textContent === 'a^2 + b^2 = c^2',
+      ),
+    ).toBe(true);
+  });
+
+  it('preserves soft line break separators adjacent to inline formatting and HTML', async () => {
+    const mixedNewlines = [
+      'Hello\n**world**',
+      '',
+      '**Hello**\nworld',
+      '',
+      '**First**\n**Second**',
+      '',
+      '<span>Before</span>\n**After**',
+      '',
+      'Setext\n**Title**\n===',
+    ].join('\n');
+
+    const { editor, serialized } = await openAndPaste(mixedNewlines);
+    closers.push(editor.close);
+
+    const dom = editor.view.dom;
+    const paragraphs = Array.from(dom.querySelectorAll('p')).map(
+      (p) => p.textContent,
+    );
+    expect(paragraphs).toEqual([
+      'Hello world',
+      'Hello world',
+      'First Second',
+      '<span>Before</span> After',
+    ]);
+    expect(dom.querySelector('h1')?.textContent).toBe('Setext Title');
+    expect(serialized).toContain('Hello\n**world**');
+    expect(serialized).toContain('**Hello**\nworld');
+    expect(serialized).toContain('**First**\n**Second**');
+    expect(serialized).toContain('# Setext **Title**');
+  });
+
+  it('falls back as whole paste without truncating when exceeding document node or token limits', async () => {
+    const tokenEditor = await openRich('');
+    closers.push(tokenEditor.close);
+    const tooManyTokens = '**x** '.repeat(4000).trimEnd();
+    dispatchPaste(tokenEditor.view.dom, {
+      'text/plain': tooManyTokens,
+    });
+    expect(tokenEditor.view.dom.querySelectorAll('strong')).toHaveLength(0);
+    expect(tokenEditor.view.state.doc.textContent).toBe(tooManyTokens);
+
+    const paragraphEditor = await openRich('');
+    closers.push(paragraphEditor.close);
+    const tooManyParagraphs = 'p\n\n'.repeat(6000).trimEnd();
+    dispatchPaste(paragraphEditor.view.dom, {
+      'text/plain': tooManyParagraphs,
+    });
+    expect(paragraphEditor.view.state.doc.childCount).toBe(6000);
+  }, 15_000);
+
+  it('falls back without truncating when mixed unsupported and valid content exceeds node limits', async () => {
+    const mixedEditor = await openRich('');
+    closers.push(mixedEditor.close);
+    const mixedOverflow = `<details>\nhi\n</details>\n\n${'p\n\n'.repeat(6000).trimEnd()}`;
+    dispatchPaste(mixedEditor.view.dom, {
+      'text/plain': mixedOverflow,
+    });
+    expect(mixedEditor.view.dom.querySelector('details')).toBeNull();
+    expect(mixedEditor.view.state.doc.childCount).toBe(6003);
+  }, 15_000);
 
   it('keeps interactive task checkboxes clickable after paste and updates serialized Markdown', async () => {
     const { editor } = await openAndPaste(

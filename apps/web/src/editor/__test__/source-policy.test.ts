@@ -37,8 +37,25 @@ describe('source compatibility policy', () => {
     '- Calculate with $x$',
     '> - Math $$x$$',
     '$$\nx = y\n$$',
+    '`example\n[^1]: not a definition`',
+    'See `example\n[^1]: not a definition` inline',
+    '- `example\n[^1]: not a definition`',
+    '- [x] `example\n[^1]: not a definition`',
+    '> Line 1\n> `example\n> [^1]: not a definition`',
+    '`code` [^1]: mid line text',
+    '- [x] [^1]: mid line in task',
   ])('accepts supported source %#', (source) => {
     expect(assessSource(source)).toBeNull();
+  });
+  it.each([
+    '[^1]: Multi word footnote definition',
+    'Paragraph line\n[^1]: Multi word footnote definition',
+    '> Quote line\n> [^1]: Multi word footnote definition',
+    '- Item line\n  [^1]: Multi word footnote definition',
+    '- [x] Task line\n  [^1]: Multi word footnote definition',
+    '`code`\n[^1]: Multi word footnote definition',
+  ])('rejects multi-word footnote definitions %#', (source) => {
+    expect(assessSource(source)).toBe('unsupported');
   });
   it('bounds source bytes before tokenization', () => {
     expect(assessSource('é'.repeat(editorLimits.sourceBytes / 2))).toBeNull();
