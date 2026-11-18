@@ -1,7 +1,13 @@
 import {
   ApiErrorCode,
+  createFolderRequestSchema,
+  createNoteRequestSchema,
+  folderSchema,
   noteDetailSchema,
+  noteMetadataSchema,
+  resourceIdSchema,
   resourceParamsSchema,
+  updateNoteRequestSchema,
 } from '@markdown-note-taker/contracts';
 import { McpServer, type CallToolResult } from '@modelcontextprotocol/server';
 import { WorkspaceError } from '../workspace/errors.js';
@@ -17,9 +23,16 @@ function result(
   payload: Record<string, unknown>,
   isError = false,
 ): CallToolResult {
+  const json = JSON.stringify(payload);
+  // Escaped control characters can multiply the wire size. Keep the full
+  // structured result while avoiding a second large copy in the text block.
+  const text =
+    Buffer.byteLength(json, 'utf8') <= 3 * 1024 * 1024
+      ? json
+      : 'The complete result is in structuredContent.';
   return {
     structuredContent: payload,
-    content: [{ type: 'text', text: JSON.stringify(payload) }],
+    content: [{ type: 'text', text }],
     ...(isError ? { isError: true } : {}),
   };
 }
@@ -37,8 +50,71 @@ function runTool(operation: () => Record<string, unknown>): CallToolResult {
 }
 
 const readAnnotations = { readOnlyHint: true, openWorldHint: false };
+const createAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+};
+const noteWriteResultSchema = noteMetadataSchema.pick({
+  id: true,
+  revision: true,
+});
+const updateNoteSchema = updateNoteRequestSchema.safeExtend({
+  id: resourceIdSchema,
+});
 
-export function createMcpServer(workspace: WorkspaceService): McpServer {
+function registerWriteTools(server: McpServer, workspace: WorkspaceService) {
+  server.registerTool(
+    'create_folder',
+    {
+      title: 'Create a folder',
+      description:
+        'Create a named folder below parentId. Use null for the root. Check for the folder before retrying if the outcome is unknown.',
+      inputSchema: createFolderRequestSchema,
+      outputSchema: folderSchema,
+      annotations: createAnnotations,
+    },
+    (input) => runTool(() => workspace.createFolder(input)),
+  );
+  server.registerTool(
+    'create_note',
+    {
+      title: 'Create a note',
+      description:
+        'Create a titled note with optional Markdown. Use null folderId for the root. Check for the note before retrying if the outcome is unknown.',
+      inputSchema: createNoteRequestSchema,
+      outputSchema: noteWriteResultSchema,
+      annotations: createAnnotations,
+    },
+    (input) =>
+      runTool(() => {
+        const { id, revision } = workspace.createNote(input);
+        return { id, revision };
+      }),
+  );
+  server.registerTool(
+    'update_note',
+    {
+      title: 'Update a saved note',
+      description:
+        'Edit the title, move the note, or replace its entire Markdown body. Omitted fields stay unchanged. Use the revision from get_note as expectedRevision. If the revision conflicts, re-read the note and reconsider the edit.',
+      inputSchema: updateNoteSchema,
+      outputSchema: noteWriteResultSchema,
+      annotations: { ...createAnnotations, destructiveHint: true },
+    },
+    ({ id, ...patch }) =>
+      runTool(() => {
+        const { revision } = workspace.updateNote(id, patch);
+        return { id, revision };
+      }),
+  );
+}
+
+export function createMcpServer(
+  workspace: WorkspaceService,
+  { writable }: { writable: boolean },
+): McpServer {
   const server = new McpServer(
     { name: 'markdown-note-taker', version: '1.0.0' },
     {
@@ -86,5 +162,6 @@ export function createMcpServer(workspace: WorkspaceService): McpServer {
     ({ id }) => runTool(() => workspace.getNote(id)),
   );
 
+  if (writable) registerWriteTools(server, workspace);
   return server;
 }

@@ -4,15 +4,18 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 
 export function workspaceMcpClient(
   dataDirectory: string,
-  mode: 'auto' | 'legacy' = 'legacy',
+  {
+    mode = 'legacy',
+    args = [],
+    built = false,
+  }: { mode?: 'auto' | 'legacy'; args?: string[]; built?: boolean } = {},
 ) {
+  const entry = built
+    ? [fileURLToPath(new URL('../../dist/mcp.js', import.meta.url))]
+    : ['--import', 'tsx', fileURLToPath(new URL('../mcp.ts', import.meta.url))];
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [
-      '--import',
-      'tsx',
-      fileURLToPath(new URL('../mcp.ts', import.meta.url)),
-    ],
+    args: [...entry, ...args],
     env: { DATA_DIR: dataDirectory },
     stderr: 'pipe',
   });

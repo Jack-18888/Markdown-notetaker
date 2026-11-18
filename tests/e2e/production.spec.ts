@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { pngImage } from '../../apps/server/src/__test__/image-fixture.js';
+import { workspaceMcpClient } from '../../apps/server/src/__test__/workspace-mcp-client.js';
 import {
   folderSchema,
   noteDetailSchema,
@@ -100,6 +101,111 @@ async function launch(directory = dataDirectory) {
   }
   return { origin, stop };
 }
+
+test('built MCP and browser saves reject stale revisions and preserve the browser draft', async ({
+  page,
+  request,
+}) => {
+  const directory = join(temporaryDirectory, 'mcp-browser');
+  const runtime = await launch(directory);
+  const mcp = workspaceMcpClient(directory, { args: ['--write'], built: true });
+  try {
+    const note = noteDetailSchema.parse(
+      await (
+        await request.post(`${runtime.origin}/api/notes`, {
+          data: {
+            title: 'Browser and agent',
+            folderId: null,
+            content: 'Original',
+          },
+        })
+      ).json(),
+    );
+    await mcp.connect();
+    const read = async () =>
+      noteDetailSchema.parse(
+        (
+          await mcp.client.callTool({
+            name: 'get_note',
+            arguments: { id: note.id },
+          })
+        ).structuredContent,
+      );
+    const update = (expectedRevision: number, content: string) =>
+      mcp.client.callTool({
+        name: 'update_note',
+        arguments: { id: note.id, expectedRevision, content },
+      });
+    const original = await read();
+    await page.clock.install();
+    await page.goto(runtime.origin);
+    const openNote = page.getByRole('button', {
+      name: `Open note ${note.title}`,
+      exact: true,
+    });
+    await openNote.click();
+    const body = page.getByRole('textbox', {
+      name: 'Note content',
+      exact: true,
+    });
+    const save = page.getByRole('button', { name: 'Save note', exact: true });
+    await expect(body).toHaveText(original.content);
+    await page.clock.pauseAt(new Date(Date.now() + 1000));
+    await body.fill('First browser save');
+    await save.click();
+    await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+
+    const stale = await update(original.revision, 'Stale agent draft');
+    expect(stale.isError).toBe(true);
+    expect(stale.structuredContent).toMatchObject({
+      error: {
+        code: 'REVISION_CONFLICT',
+        noteId: note.id,
+        expectedRevision: 1,
+        currentRevision: 2,
+      },
+    });
+    const afterBrowser = await read();
+    expect(afterBrowser.content).toBe('First browser save');
+
+    await body.fill('Keep pending browser draft');
+    const committed = await update(
+      afterBrowser.revision,
+      'Agent saved summary',
+    );
+    expect(committed.structuredContent).toEqual({ id: note.id, revision: 3 });
+    await save.click();
+    const reload = page.getByRole('button', {
+      name: 'Reload saved note',
+      exact: true,
+    });
+    await expect(reload).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Save as new note', exact: true }),
+    ).toBeVisible();
+    await expect(body).toHaveText('Keep pending browser draft');
+    expect(await read()).toMatchObject({
+      revision: 3,
+      content: 'Agent saved summary',
+    });
+
+    await reload.click();
+    await page
+      .getByRole('button', { name: 'Discard and reload', exact: true })
+      .click();
+    await expect(body).toHaveText('Agent saved summary');
+    await page.clock.resume();
+    await page.reload();
+    await openNote.click();
+    await expect(body).toHaveText('Agent saved summary');
+  } finally {
+    try {
+      await mcp.close();
+    } finally {
+      await runtime.stop();
+    }
+  }
+});
 
 test('built assets support writing, diagrams, files, protected API, and restart durability without Vite', async ({
   page,

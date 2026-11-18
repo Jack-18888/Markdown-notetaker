@@ -23,9 +23,9 @@ Production startup validates `PORT` and the built frontend index/assets director
 The server build also emits `apps/server/dist/mcp.js`. An MCP client launches
 this entry point directly with Node.js and communicates over standard input and
 output. It can run with the web server stopped and uses the same workspace
-service and SQLite file. The connection opens read-only and verifies the
-migration ledger. Initialize or upgrade the workspace by starting the web app
-from the same version before connecting the MCP client.
+service and SQLite file. The connection verifies the migration ledger and
+opens read-only by default. Initialize or upgrade the workspace by starting
+the web app from the same version before connecting the MCP client.
 
 Pass the same `DATA_DIR` to the subprocess if the web app uses a custom
 directory. The standalone MCP entry point reads its environment. A client setup
@@ -39,6 +39,39 @@ Markdown with ASCII case-insensitive comparison. Both tools return metadata and
 a `nextCursor` for another page. Reuse that cursor with the same search and
 folder arguments. The default page size is 50 and the maximum is 100. `get_note`
 returns a single note's complete saved Markdown and revision.
+Read `structuredContent` for the complete result, including notes whose
+escaped source is too large to duplicate in the text response.
+
+Pass `--write` after the entry point to enable `create_folder`, `create_note`,
+and `update_note`. Use explicit parent or folder IDs, including `null` for the
+root. `update_note` requires the `expectedRevision` from `get_note`. A stale
+update returns `REVISION_CONFLICT`. Re-read the saved note and reconsider the
+edit before retrying. Passing `content` replaces the entire Markdown body.
+After an agent edit, reload to see the saved version. If you have a pending
+browser draft, the next save shows the existing recovery choices and keeps the
+draft until you choose how to resolve it. Before retrying an unacknowledged
+create, check whether it already succeeded.
+
+### Connect Codex CLI
+
+1. Run `npm run build` from the repository root. For a new workspace or a
+   database upgrade, run `npm start` once to prepare the database.
+2. Register the built entry point using its absolute path. Use the Node.js 24
+   executable's absolute path as the command if `node` on your PATH selects a
+   different version.
+
+   ```sh
+   codex mcp add markdown-notes -- node "/absolute/repo/apps/server/dist/mcp.js"
+   ```
+
+   For a custom data directory, add `--env "DATA_DIR=/absolute/path/to/data"`
+   before `--`. For write access, append `--write` after `mcp.js`. Omit the
+   flag to keep the connection read-only.
+
+3. Run `codex mcp list` to check the registration. Start a new Codex session
+   and use `/mcp` to verify the available tools. See the
+   [Codex MCP guide](https://developers.openai.com/codex/mcp) for configuration
+   details.
 
 ## Tooling choices
 
