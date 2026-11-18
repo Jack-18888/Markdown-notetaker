@@ -72,3 +72,21 @@ item before trying again. See the [existing API contracts](../docs/api.md).
    stale browser save after an agent edit must preserve the browser draft and
    offer the existing conflict recovery choices. A clean reload must show the
    saved agent edit.
+
+## Verification record
+
+- `npm test` passed all 484 tests. The stdio tests use the official MCP client
+  against temporary SQLite workspaces and check both protocol eras, pagination,
+  literal search, source fidelity, startup failures, opt-in tool discovery,
+  stale revisions, and saved changes after reopening SQLite.
+- `npm run test:production` passed all four Chromium tests. The MCP scenario used
+  the built server and the browser on the same temporary database. It verified
+  conflicts in both directions, retention of the pending browser draft, recovery
+  controls, and the committed agent edit after a clean reload. The development
+  browser run could not start on its fixed port, so the production suite used
+  an available loopback port.
+- Codex CLI 0.169.0 discovered three read-only tools and six tools with `--write`
+  when launching the built entry point against a temporary workspace. See
+  [Codex setup](../docs/architecture/runtime.md#connect-codex-cli).
+- `npm run typecheck`, `npm run lint`, and `npm run build` passed. Vite still
+  reports the existing large-chunk warning.

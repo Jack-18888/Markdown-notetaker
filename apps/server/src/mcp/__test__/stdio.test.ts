@@ -1,6 +1,10 @@
 import { existsSync } from 'node:fs';
 import { afterEach, expect, it } from 'vitest';
-import { noteDetailSchema } from '@markdown-note-taker/contracts';
+import {
+  folderSchema,
+  limits,
+  noteDetailSchema,
+} from '@markdown-note-taker/contracts';
 import {
   fixtureIds,
   seedWorkspace,
@@ -16,9 +20,9 @@ import {
 
 const cleanup: (() => void | Promise<void>)[] = [];
 
-function testWorkspace(mode: 'auto' | 'legacy' = 'legacy') {
+function testWorkspace(options?: Parameters<typeof workspaceMcpClient>[1]) {
   const temporary = temporaryWorkspace();
-  const mcp = workspaceMcpClient(temporary.dataDirectory, mode);
+  const mcp = workspaceMcpClient(temporary.dataDirectory, options);
   cleanup.push(
     () => temporary.cleanup(),
     () => mcp.close(),
@@ -33,7 +37,7 @@ afterEach(async () => {
 it.each(['auto', 'legacy'] as const)(
   'discovers read-only tools and returns exact raw Markdown over %s stdio without HTTP',
   async (mode) => {
-    const { dataDirectory, mcp } = testWorkspace(mode);
+    const { dataDirectory, mcp } = testWorkspace({ mode });
     const workspace = openWorkspace({ dataDirectory });
     const content =
       '# Fixture 📝\r\n\r\n```mermaid\ngraph LR\n```\n\n![Local](/api/images/123e4567-e89b-42d3-a456-426614174005)  \n';
@@ -205,4 +209,129 @@ it('rejects a current-version database with mismatched migration history', async
       .prepare('SELECT checksum FROM schema_migrations WHERE version = 1')
       .get(),
   ).toEqual({ checksum: 'other' });
+});
+
+it('creates folders and notes, then durably renames, moves, and edits a note in write mode', async () => {
+  const { mcp, open, dataDirectory } = testWorkspace({ args: ['--write'] });
+  open().close();
+  await mcp.connect();
+  expect(
+    (await mcp.client.listTools()).tools.map((tool) => tool.name).sort(),
+  ).toEqual([
+    'create_folder',
+    'create_note',
+    'get_note',
+    'list_folder',
+    'search_notes',
+    'update_note',
+  ]);
+  const { id: folderId } = folderSchema.parse(
+    (
+      await mcp.client.callTool({
+        name: 'create_folder',
+        arguments: { name: 'Project', parentId: null },
+      })
+    ).structuredContent,
+  );
+  const created = await mcp.client.callTool({
+    name: 'create_note',
+    arguments: { title: 'Draft', folderId },
+  });
+  expect(created.structuredContent).toEqual({
+    id: expect.any(String),
+    revision: 1,
+  });
+  const list = await mcp.client.callTool({
+    name: 'list_folder',
+    arguments: { folderId },
+  });
+  const [note] = folderPageSchema.parse(list.structuredContent).items;
+  expect(note).toMatchObject({ kind: 'note', title: 'Draft', folderId });
+  const id = note!.id;
+  const content = '# Updated 📝\r\n\r\nDetails.  \n';
+  const update = await mcp.client.callTool({
+    name: 'update_note',
+    arguments: {
+      id,
+      expectedRevision: 1,
+      title: 'Summary',
+      folderId: null,
+      content,
+    },
+  });
+  expect(update.structuredContent).toEqual({ id, revision: 2 });
+
+  const stale = await mcp.client.callTool({
+    name: 'update_note',
+    arguments: {
+      id,
+      expectedRevision: 1,
+      content: 'Stale edit',
+    },
+  });
+  expect(stale.isError).toBe(true);
+  expect(stale.structuredContent).toMatchObject({
+    error: {
+      code: 'REVISION_CONFLICT',
+      noteId: id,
+      expectedRevision: 1,
+      currentRevision: 2,
+    },
+  });
+  expect(JSON.stringify(stale)).not.toContain('Details.');
+  const empty = await mcp.client.callTool({
+    name: 'update_note',
+    arguments: {
+      id,
+      expectedRevision: 2,
+    },
+  });
+  expect(empty.isError).toBe(true);
+
+  await mcp.close();
+  const reopened = openWorkspace({ dataDirectory });
+  try {
+    expect(reopened.service.getNote(id)).toMatchObject({
+      title: 'Summary',
+      folderId: null,
+      revision: 2,
+      content,
+    });
+    expect(reopened.service.listFolder({ folderId }).items).toEqual([]);
+  } finally {
+    reopened.close();
+  }
+});
+
+it('fails closed on unknown startup arguments', async () => {
+  const { mcp, open } = testWorkspace({ args: ['--writable'] });
+  open().close();
+  await expect(mcp.connect()).rejects.toThrow();
+  expect(mcp.diagnostics).toContain(
+    'Usage: node apps/server/dist/mcp.js [--write]',
+  );
+});
+
+it('returns complete structured Markdown when JSON escaping would make two copies exceed the stdio limit', async () => {
+  const { dataDirectory, mcp } = testWorkspace();
+  const workspace = openWorkspace({ dataDirectory });
+  const content = '\u0001'.repeat(limits.markdownBytes);
+  const note = workspace.service.createNote({
+    title: 'Control characters',
+    content,
+    folderId: null,
+  });
+  workspace.close();
+
+  await mcp.connect();
+  const result = await mcp.client.callTool({
+    name: 'get_note',
+    arguments: { id: note.id },
+  });
+  expect(
+    noteDetailSchema.parse(result.structuredContent).content === content,
+  ).toBe(true);
+  expect(result.content).toEqual([
+    { type: 'text', text: 'The complete result is in structuredContent.' },
+  ]);
 });

@@ -56,6 +56,8 @@ npm start
 
 Open http://127.0.0.1:3001 (or the configured PORT). Express serves the built page, editor/diagram assets, and API together without Vite or a runtime CDN. Rebuild after changing source or dependencies. Stop with Ctrl+C before backing up or restoring the database; see [storage and backup guidance](docs/architecture/runtime.md#data-directory-and-backup). Missing frontend output and invalid port/data settings produce startup errors. Keep the project and installed dependencies alongside the build.
 
+To connect a local agent to saved notes, follow the [MCP setup instructions](docs/architecture/runtime.md#connect-codex-cli).
+
 ## Limits to know
 
 - This is a local, single-user app bound to loopback. It has no authentication or shared/hosted mode.

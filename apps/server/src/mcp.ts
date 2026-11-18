@@ -1,4 +1,5 @@
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
+import { RuntimeConfigurationError } from './config.js';
 import {
   DatabaseErrorCode,
   DatabaseInitializationError,
@@ -7,10 +8,17 @@ import { createMcpServer } from './mcp/tools.js';
 import { openExistingWorkspace } from './workspace/open.js';
 
 try {
-  const workspace = openExistingWorkspace();
+  const args = process.argv.slice(2);
+  const writable = args.length === 1 && args[0] === '--write';
+  if (args.length > 0 && !writable)
+    throw new RuntimeConfigurationError(
+      'Usage: node apps/server/dist/mcp.js [--write]',
+    );
+
+  const workspace = openExistingWorkspace({ writable });
   // Also release SQLite if stdin closes before the first protocol message.
   process.once('exit', workspace.close);
-  const server = createMcpServer(workspace.service);
+  const server = createMcpServer(workspace.service, { writable });
   server.server.onclose = workspace.close;
   const connection = serveStdio(() => server, {
     onerror: () => console.error('Workspace MCP transport error.'),
@@ -30,6 +38,8 @@ try {
       console.error(
         'Start the web app once to initialize the selected workspace.',
       );
+  } else if (error instanceof RuntimeConfigurationError) {
+    console.error(error.message);
   } else {
     console.error('Workspace MCP startup failed.');
   }

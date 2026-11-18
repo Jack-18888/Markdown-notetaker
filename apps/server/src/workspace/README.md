@@ -8,7 +8,8 @@ Application startup calls [openWorkspace](open.ts), passes its `service` to appl
 
 MCP startup uses `openExistingWorkspace` from the same module. It verifies the
 current schema without applying migrations and defaults to a read-only SQLite
-connection.
+connection. Explicit write mode uses a separate writable connection and the
+same transactional service methods as the HTTP app.
 
 Database settings, including foreign-key enforcement, are initialized by [openDatabase](../database/open.ts). The service relies on that setup instead of checking the same settings again.
 
