@@ -6,6 +6,10 @@ This module owns application access to saved notes and folders. All application 
 
 Application startup calls [openWorkspace](open.ts), passes its `service` to application code, and calls `close()` during shutdown. The handle exposes no database connection. Public options are limited to the data directory and busy timeout.
 
+MCP startup uses `openExistingWorkspace` from the same module. It verifies the
+current schema without applying migrations and defaults to a read-only SQLite
+connection.
+
 Database settings, including foreign-key enforcement, are initialized by [openDatabase](../database/open.ts). The service relies on that setup instead of checking the same settings again.
 
 [ESLint import restrictions](../../../../eslint.config.js) keep direct SQLite, database, migration, and repository access inside persistence internals. New features must use service methods for persistence.
@@ -27,6 +31,11 @@ Reads return the saved content string directly, preserving whitespace, line endi
 `ParentId` is a folder ID or `null`, which represents the virtual workspace root. `validateFolderDestination` checks that the destination exists, its ancestor path reaches root, and the path excludes the folder being moved. This prevents missing parents and moves into a folder's own subtree.
 
 Hierarchy checks, revision checks, and mutations share an immediate transaction. Folder deletion atomically removes its subtree through foreign-key cascades. Tree listing returns a consistent metadata snapshot without loading note bodies.
+
+The paginated `listFolder` and `searchNotes` methods also return metadata.
+Listing traverses direct folders and then notes. Keyword search checks saved
+titles and Markdown with an optional direct-folder filter. Each page reads a
+consistent snapshot.
 
 Note rename, move, body update, and deletion require the caller's loaded `expectedRevision`. The shared service check `assertExpectedRevision` rejects stale updates and deletes with the loaded/current counters. SQL also requires the expected revision, increments it atomically on updates, and returns committed metadata through the service. These checks share the write transaction. Revisions track individual note changes; the database migration version tracks the storage format.
 

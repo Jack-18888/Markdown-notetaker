@@ -1,5 +1,11 @@
 import type { ImageService } from './images.js';
 import type {
+  FolderPage,
+  ListFolderRequest,
+  NoteSearchPage,
+  SearchNotesRequest,
+} from './queries.js';
+import type {
   CreateFolderRequest,
   CreateNoteRequest,
   DeleteNoteRequest,
@@ -14,6 +20,8 @@ import type {
 /** Folder/note operations and their committed results. */
 export interface WorkspaceService extends ImageService {
   listTree(): TreeResponse;
+  listFolder(input: ListFolderRequest): FolderPage;
+  searchNotes(input: SearchNotesRequest): NoteSearchPage;
   getNote(id: ResourceId): NoteDetail;
   createFolder(input: CreateFolderRequest): Folder;
   updateFolder(id: ResourceId, input: UpdateFolderRequest): Folder;

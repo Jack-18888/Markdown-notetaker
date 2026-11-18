@@ -7,6 +7,7 @@ export enum DatabaseErrorCode {
   DATABASE_LOCKED = 'database_locked',
   DATABASE_CORRUPT = 'database_corrupt',
   MIGRATION_HISTORY_MISMATCH = 'migration_history_mismatch',
+  MIGRATION_REQUIRED = 'migration_required',
   MIGRATION_FAILED = 'migration_failed',
 }
 
@@ -27,6 +28,8 @@ const messages: Record<DatabaseErrorCode, string> = {
     'The database is corrupt or is not a SQLite file. Keep the file and restore a verified backup.',
   [DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH]:
     'Database migration history does not match this app. Use matching migration files or a compatible app version.',
+  [DatabaseErrorCode.MIGRATION_REQUIRED]:
+    'The workspace needs a database upgrade. Start the web app from this version before connecting MCP.',
   [DatabaseErrorCode.MIGRATION_FAILED]:
     'Database migration failed. Check the migration code and retry without deleting the database.',
 };

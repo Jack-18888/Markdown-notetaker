@@ -18,6 +18,28 @@ TypeScript checks all workspaces with noEmit. Production frontend JavaScript com
 
 Production startup validates `PORT` and the built frontend index/assets directory before opening SQLite. Missing or unreadable frontend output reports `Run npm run build before npm start`; invalid port/data paths use fixed actionable messages without stack traces, underlying SQL, or note contents. [Production configuration/routing checks](../../apps/server/src/__test__/production.test.ts) use test-owned frontend fixtures and temporary storage, so unit tests do not require an existing build.
 
+## Local MCP subprocess
+
+The server build also emits `apps/server/dist/mcp.js`. An MCP client launches
+this entry point directly with Node.js and communicates over standard input and
+output. It can run with the web server stopped and uses the same workspace
+service and SQLite file. The connection opens read-only and verifies the
+migration ledger. Initialize or upgrade the workspace by starting the web app
+from the same version before connecting the MCP client.
+
+Pass the same `DATA_DIR` to the subprocess if the web app uses a custom
+directory. The standalone MCP entry point reads its environment. A client setup
+that launches Node directly must explicitly pass a setting that the web app
+loads from `.env`. Diagnostics go to stderr and exclude note content and
+search terms. The MCP client can pass returned notes on to its model provider.
+
+`list_folder` returns direct children, with folders before notes and each
+group ordered by ID. `search_notes` matches literal substrings of titles and
+Markdown with ASCII case-insensitive comparison. Both tools return metadata and
+a `nextCursor` for another page. Reuse that cursor with the same search and
+folder arguments. The default page size is 50 and the maximum is 100. `get_note`
+returns a single note's complete saved Markdown and revision.
+
 ## Tooling choices
 
 Vitest checks isolated contracts and logic, Supertest checks Express, and Playwright checks browser workflows. Persistence/API tasks must use temporary SQLite databases and reopen them when testing durability. ESLint, Prettier, and strict TypeScript provide quality checks; package manifests own the commands.
@@ -32,8 +54,8 @@ The HTTP/database lifecycle is managed by [startServer](../../apps/server/src/se
 
 For a backup or restore:
 
-1. Wait for the note to show `Saved.`, then stop every backend using that data directory. A database backup contains saved notes, not pending browser edits.
-2. Copy the entire configured data directory to a new backup location, keeping any SQLite WAL/SHM sidecars with `workspace.sqlite`. Do not copy only the main file while a server is running.
+1. Wait for the note to show `Saved.`, then stop every backend and disconnect every MCP client using that data directory. A database backup contains only saved notes.
+2. Copy the entire configured data directory to a new backup location, keeping any SQLite WAL/SHM sidecars with `workspace.sqlite`.
 3. To restore, keep the current directory separately and copy the complete backup into a new local directory. Set `DATA_DIR` to that restored directory in `.env` or the process environment.
 4. Start the app and verify its folder tree and notes. The previous directory and backup remain available if verification fails. Do not delete/reset a database to resolve an initialization or migration error.
 

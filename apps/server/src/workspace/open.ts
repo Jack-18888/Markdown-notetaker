@@ -1,4 +1,9 @@
-import { openDatabase, type DatabaseOptions } from '../database/open.js';
+import {
+  openDatabase,
+  openExistingDatabase,
+  type DatabaseOptions,
+  type ExistingDatabaseOptions,
+} from '../database/open.js';
 import { createWorkspaceService } from './service.js';
 import type { Workspace } from './types.js';
 
@@ -14,7 +19,18 @@ export function openWorkspace(options: WorkspaceOptions = {}): Workspace {
     databaseOptions.dataDirectory = options.dataDirectory;
   if (options.busyTimeoutMs !== undefined)
     databaseOptions.busyTimeoutMs = options.busyTimeoutMs;
-  const database = openDatabase(databaseOptions);
+  return workspaceFromDatabase(openDatabase(databaseOptions));
+}
+
+export function openExistingWorkspace(
+  options: ExistingDatabaseOptions = {},
+): Workspace {
+  return workspaceFromDatabase(openExistingDatabase(options));
+}
+
+function workspaceFromDatabase(
+  database: ReturnType<typeof openDatabase>,
+): Workspace {
   try {
     const service = createWorkspaceService(database);
     return {

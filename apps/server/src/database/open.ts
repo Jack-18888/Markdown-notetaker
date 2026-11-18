@@ -9,6 +9,7 @@ import {
 } from './errors.js';
 import {
   applyMigrations,
+  requireCurrentSchema,
   workspaceMigrations,
   type Migration,
 } from './migrations.js';
@@ -19,15 +20,23 @@ export interface DatabaseOptions {
   migrations?: readonly Migration[];
 }
 
-/** Open the workspace, configure SQLite, and migrate before exposing a connection. */
-export function openDatabase(options: DatabaseOptions = {}): Database.Database {
-  const directory = resolveDataDirectory(options.dataDirectory);
-  const timeout = options.busyTimeoutMs ?? 5000;
+export type ExistingDatabaseOptions = Omit<DatabaseOptions, 'migrations'> & {
+  writable?: boolean;
+};
+
+function busyTimeout(timeout = 5000): number {
   if (!Number.isInteger(timeout) || timeout < 0 || timeout > 60000) {
     throw new DatabaseInitializationError(
       DatabaseErrorCode.INVALID_BUSY_TIMEOUT,
     );
   }
+  return timeout;
+}
+
+/** Open the workspace, configure SQLite, and migrate before exposing a connection. */
+export function openDatabase(options: DatabaseOptions = {}): Database.Database {
+  const directory = resolveDataDirectory(options.dataDirectory);
+  const timeout = busyTimeout(options.busyTimeoutMs);
   try {
     mkdirSync(directory, { recursive: true });
   } catch {
@@ -47,6 +56,29 @@ export function openDatabase(options: DatabaseOptions = {}): Database.Database {
     }
     database.pragma('synchronous = FULL');
     applyMigrations(database, options.migrations ?? workspaceMigrations);
+    return database;
+  } catch (error) {
+    if (database?.open) database.close();
+    throw databaseFailure(error, DatabaseErrorCode.DATABASE_UNAVAILABLE);
+  }
+}
+
+/** Connect to an initialized workspace without creating a file or migrating it. */
+export function openExistingDatabase(
+  options: ExistingDatabaseOptions = {},
+): Database.Database {
+  const directory = resolveDataDirectory(options.dataDirectory);
+  const timeout = busyTimeout(options.busyTimeoutMs);
+  let database: Database.Database | undefined;
+  try {
+    database = new Database(join(directory, databaseFileName), {
+      timeout,
+      fileMustExist: true,
+      readonly: options.writable !== true,
+    });
+    database.pragma('foreign_keys = ON');
+    if (options.writable) database.pragma('synchronous = FULL');
+    requireCurrentSchema(database);
     return database;
   } catch (error) {
     if (database?.open) database.close();

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveDataDirectory } from '../../config.js';
 import { DatabaseErrorCode, DatabaseInitializationError } from '../errors.js';
+import { openExistingDatabase } from '../open.js';
 import {
   fixtureIds,
   fixtureTimestamp,
@@ -23,6 +24,27 @@ afterEach(() => {
 });
 
 describe('workspace database initialization', () => {
+  it('can check the schema and read without taking a write lock', () => {
+    const temporary = workspace();
+    const database = temporary.open();
+    const content = seedWorkspace(database);
+    database.exec('BEGIN IMMEDIATE');
+    const reader = openExistingDatabase({
+      dataDirectory: temporary.dataDirectory,
+      busyTimeoutMs: 0,
+    });
+    try {
+      expect(reader.readonly).toBe(true);
+      expect(reader.prepare('SELECT content FROM notes').get()).toEqual({
+        content,
+      });
+      database.exec('ROLLBACK');
+      expect(() => reader.exec('DELETE FROM notes')).toThrow('readonly');
+    } finally {
+      reader.close();
+    }
+  });
+
   it('initializes a missing directory with the required SQLite settings', () => {
     const temporary = workspace();
     expect(existsSync(temporary.dataDirectory)).toBe(false);

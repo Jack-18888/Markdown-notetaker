@@ -3,11 +3,23 @@ import type {
   Folder,
   NoteMetadata,
   NoteDetail,
+  ParentId,
   ResourceId,
   Revision,
 } from '@markdown-note-taker/contracts';
 
 type FolderAncestor = Pick<Folder, 'id' | 'parentId'>;
+
+interface ChildPage {
+  folderId: ParentId;
+  afterId: string;
+  limit: number;
+}
+
+interface SearchPage extends ChildPage {
+  allFolders: 0 | 1;
+  query: string;
+}
 
 const folderColumns =
   'id, name, parent_id AS parentId, created_at AS createdAt, updated_at AS updatedAt';
@@ -21,6 +33,21 @@ export function createWorkspaceRepository(database: Database.Database) {
   );
   const notes = database.prepare<[], NoteMetadata>(
     `SELECT ${noteColumns} FROM notes ORDER BY id`,
+  );
+  const childFolders = database.prepare<ChildPage, Folder>(
+    `SELECT ${folderColumns} FROM folders
+     WHERE parent_id IS @folderId AND id > @afterId ORDER BY id LIMIT @limit`,
+  );
+  const childNotes = database.prepare<ChildPage, NoteMetadata>(
+    `SELECT ${noteColumns} FROM notes
+     WHERE folder_id IS @folderId AND id > @afterId ORDER BY id LIMIT @limit`,
+  );
+  const matchingNotes = database.prepare<SearchPage, NoteMetadata>(
+    `SELECT ${noteColumns} FROM notes
+     WHERE id > @afterId AND (@allFolders = 1 OR folder_id IS @folderId)
+       AND (instr(lower(title), lower(@query)) > 0
+         OR instr(lower(content), lower(@query)) > 0)
+     ORDER BY id LIMIT @limit`,
   );
   const folder = database.prepare<[ResourceId], Folder>(
     `SELECT ${folderColumns} FROM folders WHERE id = ?`,
@@ -58,6 +85,9 @@ export function createWorkspaceRepository(database: Database.Database) {
   return {
     listFolders: () => folders.all(),
     listNotes: () => notes.all(),
+    listChildFolders: (page: ChildPage) => childFolders.all(page),
+    listChildNotes: (page: ChildPage) => childNotes.all(page),
+    searchNotes: (page: SearchPage) => matchingNotes.all(page),
     findFolder: (id: ResourceId) => folder.get(id),
     findNote: (id: ResourceId) => note.get(id),
     findNoteMetadata: (id: ResourceId) => noteMetadata.get(id),
