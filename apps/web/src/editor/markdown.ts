@@ -31,7 +31,7 @@ export type LoadedMarkdown =
       serialize(document: Node): string;
     };
 
-function checkDocument(document: Node) {
+export function checkDocument(document: Node) {
   const pending = [{ node: document, depth: 0 }];
   let count = 0;
   while (pending.length) {
@@ -62,6 +62,29 @@ function checkDocument(document: Node) {
     node.forEach((child) => pending.push({ node: child, depth: depth + 1 }));
   }
   document.check();
+}
+
+export function roundTripDocument(document: Node, ctx: Ctx): string {
+  checkDocument(document);
+  const serialize = ctx.get(serializerCtx);
+  const last = document.lastChild;
+  // Milkdown drops one trailing empty paragraph as a typing area. Supply
+  // that extra paragraph only to the serializer so real blank lines survive.
+  const snapshot =
+    document.childCount > 1 &&
+    last?.type.name === 'paragraph' &&
+    !last.content.size
+      ? document.copy(document.content.addToEnd(last))
+      : document;
+  const serialized = serialize(snapshot);
+  const next = serialized.endsWith('\n') ? serialized.slice(0, -1) : serialized;
+  if (
+    !markdownSchema.safeParse(next).success ||
+    assessSource(next) ||
+    !parse(next, ctx).eq(document)
+  )
+    throw new MarkdownConversionError();
+  return next;
 }
 
 function parse(source: string, ctx: Ctx) {
@@ -97,38 +120,16 @@ export function loadMarkdown(source: string, ctx: Ctx): LoadedMarkdown {
   if (reason) return { mode: 'source', source, reason };
   try {
     const baseline = parse(source, ctx);
-    const serialize = ctx.get(serializerCtx);
-    const roundTrip = (document: Node) => {
-      checkDocument(document);
-      const last = document.lastChild;
-      // Milkdown drops one trailing empty paragraph as a typing area. Supply
-      // that extra paragraph only to the serializer so real blank lines survive.
-      const snapshot =
-        document.childCount > 1 &&
-        last?.type.name === 'paragraph' &&
-        !last.content.size
-          ? document.copy(document.content.addToEnd(last))
-          : document;
-      const serialized = serialize(snapshot);
-      const next = serialized.endsWith('\n')
-        ? serialized.slice(0, -1)
-        : serialized;
-      if (
-        !markdownSchema.safeParse(next).success ||
-        assessSource(next) ||
-        !parse(next, ctx).eq(document)
-      )
-        throw new MarkdownConversionError();
-      return next;
-    };
-    roundTrip(baseline);
+    roundTripDocument(baseline, ctx);
     return {
       mode: 'rich',
       source,
       document: baseline,
       serialize(document) {
         try {
-          return document.eq(baseline) ? source : roundTrip(document);
+          return document.eq(baseline)
+            ? source
+            : roundTripDocument(document, ctx);
         } catch {
           throw new MarkdownConversionError();
         }
