@@ -49,6 +49,59 @@ function validateDefinitions(migrations: readonly Migration[]) {
   }
 }
 
+/** Read the ledger and verify it against the app's migration definitions. */
+function readMigrationHistory(
+  database: Database.Database,
+  migrations: readonly Migration[],
+): AppliedMigration[] {
+  let applied: AppliedMigration[];
+  try {
+    applied = database
+      .prepare<[], AppliedMigration>(
+        'SELECT version, name, checksum FROM schema_migrations ORDER BY version',
+      )
+      .all();
+  } catch (error) {
+    throw databaseFailure(error, DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH);
+  }
+
+  const latestAppliedVersion = applied.at(-1)?.version ?? 0;
+  if (
+    database.pragma('user_version', { simple: true }) !==
+      latestAppliedVersion ||
+    applied.length > migrations.length
+  ) {
+    throw new DatabaseInitializationError(
+      DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
+    );
+  }
+  for (const [index, record] of applied.entries()) {
+    const expected = migrations[index];
+    if (
+      !expected ||
+      record.version !== expected.version ||
+      record.name !== expected.name ||
+      record.checksum !== checksum(expected)
+    ) {
+      throw new DatabaseInitializationError(
+        DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
+      );
+    }
+  }
+  return applied;
+}
+
+/** Require a current workspace without creating a ledger or taking a write lock. */
+export function requireCurrentSchema(database: Database.Database) {
+  database.transaction(() => {
+    const applied = readMigrationHistory(database, workspaceMigrations);
+    if (applied.length !== workspaceMigrations.length)
+      throw new DatabaseInitializationError(
+        DatabaseErrorCode.MIGRATION_REQUIRED,
+      );
+  })();
+}
+
 /** Apply all pending migrations together; any failure rolls back the whole batch. */
 export function applyMigrations(
   database: Database.Database,
@@ -65,46 +118,7 @@ export function applyMigrations(
         checksum TEXT NOT NULL,
         applied_at TEXT NOT NULL
       ) STRICT;`);
-      let applied: AppliedMigration[];
-
-      // get applied migrations from db
-      try {
-        applied = database
-          .prepare<[], AppliedMigration>(
-            'SELECT version, name, checksum FROM schema_migrations ORDER BY version',
-          )
-          .all();
-      } catch (error) {
-        throw databaseFailure(
-          error,
-          DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
-        );
-      }
-
-      // verify migration version and histories
-      const latestAppliedVersion = applied.at(-1)?.version ?? 0;
-      if (
-        database.pragma('user_version', { simple: true }) !==
-          latestAppliedVersion ||
-        applied.length > migrations.length
-      ) {
-        throw new DatabaseInitializationError(
-          DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
-        );
-      }
-      for (const [index, record] of applied.entries()) {
-        const expected = migrations[index];
-        if (
-          !expected ||
-          record.version !== expected.version ||
-          record.name !== expected.name ||
-          record.checksum !== checksum(expected)
-        ) {
-          throw new DatabaseInitializationError(
-            DatabaseErrorCode.MIGRATION_HISTORY_MISMATCH,
-          );
-        }
-      }
+      const applied = readMigrationHistory(database, migrations);
 
       // apply migrations
       const recordMigration = database.prepare(

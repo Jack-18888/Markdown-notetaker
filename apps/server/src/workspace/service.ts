@@ -22,6 +22,15 @@ import {
   type UpdateNoteRequest,
 } from '@markdown-note-taker/contracts';
 import { guarded, WorkspaceError } from './errors.js';
+import {
+  defaultPageSize,
+  listFolderSchema,
+  searchNotesSchema,
+  type FolderPage,
+  type ListFolderRequest,
+  type NoteSearchPage,
+  type SearchNotesRequest,
+} from './queries.js';
 import { createWorkspaceRepository } from './repository.js';
 import type { WorkspaceService } from './types.js';
 import { validate } from './validation.js';
@@ -89,6 +98,66 @@ export function createWorkspaceService(
           folders: repository.listFolders(),
           notes: repository.listNotes(),
         }))(),
+      );
+    },
+
+    listFolder(input: ListFolderRequest): FolderPage {
+      const {
+        folderId,
+        cursor,
+        limit = defaultPageSize,
+      } = validate(listFolderSchema, input);
+      return guarded(() =>
+        database.transaction(() => {
+          if (folderId !== null) requireFolder(folderId);
+          // Read one extra row to distinguish a full last page from a partial listing.
+          const items: FolderPage['items'] = [];
+          if (cursor?.kind !== 'note') {
+            const folders = repository.listChildFolders({
+              folderId,
+              afterId: cursor?.id ?? '',
+              limit: limit + 1,
+            });
+            for (const folder of folders)
+              items.push({ ...folder, kind: 'folder' });
+          }
+          if (items.length <= limit) {
+            const notes = repository.listChildNotes({
+              folderId,
+              afterId: cursor?.kind === 'note' ? cursor.id : '',
+              limit: limit + 1 - items.length,
+            });
+            for (const note of notes) items.push({ ...note, kind: 'note' });
+          }
+          if (items.length <= limit) return { items, nextCursor: null };
+          items.pop();
+          const last = items[limit - 1]!;
+          return { items, nextCursor: { kind: last.kind, id: last.id } };
+        })(),
+      );
+    },
+
+    searchNotes(input: SearchNotesRequest): NoteSearchPage {
+      const {
+        query,
+        folderId,
+        cursor,
+        limit = defaultPageSize,
+      } = validate(searchNotesSchema, input);
+      return guarded(() =>
+        database.transaction(() => {
+          if (folderId != null) requireFolder(folderId);
+          const notes = repository.searchNotes({
+            query,
+            folderId: folderId ?? null,
+            allFolders: folderId === undefined ? 1 : 0,
+            afterId: cursor ?? '',
+            limit: limit + 1,
+          });
+          if (notes.length <= limit) return { notes, nextCursor: null };
+          notes.pop();
+          return { notes, nextCursor: notes[limit - 1]!.id };
+        })(),
       );
     },
 
